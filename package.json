@@ -1,0 +1,9 @@
+{
+  "name": "sobrecarga",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SOBRECARGA — Arena Neon: twin-stick shooter roguelite em canvas 2D. O jogo é estático; o único código de servidor é a função do placar mundial.",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0"
+  }
+}

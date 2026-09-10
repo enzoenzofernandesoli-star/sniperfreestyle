@@ -1,0 +1,8 @@
+VISÃO GERAL — O QUE VAMOS FAZER AGORA
+
+Vamos criar padrões diferentes de boss, assim:
+
+Boss	Fase	Movimento	Ataque
+Boss 1	Fase 4	Horizontal	Tiro único lento
+Boss 2	Fase 8	Senoidal (onda)	Rajada em leque
+Boss 3	Fase 12	Circular	Tiros em espiral

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Jogo de Tiro</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="startScreen">
+    <h1>🔥 SNIPER FREESTYLE 🔥</h1>
+    <button onclick="startGame()">Iniciar</button>
+<p id="creditos">Feito por LODCH</p>
+
+</div>
+
+    <h2>sniper freestyle</h2>
+    <div id="hud">
+        <span>Pontos: <span id="score">0</span></span>
+        <span>Fase: <span id="level">1</span></span>
+    </div>
+
+<button id="pauseBtn">Pausar</button> <button id="skipBtn">Pular Fase</button>
+
+
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <script src="game.js"></script>
+</body>
+</html>

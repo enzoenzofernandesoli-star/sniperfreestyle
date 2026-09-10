@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>SOBRECARGA — Arena Neon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="palco">
+  <canvas id="telaJogo" width="1280" height="720"></canvas>
+  <div id="scanlines"></div>
+
+  <!-- ============================== HUD ============================== -->
+  <div id="hud">
+    <div class="hud-topo">
+      <div class="bloco vidas">
+        <span class="rotulo" id="classeNome">—</span>
+        <div id="coracoes"></div>
+        <div id="buffs"></div>
+      </div>
+
+      <div class="bloco central">
+        <div class="onda-caixa"><span class="rotulo">ONDA</span><b id="onda">1/20</b></div>
+        <div id="bossBarra">
+          <div class="boss-cabecalho">
+            <span id="bossNome">BOSS</span>
+            <span id="bossTitulo"></span>
+          </div>
+          <div class="boss-trilha"><i id="bossFill"></i></div>
+        </div>
+      </div>
+
+      <div class="bloco pontuacao">
+        <span class="rotulo">PONTOS</span>
+        <b id="pontos">0</b>
+        <span id="multi" class="multi">x1</span>
+      </div>
+    </div>
+
+    <div class="hud-base">
+      <div class="xp-caixa">
+        <span class="rotulo">NÍVEL <b id="nivel">1</b></span>
+        <div class="xp-trilha"><i id="barraXP"></i></div>
+      </div>
+
+      <div class="habilidades">
+        <div class="hab" id="habDash"><span class="tecla">ESPAÇO</span><span class="nome">DASH</span></div>
+        <div class="hab" id="habEscudo"><span class="tecla">Q</span><span class="nome">ESCUDO</span></div>
+        <div class="hab" id="habUlt"><span class="tecla">E</span><span class="nome">ULTIMATE</span></div>
+      </div>
+
+      <div class="rodape-info">
+        <button id="btPausar" title="Pausar">❚❚</button>
+        <span>FPS <b id="fps">60</b></span>
+        <span class="dica">P = pausar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= CONTROLES DE TOQUE ====================== -->
+  <div id="toque" aria-hidden="true">
+    <div id="stickMover" class="stick"><i></i><span>MOVER</span></div>
+
+    <div class="lado-direito">
+      <div class="fila-habilidades">
+        <button id="btToqueDash" class="bt-toque hab-toque" data-hab="dash">»</button>
+        <button id="btToqueEscudo" class="bt-toque hab-toque" data-hab="escudo">⛨</button>
+        <button id="btToqueUlt" class="bt-toque hab-toque" data-hab="ult">★</button>
+      </div>
+      <div class="fila-tiro">
+        <button id="btToqueTiro" class="bt-toque tiro">ATIRAR</button>
+        <div id="stickMira" class="stick"><i></i><span>MIRAR</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= TELAS ============================= -->
+
+  <!-- MENU -->
+  <section class="tela ativa" data-tela="menu">
+    <div class="brilho-fundo"></div>
+    <div class="menu-caixa">
+      <p class="tag-topo">TWIN-STICK ROGUELITE</p>
+      <h1 class="titulo">SOBRECARGA<span>ARENA NEON</span></h1>
+      <p class="slogan">"Aguenta mais um pouco."</p>
+      <p class="subtitulo">4 classes · 7 tipos de inimigo · 4 bosses com fases · 22 melhorias · 20 ondas</p>
+      <div class="menu-botoes">
+        <button id="btJogar" class="bt principal">JOGAR</button>
+        <button id="btComoJogar" class="bt">COMO JOGAR</button>
+        <button id="btRecordes" class="bt">RECORDES</button>
+        <button id="btConfig" class="bt">AJUSTES</button>
+      </div>
+      <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
+      <p class="creditos">Feito por <b>LODCH</b></p>
+    </div>
+  </section>
+
+  <!-- SELEÇÃO DE CLASSE -->
+  <section class="tela" data-tela="classes">
+    <div class="cabecalho-tela">
+      <h2>ESCOLHA SUA CLASSE</h2>
+      <p>Cada classe muda arma, mobilidade, defesa e ultimate. Escolha define a run inteira.</p>
+    </div>
+
+    <div class="caixa-nome">
+      <label for="campoNome">SEU NOME NO PLACAR</label>
+      <input id="campoNome" type="text" maxlength="12" placeholder="ANÔNIMO" autocomplete="off" spellcheck="false" />
+      <span id="avisoNome"></span>
+    </div>
+    <div id="gradeClasses" class="grade-classes"></div>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- AJUDA -->
+  <section class="tela" data-tela="ajuda">
+    <div class="cabecalho-tela"><h2>COMO JOGAR</h2></div>
+    <div class="painel ajuda-grade">
+      <div>
+        <h3>CONTROLES</h3>
+        <ul class="teclas">
+          <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> mover</li>
+          <li><kbd>MOUSE</kbd> mirar</li>
+          <li><kbd>CLIQUE ESQ.</kbd> atirar (segure)</li>
+          <li><kbd>ESPAÇO</kbd> dash (invencível por instantes)</li>
+          <li><kbd>Q</kbd> escudo</li>
+          <li><kbd>E</kbd> / <kbd>CLIQUE DIR.</kbd> ultimate</li>
+          <li><kbd>P</kbd> / <kbd>ESC</kbd> pausar</li>
+          <li><kbd>CELULAR</kbd> joystick esquerdo move, direito mira, botão <b>ATIRAR</b> dispara com mira automática</li>
+        </ul>
+      </div>
+      <div>
+        <h3>REGRAS DA ARENA</h3>
+        <ul class="marcadores">
+          <li><b>20 ondas.</b> Boss nas ondas 5, 10, 15 e 20.</li>
+          <li>Matar dá <b>XP</b>. Subir de nível abre <b>3 melhorias</b> pra escolher.</li>
+          <li><b>Combo</b>: mate rápido e o multiplicador vai até <b>x8</b> nos pontos.</li>
+          <li>Bosses têm <b>fases</b>: mudam movimento e ataque conforme perdem vida.</li>
+          <li><b>COURAÇA</b> bloqueia tiro de frente — flanqueie ou use ricochete.</li>
+          <li><b>KAMIKAZE</b> pisca ~0,8 s antes de investir: dash pra fora do raio.</li>
+          <li>Itens: ❤ vida · ✹ bomba · ◈ ímã · ⚡ frenesi.</li>
+        </ul>
+      </div>
+    </div>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- RECORDES -->
+  <section class="tela" data-tela="recordes">
+    <div class="cabecalho-tela"><h2>RECORDES</h2></div>
+    <div class="abas">
+      <button class="aba ativa" data-aba="mundial">🌎 MUNDIAL</button>
+      <button class="aba" data-aba="local">💾 NESTE APARELHO</button>
+    </div>
+    <div class="painel" id="listaMundial"></div>
+    <div class="painel" id="listaRecordes" hidden></div>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="tela" data-tela="config">
+    <div class="cabecalho-tela"><h2>AJUSTES</h2></div>
+    <div class="painel form">
+      <label class="linha"><span>Nome no placar</span>
+        <input id="cfgNome" type="text" maxlength="12" placeholder="ANÔNIMO" autocomplete="off" spellcheck="false" />
+      </label>
+      <label class="linha"><span>Música</span><input id="cfgMusica" type="range" min="0" max="100" /></label>
+      <label class="linha"><span>Efeitos</span><input id="cfgEfeitos" type="range" min="0" max="100" /></label>
+      <label class="linha"><span>Tremor de tela</span><input id="cfgTremor" type="checkbox" /></label>
+      <label class="linha"><span>Partículas</span><input id="cfgParticulas" type="checkbox" /></label>
+      <label class="linha"><span>Números de dano</span><input id="cfgDano" type="checkbox" /></label>
+      <label class="linha"><span>Controles de toque</span>
+        <select id="cfgToque">
+          <option value="auto">Automático (detecta o aparelho)</option>
+          <option value="sempre">Sempre visíveis</option>
+          <option value="nunca">Nunca</option>
+        </select>
+      </label>
+      <button id="btApagarRecordes" class="bt perigo">APAGAR RECORDES</button>
+    </div>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- PAUSA -->
+  <section class="tela" data-tela="pausa">
+    <div class="menu-caixa estreito">
+      <h2 class="titulo-menor">PAUSADO</h2>
+      <div class="menu-botoes coluna">
+        <button id="btRetomar" class="bt principal">CONTINUAR</button>
+        <button id="btReiniciarPausa" class="bt">TROCAR DE CLASSE</button>
+        <button id="btMenuPausa" class="bt fantasma">SAIR PRO MENU</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MELHORIA -->
+  <section class="tela" data-tela="melhoria">
+    <div class="cabecalho-tela">
+      <p class="tag-topo" id="melhoriaNivel">NÍVEL 2</p>
+      <h2>ESCOLHA UMA MELHORIA</h2>
+      <p>Escolha permanente pelo resto da run.</p>
+    </div>
+    <div id="gradeMelhorias" class="grade-melhorias"></div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="tela" data-tela="final">
+    <div class="menu-caixa largo">
+      <h2 id="finalTitulo" class="titulo-menor">FIM</h2>
+      <p id="finalSub" class="subtitulo"></p>
+      <div id="finalEstat" class="estat-grade"></div>
+      <p id="statusPlacar" class="status-placar"></p>
+      <div class="melhorias-ativas">
+        <span class="rotulo">MELHORIAS DA RUN</span>
+        <div id="listaMelhoriasAtivas"></div>
+      </div>
+      <div class="menu-botoes">
+        <button id="btDeNovo" class="bt principal">JOGAR DE NOVO</button>
+        <button id="btMenuFinal" class="bt fantasma">MENU</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="girar">
+  <div>
+    <span class="icone">⟳</span>
+    <b>VIRE O CELULAR</b>
+    <p>A arena é 16:9 — de lado dá o dobro de espaço pra desviar.</p>
+  </div>
+</div>
+
+<script src="src/nucleo.js"></script>
+<script src="src/placar-config.js"></script>
+<script src="src/placar.js"></script>
+<script src="src/classes.js"></script>
+<script src="src/entidades.js"></script>
+<script src="src/jogo.js"></script>
+<script src="src/ui.js"></script>
+<script>Jogo.iniciar();</script>
+</body>
+</html>
