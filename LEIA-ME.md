@@ -27,6 +27,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 | Telas via `innerHTML` | 7 telas reais: menu, classes, ajuda, ajustes, recordes, pausa, fim |
 | Sem áudio | Trilha e ~20 efeitos sintetizados no WebAudio (zero arquivo) |
 | Sem persistência | Recordes e ajustes salvos em `localStorage` |
+| Sem identidade | Nome do jogador na run e **placar mundial** compartilhado |
 | Sem feedback de impacto | Partículas, tremor, hitstop, flash, slow-mo, números de dano |
 | Só teclado + mouse | Controles de toque em tela: joystick de mover, joystick de mira e botão ATIRAR |
 
@@ -95,6 +96,9 @@ Cada boss troca de fase por faixa de vida, com telégrafo visual e sonoro antes 
 index.html          telas, HUD e ordem de carregamento dos scripts
 style.css           design system (tokens em :root, vidro escuro + neon)
 src/nucleo.js       Mat, Config, Camera, Recordes, Input, Som, Particulas, Textos
+src/placar.js       Perfil (nome) e Placar (envio e leitura do placar mundial)
+src/placar-config.js  endereço do placar — o único arquivo a mexer pra ligar/desligar
+api/placar.js       função da Vercel: valida a run e grava no Postgres do Neon
 src/classes.js      CLASSES[] e MELHORIAS[] (dados puros — mexa aqui pra balancear)
 src/entidades.js    Jogador, Projetil, Inimigo, Boss, Coletavel
 src/jogo.js         estado, loop, ondas, colisões, efeitos de tela, render da arena
@@ -155,3 +159,60 @@ Pedido: menos telas de melhoria e inimigos menos difíceis.
 - **Quantidade**: orçamento por onda de `5 + 2,7×onda` para `4 + 2,2×onda`, teto simultâneo de
   34 para **26**, e spawn mais espaçado.
 - **Bosses**: −20% de vida (1250 / 2400 / 4100 / 7000).
+
+---
+
+## Nome do jogador e placar mundial
+
+### Como funciona pra quem joga
+
+1. Na tela de classes existe o campo **SEU NOME NO PLACAR** (12 caracteres, salvo
+   no navegador; também editável em Ajustes). Em branco, entra como `ANÔNIMO`.
+2. Ao terminar a run — vitória ou derrota — a pontuação vai pro placar e a tela
+   final diz se subiu (`🌎 Enviado ao placar mundial`) ou se ficou só local.
+3. **RECORDES** tem duas abas: **MUNDIAL** (todos que jogaram) e **NESTE
+   APARELHO** (as 8 melhores runs de quem está ali). A linha de quem está
+   jogando aparece destacada em ciano no placar mundial.
+
+Se o placar estiver fora do ar, ou o arquivo for aberto sem internet, o jogo não
+muda em nada: a run continua salva no aparelho.
+
+### Como está montado
+
+```
+navegador (src/placar.js)  →  /api/placar (Vercel)  →  Postgres (Neon)
+```
+
+- **Nenhuma credencial de banco vive no navegador.** A página só conhece a rota.
+- A função usa o papel `placar_app`, que só tem `SELECT` e `INSERT` na tabela
+  `placar_sobrecarga`. Não cria, não altera, não apaga, não vê outra tabela.
+- A tabela tem RLS ligado e `CHECK` em toda coluna (faixas de pontos, onda,
+  nível, tempo, abates e lista fechada de classes).
+- A função rejeita: nome de lista negra, classe inexistente, valor fora de
+  faixa, pontuação implausível pra onda alcançada (`30000 × onda + 60000`) e
+  reenvio do mesmo nome+pontuação dentro de 2 minutos.
+- Banco: projeto Neon `sobrecarga-placar`, região `sa-east-1`, plano grátis.
+
+**O que isso não é:** placar à prova de trapaça. Quem entende de HTTP consegue
+mandar uma pontuação plausível na mão. Pra um placar entre amigos, os limites
+acima resolvem; pra torneio valendo algo, o caminho seria assinar a run no
+servidor.
+
+### Publicar / religar
+
+1. Vercel → projeto **sobrecarga** → *Settings → Git* → conectar o repositório
+   `enzoenzofernandesoli-star/sobrecarga`.
+2. Vercel → *Settings → Environment Variables* → criar **`DATABASE_URL`** com a
+   string de conexão do papel `placar_app` (está em `api/conexao-local.js`, que
+   fica fora do git). Sem essa variável, `/api/placar` responde `503` com recado
+   claro e o jogo cai no placar local.
+3. Deploy. A partir daí, cada `git push` na `main` redeploya sozinho.
+4. Opcional: em `src/placar-config.js`, trocar `url` de `/api/placar` pro
+   endereço absoluto (`https://SEU-DOMINIO/api/placar`). Assim a cópia aberta
+   direto do arquivo no PC também manda pontuação pro mesmo placar do site.
+
+### Trocar de banco
+
+`api/placar.js` é o único lugar que fala SQL. Pra migrar (Supabase, Postgres
+próprio, o que for), basta apontar `DATABASE_URL` pro novo banco e criar a
+tabela com as mesmas colunas — o jogo não muda uma linha.
