@@ -12,8 +12,7 @@ fundo transparente, estilo arcade retro-futurista, sem serifa, sem textura suja.
 
 ## 1. Logo / wordmark (maior retorno)
 
-> Wordmark "SOBRECARGA" em uma linha, com a assinatura "ARENA NEON" menor embaixo, tipografia
-> geométrica extrabold estilo Orbitron,
+> Wordmark "SNIPER FREESTYLE" em duas linhas, tipografia geométrica extrabold estilo Orbitron,
 > letras em degradê de branco para ciano elétrico, contorno com brilho neon azul, leve aberração
 > cromática, fundo transparente PNG, alta resolução, estética arcade retro-futurista, sem mascote,
 > sem moldura.

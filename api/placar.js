@@ -1,8 +1,12 @@
 /* ===========================================================================
-   /api/placar — placar mundial do SOBRECARGA.
+   /api/placar — placar mundial do SNIPER FREESTYLE.
 
    GET  /api/placar?limite=25   → top do placar
    POST /api/placar             → grava uma run
+
+   O nome da tabela e do projeto no Neon ficou `..._sobrecarga` / `sobrecarga-placar`
+   de quando o jogo se chamou SOBRECARGA. Renomear no banco quebraria o deploy sem
+   ganhar nada — é nome interno, o jogador nunca vê.
 
    Roda na Vercel (função serverless) e fala com o Neon pelo papel `placar_app`,
    que só tem SELECT e INSERT nessa tabela. Nenhuma credencial chega ao

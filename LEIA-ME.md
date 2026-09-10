@@ -1,9 +1,4 @@
-# SOBRECARGA — Arena Neon
-
-> *"Aguenta mais um pouco."*
->
-> Antes chamado **Sniper Freestyle**. O nome mudou em 09/09/2026; as chaves de
-> `localStorage` (`sniper.*`) ficaram como estavam pra não apagar recorde de ninguém.
+# SNIPER FREESTYLE — Arena Neon
 
 Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependência:
 é só abrir o `index.html` no navegador.
@@ -200,8 +195,7 @@ servidor.
 
 ### Publicar / religar
 
-1. Vercel → projeto **sobrecarga** → *Settings → Git* → conectar o repositório
-   `enzoenzofernandesoli-star/sobrecarga`.
+1. Vercel → *Add New → Project* → importar `enzoenzofernandesoli-star/sniperfreestyle`.
 2. Vercel → *Settings → Environment Variables* → criar **`DATABASE_URL`** com a
    string de conexão do papel `placar_app` (está em `api/conexao-local.js`, que
    fica fora do git). Sem essa variável, `/api/placar` responde `503` com recado
@@ -210,6 +204,14 @@ servidor.
 4. Opcional: em `src/placar-config.js`, trocar `url` de `/api/placar` pro
    endereço absoluto (`https://SEU-DOMINIO/api/placar`). Assim a cópia aberta
    direto do arquivo no PC também manda pontuação pro mesmo placar do site.
+
+### Por que o banco tem outro nome
+
+A tabela é `placar_sobrecarga` e o projeto no Neon é `sobrecarga-placar`, de
+quando o jogo se chamou SOBRECARGA por algumas horas. São nomes internos que o
+jogador nunca vê; renomear obrigaria a mexer no banco em produção sem ganho
+nenhum. O mesmo vale pras chaves de `localStorage` (`sniper.*`), que ficaram
+desde a primeira versão — trocar apagaria os recordes já salvos.
 
 ### Trocar de banco
 

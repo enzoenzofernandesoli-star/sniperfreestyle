@@ -1,5 +1,5 @@
 /* ===========================================================================
-   SOBRECARGA — design system: arcade neon sobre vidro escuro.
+   SNIPER FREESTYLE — design system: arcade neon sobre vidro escuro.
    =========================================================================== */
 
 :root {
@@ -337,24 +337,17 @@ body.em-jogo #hud { display: flex; }
 .titulo {
   font-family: Orbitron, sans-serif;
   font-weight: 900;
-  font-size: clamp(28px, 5.1vw, 72px);
-  line-height: .94;
-  letter-spacing: -.01em;
+  font-size: clamp(32px, 6vw, 88px);
+  line-height: .92;
+  letter-spacing: .01em;
   background: linear-gradient(180deg, #fff 20%, #7ee8ff 60%, #2b7fb0 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 26px rgba(49, 224, 255, .45));
 }
-.titulo span { display: block; font-size: .38em; letter-spacing: .42em; color: transparent; }
+.titulo span { display: block; font-size: .62em; letter-spacing: .3em; color: transparent; }
 
-.slogan {
-  margin-top: 10px;
-  font-size: clamp(11px, 1.05vw, 15px);
-  font-style: italic;
-  letter-spacing: .06em;
-  color: rgba(142, 163, 184, .75);
-}
 
 .titulo-menor {
   font-family: Orbitron, sans-serif;
