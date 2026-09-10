@@ -77,6 +77,31 @@ const UI = {
       }
     });
 
+    // A marca de histórico sobrevive a um recarregar de página; limpar no boot
+    // evita o caso em que o primeiro VOLTAR sai do jogo em vez de trocar de tela.
+    try {
+      if (history.state && history.state.sniper) history.replaceState(null, '');
+    } catch (e) { /* file:// recusa */ }
+
+    // botão VOLTAR do Android / gesto de voltar do navegador
+    addEventListener('popstate', () => {
+      if (Jogo.estado === 'jogando') { Jogo.pausar(); return; }
+      if (Jogo.estado === 'melhoria') {
+        // no meio da escolha, voltar não faz nada: repõe a entrada e segue
+        UI.sincronizarHistorico('melhoria');
+        return;
+      }
+      const atual = document.querySelector('.tela.ativa');
+      const nome = atual ? atual.dataset.tela : null;
+      if (nome !== 'menu') {
+        Som.clique();
+        Jogo.estado = 'menu';
+        UI.esconderBarraBoss();
+        UI.mostrarTela('menu');
+      }
+      // já no menu: deixa o navegador/Android sair, que é o esperado
+    });
+
     UI.mostrarTela('menu');
     UI.el.recordeMenu.textContent = Recordes.melhor().toLocaleString('pt-BR');
   },
@@ -85,9 +110,20 @@ const UI = {
   mostrarTela(nome) {
     UI.el.telas.forEach((t) => t.classList.toggle('ativa', t.dataset.tela === nome));
     document.body.classList.toggle('em-jogo', nome === null);
+    UI.sincronizarHistorico(nome);
     if (nome === 'menu') {
       UI.esconderBarraBoss();
       UI.el.recordeMenu.textContent = Recordes.melhor().toLocaleString('pt-BR');
+    }
+  },
+
+  /* Deixa sempre uma entrada de histórico fora do menu, pra o botão VOLTAR do
+     Android voltar de tela em vez de fechar o app na cara do jogador. */
+  sincronizarHistorico(nome) {
+    const foraDoMenu = nome !== 'menu';
+    const temMarca = !!(history.state && history.state.sniper);
+    if (foraDoMenu && !temMarca) {
+      try { history.pushState({ sniper: true }, ''); } catch (e) { /* file:// recusa */ }
     }
   },
 

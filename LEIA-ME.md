@@ -90,6 +90,11 @@ Cada boss troca de fase por faixa de vida, com telégrafo visual e sonoro antes 
 ```
 index.html          telas, HUD e ordem de carregamento dos scripts
 style.css           design system (tokens em :root, vidro escuro + neon)
+manifest.webmanifest  identidade do app (nome, ícone, tela cheia, paisagem)
+sw.js               service worker: o jogo abre e roda sem internet
+privacidade.html    política de privacidade (a URL que a Play exige)
+assets/             ícones e capa da loja, gerados por ferramentas/gerar-icones.py
+ferramentas/        scripts de apoio que não vão pro navegador
 src/nucleo.js       Mat, Config, Camera, Recordes, Input, Som, Particulas, Textos
 src/placar.js       Perfil (nome) e Placar (envio e leitura do placar mundial)
 src/placar-config.js  endereço do placar — o único arquivo a mexer pra ligar/desligar
@@ -218,3 +223,44 @@ desde a primeira versão — trocar apagaria os recordes já salvos.
 `api/placar.js` é o único lugar que fala SQL. Pra migrar (Supabase, Postgres
 próprio, o que for), basta apontar `DATABASE_URL` pro novo banco e criar a
 tabela com as mesmas colunas — o jogo não muda uma linha.
+
+---
+
+## Celular: o que foi arrumado em 10/09
+
+Pedido: a tela de escolher classe ficava apertada, tirar o blur e tirar o scroll da página.
+
+- **Zero `backdrop-filter`.** O blur saiu de todas as camadas (HUD, telas, painéis, joysticks,
+  botões). Como não há mais desfoque pra separar o fundo, o vidro ficou mais opaco
+  (`--vidro` de `.82` para `.94`) e o fundo das telas quase sólido.
+- **A página nunca rola.** `.tela` virou `overflow: hidden`. Quando o conteúdo não cabe, quem
+  rola é o miolo (`.painel`, `.menu-caixa`, as grades), com barra fina de 6 px.
+- **Escolha de classe no celular deitado** virou **carrossel com encaixe**: um cartão por vez,
+  ocupando 94% da largura, e o cartão se reorganiza em **duas colunas** (identidade + atributos
+  de um lado, forças/fraquezas + ultimate do outro). Aparece a dica "arraste para ver as 4".
+- **Gatilho é a altura, não a largura:** `@media (max-height: 560px)`. Celular deitado tem
+  375 px de altura — é a altura que aperta, não a largura. Um notebook com janela baixa ganha
+  o mesmo layout, e é bom que ganhe.
+- Cabeçalho, nome do jogador (rótulo e campo na mesma linha), cartas de melhoria, tela final,
+  ajuda, ajustes e recordes ganharam versão compacta na mesma media query.
+- Área segura de notch respeitada via `env(safe-area-inset-*)`.
+
+Conferido em 812×375 (celular deitado) e em 1280×720: sem rolagem de página, sem nenhum
+elemento com blur, e nada cortado.
+
+## PWA e app Android
+
+O jogo agora é instalável e roda offline:
+
+- `manifest.webmanifest` — tela cheia, orientação paisagem, ícones 192/512 + maskable.
+- `sw.js` — cache do casco (cache primeiro), rede sempre pro `/api/placar`.
+- Botão **VOLTAR** do Android navega telas: em jogo pausa, na pausa vai pro menu, no menu sai.
+- `ferramentas/gerar-icones.py` desenha os ícones e a capa da loja a partir da mesma nave que
+  o jogo desenha no canvas. Rode `python ferramentas/gerar-icones.py` pra regerar.
+
+> **Ao publicar uma versão nova, suba o `VERSAO` no `sw.js`.** Senão quem já abriu o jogo
+> continua vendo o casco antigo até o service worker atualizar sozinho. Em
+> desenvolvimento, desregistre o service worker nas ferramentas do navegador.
+
+A avaliação completa para a loja — bloqueios, custos, textos prontos, respostas do formulário
+de Segurança de Dados e da classificação de conteúdo — está em **[GOOGLE-PLAY.md](GOOGLE-PLAY.md)**.

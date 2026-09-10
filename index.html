@@ -2,8 +2,19 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>SNIPER FREESTYLE — Arena Neon</title>
+<meta name="description" content="Twin-stick shooter roguelite: 4 classes, 4 bosses com fases, 22 melhorias e 20 ondas numa arena neon. Joga no navegador, no PC ou no celular." />
+<meta name="theme-color" content="#05060b" />
+<meta name="color-scheme" content="dark" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Sniper Freestyle" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="assets/favicon-64.png" sizes="64x64" type="image/png" />
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -112,6 +123,7 @@
       <span id="avisoNome"></span>
     </div>
     <div id="gradeClasses" class="grade-classes"></div>
+    <p class="dica-arraste">◂ ARRASTE PARA VER AS 4 CLASSES ▸</p>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 
@@ -157,6 +169,11 @@
     </div>
     <div class="painel" id="listaMundial"></div>
     <div class="painel" id="listaRecordes" hidden></div>
+    <p class="linha-denuncia">
+      Apelido ofensivo no placar?
+      <a href="mailto:enzo.enzofernandesoli@gmail.com?subject=Denuncia%20de%20apelido%20no%20placar%20-%20Sniper%20Freestyle&body=Apelido%20denunciado%3A%0APontuacao%3A%0AMotivo%3A">denuncie aqui</a>
+      — apago e bloqueio o termo.
+    </p>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 
@@ -180,6 +197,10 @@
         </select>
       </label>
       <button id="btApagarRecordes" class="bt perigo">APAGAR RECORDES</button>
+      <p class="linha-legal">
+        <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a>
+        · o que o jogo guarda e o que não guarda
+      </p>
     </div>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
@@ -240,6 +261,16 @@
 <script src="src/entidades.js"></script>
 <script src="src/jogo.js"></script>
 <script src="src/ui.js"></script>
-<script>Jogo.iniciar();</script>
+<script>
+  Jogo.iniciar();
+
+  // Service worker: o jogo passa a abrir e rodar sem internet.
+  // Só registra em http/https — em file:// o navegador recusa e não faz sentido.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* segue sem offline */ });
+    });
+  }
+</script>
 </body>
 </html>

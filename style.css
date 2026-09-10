@@ -8,7 +8,7 @@
   --tinta-fraca: #8ea3b8;
   --fundo: #05060b;
   --fundo-2: #0a0d18;
-  --vidro: rgba(12, 18, 32, .82);
+  --vidro: rgba(12, 18, 32, .94);
   --borda: rgba(120, 190, 255, .18);
   --ciano: #31e0ff;
   --verde: #5cff9d;
@@ -91,7 +91,6 @@ body.em-jogo #hud { display: flex; }
   border: 1px solid var(--borda);
   border-radius: var(--raio);
   padding: 8px 14px;
-  backdrop-filter: blur(8px);
   box-shadow: var(--sombra);
 }
 .bloco.central { background: none; border: none; box-shadow: none; padding: 0; text-align: center; flex: 1; }
@@ -149,7 +148,6 @@ body.em-jogo #hud { display: flex; }
   border: 1px solid var(--borda);
   border-radius: 99px;
   padding: 5px 18px;
-  backdrop-filter: blur(8px);
 }
 .onda-caixa b { font-family: Orbitron, Rajdhani, sans-serif; font-size: clamp(13px, 1.2vw, 18px); letter-spacing: .06em; }
 
@@ -256,7 +254,6 @@ body.em-jogo #hud { display: flex; }
   border-radius: 12px;
   background:
     linear-gradient(to top, rgba(49, 224, 255, .22) var(--p, 0%), rgba(255, 255, 255, .03) var(--p, 0%));
-  backdrop-filter: blur(6px);
   overflow: hidden;
   transition: border-color .2s, box-shadow .2s, transform .12s;
 }
@@ -303,12 +300,27 @@ body.em-jogo #hud { display: flex; }
   justify-content: center;
   gap: clamp(10px, 1.6vh, 26px);
   padding: clamp(14px, 3vh, 42px);
-  background: radial-gradient(1200px 800px at 50% 20%, rgba(12, 20, 40, .86), rgba(3, 4, 8, .96));
-  backdrop-filter: blur(10px) saturate(.9);
+  background: radial-gradient(1200px 800px at 50% 20%, rgba(10, 16, 32, .975), rgba(3, 4, 8, .995));
   animation: entra .28s ease-out;
-  overflow: auto;
+  overflow: hidden;          /* a página nunca rola; quem rola é o miolo */
 }
 .tela.ativa { display: flex; }
+
+/* Só o conteúdo rola, e só quando não cabe. A página em si nunca tem scroll. */
+.tela > * { flex-shrink: 0; }
+.painel,
+.menu-caixa,
+.grade-classes,
+.grade-melhorias {
+  flex: 0 1 auto;            /* pode encolher quando a tela é baixa */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tela ::-webkit-scrollbar { width: 6px; height: 6px; }
+.tela ::-webkit-scrollbar-track { background: rgba(255, 255, 255, .04); border-radius: 99px; }
+.tela ::-webkit-scrollbar-thumb { background: rgba(120, 190, 255, .28); border-radius: 99px; }
+.tela ::-webkit-scrollbar-thumb:hover { background: rgba(120, 190, 255, .45); }
 @keyframes entra { from { opacity: 0; transform: scale(.985); } }
 
 .brilho-fundo {
@@ -412,7 +424,12 @@ body.em-jogo #hud { display: flex; }
   width: 100%;
   max-width: 1180px;
 }
-@media (max-width: 900px) { .grade-classes { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) and (min-height: 561px) {
+  .grade-classes { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Dica de arraste, só aparece no modo carrossel */
+.dica-arraste { display: none; }
 
 .cartao-classe {
   --cor: #31e0ff;
@@ -678,8 +695,7 @@ body.toque.em-jogo #toque { display: block; }
   border-radius: 50%;
   border: 2px solid rgba(160, 215, 255, .3);
   background:
-    radial-gradient(circle at 50% 50%, rgba(120, 190, 255, .1), rgba(6, 10, 18, .55) 70%);
-  backdrop-filter: blur(4px);
+    radial-gradient(circle at 50% 50%, rgba(120, 190, 255, .12), rgba(6, 10, 18, .78) 70%);
   box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
   transition: border-color .15s, box-shadow .15s;
 }
@@ -735,8 +751,7 @@ body.toque.em-jogo #toque { display: block; }
   border: 2px solid rgba(160, 215, 255, .3);
   border-radius: 50%;
   background:
-    linear-gradient(to top, color-mix(in srgb, var(--cor-classe) 30%, transparent) var(--p, 0%), rgba(8, 12, 22, .6) var(--p, 0%));
-  backdrop-filter: blur(4px);
+    linear-gradient(to top, color-mix(in srgb, var(--cor-classe) 34%, transparent) var(--p, 0%), rgba(8, 12, 22, .8) var(--p, 0%));
   cursor: pointer;
   transition: transform .1s, border-color .15s, box-shadow .15s;
 }
@@ -792,8 +807,7 @@ body.toque #btPausar {
     place-items: center;
     text-align: center;
     padding: 24px;
-    background: rgba(4, 6, 12, .94);
-    backdrop-filter: blur(6px);
+    background: rgba(4, 6, 12, .985);
   }
   body.toque #girar .icone {
     display: block;
@@ -904,3 +918,138 @@ body.toque #btPausar {
 .status-placar.ok { color: var(--verde); }
 .status-placar.erro { color: var(--amarelo); }
 .status-placar.neutro { color: var(--tinta-fraca); }
+
+
+/* =========================================================================
+   CELULAR DEITADO (e qualquer tela baixa): as telas viram layout horizontal.
+   Gatilho é a ALTURA, não a largura: 375 px de altura é o aperto real.
+   ========================================================================= */
+@media (max-height: 560px) {
+
+  .tela { padding: 8px 10px; gap: 6px; justify-content: center; }
+  .cabecalho-tela h2 { font-size: 17px; letter-spacing: .1em; }
+  .cabecalho-tela p { display: none; }              /* explicação come altura demais */
+  .tag-topo { font-size: 8px; letter-spacing: .3em; margin-bottom: 2px; }
+
+  /* ---- nome do jogador: rótulo e campo na mesma linha ---- */
+  .caixa-nome {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .caixa-nome label { letter-spacing: .14em; white-space: nowrap; }
+  .caixa-nome input { width: min(220px, 40vw); padding: 5px 10px; font-size: 14px; }
+  #avisoNome { min-height: 0; font-size: 9px; max-width: 26vw; }
+
+  /* ---- carrossel: um cartão de classe por vez, arrastando ---- */
+  .grade-classes {
+    display: flex;
+    grid-template-columns: none;
+    gap: 10px;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 10px;
+    padding: 2px 0 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cartao-classe {
+    flex: 0 0 min(94%, 620px);
+    scroll-snap-align: center;
+    /* cartão fica largo e baixo: duas colunas dentro dele */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 14px;
+    row-gap: 4px;
+    align-content: start;
+    padding: 10px 12px;
+  }
+  .cc-topo { grid-column: 1 / -1; gap: 8px; }
+  .cc-icone { width: 30px; border-radius: 8px; font-size: 15px; }
+  .cartao-classe h3 { font-size: 14px; }
+  .cc-apelido { font-size: 10px; }
+  .cc-desc { grid-column: 1; margin: 4px 0 2px; font-size: 11px; line-height: 1.25; }
+  .cc-attr { grid-column: 1; gap: 3px; margin: 0; }
+  .attr span { font-size: 8px; }
+  .cc-lista { grid-column: 2; grid-row: 2 / 4; margin: 4px 0 0; }
+  .cc-lista li { font-size: 10px; line-height: 1.3; }
+  .cc-ult { grid-column: 2; padding: 5px 8px; }
+  .cc-ult b { font-size: 9px; }
+  .cc-ult span { font-size: 9px; line-height: 1.2; }
+  .cc-jogar { grid-column: 1 / -1; margin-top: 4px; font-size: 11px; }
+
+  .dica-arraste {
+    display: block;
+    font-size: 9px;
+    letter-spacing: .2em;
+    color: var(--tinta-fraca);
+  }
+
+  /* ---- melhorias: três cartões baixinhos que cabem lado a lado ---- */
+  .grade-melhorias { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 100%; }
+  .cartao-melhoria { padding: 11px 8px 8px; }
+  .cm-icone { font-size: 22px; margin: 4px 0 3px; }
+  .cartao-melhoria h3 { font-size: 11px; }
+  .cartao-melhoria p { margin-top: 4px; font-size: 10px; }
+  .cm-nivel { margin-top: 6px; font-size: 8px; }
+  .cm-raridade { top: 4px; font-size: 8px; }
+  .cm-tecla { display: none; }                      /* não existe teclado aqui */
+
+  /* ---- botões e painéis ---- */
+  .bt { padding: 9px 16px; font-size: 11px; }
+  .painel { padding: 10px 12px; }
+  .ajuda-grade { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .painel h3 { font-size: 11px; margin-bottom: 6px; }
+  .teclas, .marcadores { gap: 4px; font-size: 11px; }
+  .tabela { font-size: 11px; }
+  .tabela th, .tabela td { padding: 4px 6px; }
+  .form { gap: 7px; }
+  .linha { font-size: 12px; }
+  .linha input[type=range] { width: 150px; }
+
+  /* ---- tela final: estatísticas em duas fileiras compactas ---- */
+  .titulo-menor { font-size: 20px; }
+  .subtitulo { margin-top: 4px; font-size: 11px; }
+  .estat-grade { grid-template-columns: repeat(5, 1fr); gap: 5px; margin: 8px 0; }
+  .estat { padding: 5px 3px; }
+  .estat span { font-size: 8px; }
+  .estat b { font-size: 12px; }
+  .status-placar { margin: 0 0 6px; font-size: 10px; }
+  .melhorias-ativas > div { gap: 4px; margin-top: 4px; }
+  .tag { font-size: 9px; padding: 2px 6px; }
+  .menu-botoes { margin-top: 8px; gap: 8px; }
+
+  /* ---- menu: título menor pra caber com os botões sem rolar ---- */
+  .titulo { font-size: clamp(26px, 8vh, 44px); }
+  .titulo span { font-size: .6em; }
+  .recorde-linha { margin-top: 8px; font-size: 10px; }
+  .creditos { font-size: 9px; }
+}
+
+/* Recorte de notch/ilha: em tela cheia o conteúdo respeita a área segura. */
+@supports (padding: env(safe-area-inset-left)) {
+  #palco {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* --------------- Denúncia de apelido e link legal ----------------------- */
+.linha-denuncia,
+.linha-legal {
+  font-size: clamp(10px, .88vw, 13px);
+  letter-spacing: .03em;
+  color: var(--tinta-fraca);
+  text-align: center;
+}
+.linha-denuncia a,
+.linha-legal a { color: var(--ciano); text-decoration: none; border-bottom: 1px solid currentColor; }
+.linha-denuncia a:hover,
+.linha-legal a:hover { color: #fff; }
+.linha-legal { margin-top: 4px; text-align: left; }
+
+@media (max-height: 560px) {
+  .linha-denuncia, .linha-legal { font-size: 9px; }
+}

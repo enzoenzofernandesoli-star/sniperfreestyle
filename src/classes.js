@@ -222,7 +222,7 @@ const MELHORIAS = [
     aplicar: (p) => { p.dashCongela += 0.35; }
   },
   {
-    id: 'vampiro', nome: 'SEDE', icone: '🩸', raridade: 'lendario', max: 3,
+    id: 'vampiro', nome: 'SEDE', icone: '❖', raridade: 'lendario', max: 3,
     texto: '8% de chance de curar ao matar',
     aplicar: (p) => { p.vampirismo += 0.08; }
   },
