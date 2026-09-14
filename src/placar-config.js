@@ -8,8 +8,8 @@
    o banco (Neon, projeto `sobrecarga-placar`, região sa-east-1, plano grátis).
    Aqui não existe senha nenhuma: a credencial do banco vive só no servidor.
 
-   Endereço absoluto de propósito — assim a cópia aberta direto do arquivo no PC
-   também manda pontuação pro mesmo placar do site.
+   A rota relativa funciona no site publicado. Para uma cópia local, use a URL
+   HTTPS absoluta do site publicado; file:// não oferece uma API local.
    =========================================================================== */
 
 const PLACAR_CONFIG = {

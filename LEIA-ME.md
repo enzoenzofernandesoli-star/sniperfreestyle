@@ -1,7 +1,35 @@
 # SNIPER FREESTYLE — Arena Neon
 
 Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependência:
-é só abrir o `index.html` no navegador.
+é só abrir o `index.html` no navegador. O placar mundial requer site publicado com API e banco.
+
+## Versão de 40 ondas
+
+- 40 ondas, boss a cada 5: 8 bosses no total. Os novos são Ferreiro Solar,
+  Oráculo de Jade, Eclipse Fantasma e Núcleo Infinito, cada um com 3–4 fases.
+- 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
+  neste navegador. Skins mudam o visual do personagem, não seus atributos.
+- Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
+  Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
+- Antes de publicar, execute `banco/migracoes/001_placar_40_ondas.sql` no Neon
+  com o proprietário da tabela. O banco existente pode rejeitar ondas acima de 20.
+  Depois publique a API e configure `DATABASE_URL` na Vercel. Sem os dois passos,
+  o placar mundial não está ativo.
+
+### Leitura dos tiros e desempenho no celular
+
+- Tiros do jogador são verde-lima (críticos brancos), tiros inimigos são vermelhos
+  e tiros de boss são laranja. Formatos: círculo, losango e triângulo. Lasers e
+  fragmentos seguem a mesma paleta por origem; projéteis refletidos viram do jogador.
+- Projétil que atravessa inimigo ou boss pode acertar o mesmo alvo novamente após
+  ricochetear na parede. O limite de perfuração continua valendo em cada acerto.
+- Em aparelhos de toque, o canvas usa 75% da resolução interna (960×540 em vez
+  de 1280×720), preservando coordenadas e tamanho visual. Partículas simultâneas
+  caem de 1500 para 600, rastros emitem menos partículas e efeitos de brilho
+  caros saem dos projéteis, partículas e moldura.
+- HUD atualiza a cada 100 ms no celular; durante menus, arena redesenha a até
+  15 fps. Scanlines ficam ocultas em ponteiros de toque. Jogabilidade segue
+  atualizada em cada quadro ativo.
 
 > Se abrir por `file://` e o áudio/fonte não carregar, sirva a pasta:
 > `python -m http.server 8123` e acesse `http://localhost:8123`.
@@ -15,7 +43,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 | 1 arquivo de 800 linhas | 5 módulos: `nucleo`, `classes`, `entidades`, `jogo`, `ui` |
 | Movimento por quadro (dependia do FPS) | Física por delta-time (roda igual a 60, 144 ou 240 Hz) |
 | 1 tipo de inimigo | 7 tipos com comportamento próprio |
-| 1 boss com 1 padrão | 4 bosses, cada um com 3–4 fases de movimento e ataque |
+| 1 boss com 1 padrão | 8 bosses, cada um com 3–4 fases de movimento e ataque |
 | Sem classes | 4 classes jogáveis com arma, defesa e ultimate distintas |
 | Sem progressão | XP, níveis e 22 melhorias sorteadas por raridade |
 | HUD de texto cru | HUD em DOM: corações, XP, recargas, combo, barra de boss |
@@ -63,8 +91,8 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 
 | Classe | Identidade | Ultimate |
 |---|---|---|
-| **SNIPER** | tiro perfurante, dano altíssimo, 25% de crítico, 3 corações | **TRAÇANTE** — raio que atravessa a arena |
-| **GUARDIÃO** | 6 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
+| **SNIPER** | tiro perfurante, dano altíssimo, 25% de crítico, 2 corações | **TRAÇANTE** — raio que atravessa a arena |
+| **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
 | **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro que suga e explode |
 
@@ -74,12 +102,16 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 atira · `KAMIKAZE` pisca, investe e explode · `DIVISOR` racha em 2 ao morrer ·
 `ORBITADOR` circula e dá rajada tripla · `COURAÇA` bloqueia tiro pela frente (flanqueie ou ricocheteie).
 
-## Bosses (ondas 5, 10, 15, 20)
+## Bosses (ondas 5, 10, 15, 20, 25, 30, 35, 40)
 
 1. **SENTINELA CARMESIM** — movimento horizontal → tiro único, leque de 3, anel
 2. **SERPENTE DE VÍDEO** — movimento senoidal → leque de 9, invocação
 3. **OLHO DO VAZIO** — movimento circular → espiral contínua, anel, invocação
 4. **O ARQUITETO** — 4 fases: persegue → senoidal → circular → caótico, com laser em varredura
+5. **FERREIRO SOLAR** — leque e anel → perseguição e invocação → movimento caótico e laser
+6. **ORÁCULO DE JADE** — espiral orbital → leque senoidal → invocação e laser
+7. **ECLIPSE FANTASMA** — laser senoidal → anel e invocação → perseguição e espiral
+8. **NÚCLEO INFINITO** — espiral orbital → anel horizontal → laser senoidal → caos
 
 Cada boss troca de fase por faixa de vida, com telégrafo visual e sonoro antes de retomar.
 
@@ -192,6 +224,9 @@ navegador (src/placar.js)  →  /api/placar (Vercel)  →  Postgres (Neon)
   faixa, pontuação implausível pra onda alcançada (`30000 × onda + 60000`) e
   reenvio do mesmo nome+pontuação dentro de 2 minutos.
 - Banco: projeto Neon `sobrecarga-placar`, região `sa-east-1`, plano grátis.
+- Em 14/09/2026, a consulta com `placar_app` confirmou 2 resultados (maior onda 7)
+  e a restrição antiga `onda <= 20`. A migração de 40 ondas requer papel
+  proprietário; `placar_app` só pode ler e inserir.
 
 **O que isso não é:** placar à prova de trapaça. Quem entende de HTTP consegue
 mandar uma pontuação plausível na mão. Pra um placar entre amigos, os limites
@@ -201,12 +236,15 @@ servidor.
 ### Publicar / religar
 
 1. Vercel → *Add New → Project* → importar `enzoenzofernandesoli-star/sniperfreestyle`.
-2. Vercel → *Settings → Environment Variables* → criar **`DATABASE_URL`** com a
+2. Neon → SQL Editor → executar `banco/migracoes/001_placar_40_ondas.sql` com
+   o proprietário da tabela. A consulta `select max(onda) from public.placar_sobrecarga`
+   confirma acesso, mas não prova o novo limite; teste uma partida na onda 21.
+3. Vercel → *Settings → Environment Variables* → criar **`DATABASE_URL`** com a
    string de conexão do papel `placar_app` (está em `api/conexao-local.js`, que
    fica fora do git). Sem essa variável, `/api/placar` responde `503` com recado
    claro e o jogo cai no placar local.
-3. Deploy. A partir daí, cada `git push` na `main` redeploya sozinho.
-4. Opcional: em `src/placar-config.js`, trocar `url` de `/api/placar` pro
+4. Deploy. A partir daí, cada `git push` na `main` redeploya sozinho.
+5. Opcional: em `src/placar-config.js`, trocar `url` de `/api/placar` pro
    endereço absoluto (`https://SEU-DOMINIO/api/placar`). Assim a cópia aberta
    direto do arquivo no PC também manda pontuação pro mesmo placar do site.
 

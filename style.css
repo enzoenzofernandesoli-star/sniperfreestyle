@@ -455,8 +455,10 @@ body.em-jogo #hud { display: flex; }
   pointer-events: none;
   transition: opacity .22s;
 }
-.cartao-classe:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 40px color-mix(in srgb, var(--cor) 30%, transparent); }
-.cartao-classe:hover::before { opacity: .26; }
+@media (hover: hover) and (pointer: fine) {
+  .cartao-classe:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 40px color-mix(in srgb, var(--cor) 30%, transparent); }
+  .cartao-classe:hover::before { opacity: .26; }
+}
 
 .cc-topo { display: flex; align-items: center; gap: 10px; }
 .cc-icone {
@@ -498,12 +500,33 @@ body.em-jogo #hud { display: flex; }
 .cc-jogar {
   display: block;
   margin-top: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
   text-align: right;
   font-family: Orbitron, sans-serif;
   font-size: 10px;
   letter-spacing: .18em;
   color: var(--cor);
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
+@media (pointer: coarse) { #scanlines { display: none; } }
+.cc-jogar:focus-visible, .cc-skin:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.cc-skins { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.cc-skin {
+  min-height: 44px;
+  padding: 5px 9px;
+  border: 1px solid var(--skin);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--skin);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.cc-skin[aria-pressed="true"] { background: var(--skin); color: #08101a; font-weight: 700; }
 
 /* -------------------------- Cartões de melhoria ------------------------- */
 .grade-melhorias {
@@ -958,6 +981,8 @@ body.toque #btPausar {
   .cartao-classe {
     flex: 0 0 min(94%, 620px);
     scroll-snap-align: center;
+    min-height: 0;
+    overflow-y: auto;
     /* cartão fica largo e baixo: duas colunas dentro dele */
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -978,6 +1003,8 @@ body.toque #btPausar {
   .cc-ult { grid-column: 2; padding: 5px 8px; }
   .cc-ult b { font-size: 9px; }
   .cc-ult span { font-size: 9px; line-height: 1.2; }
+  .cc-skins { grid-column: 1 / -1; margin-top: 3px; }
+  .cc-skin { padding: 3px 6px; font-size: 9px; }
   .cc-jogar { grid-column: 1 / -1; margin-top: 4px; font-size: 11px; }
 
   .dica-arraste {

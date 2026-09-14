@@ -460,7 +460,7 @@ const Particulas = {
       const a = Mat.limitar(p.vida / p.vidaMax, 0, 1);
       ctx.globalAlpha = a;
       ctx.fillStyle = p.cor;
-      if (p.brilho) { ctx.shadowBlur = p.brilho; ctx.shadowColor = p.cor; }
+      if (p.brilho && !Jogo.modoLeve) { ctx.shadowBlur = p.brilho; ctx.shadowColor = p.cor; }
       if (p.forma === 'risco') {
         ctx.save();
         ctx.translate(p.x, p.y);

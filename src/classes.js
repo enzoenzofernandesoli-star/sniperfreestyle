@@ -39,7 +39,7 @@ const CLASSES = [
     somTiro: 'sniper',
     ult: { nome: 'TRAÇANTE', descricao: 'Raio que atravessa a arena inteira e marca todo alvo tocado.' },
     atributos: {
-      vidaMax: 3, velocidade: 300, cadencia: 0.42, dano: 34, projeteis: 1,
+      vidaMax: 2, velocidade: 300, cadencia: 0.42, dano: 34, projeteis: 1,
       espalhamento: 0, balaVel: 1500, balaRaio: 5, perfuracao: 2, ricochete: 0,
       homing: 0, critChance: 0.25, critMult: 2.4,
       dashRecarga: 1.5, escudoRecarga: 12, escudoDuracao: 2.5, ultRecarga: 22,
@@ -53,13 +53,13 @@ const CLASSES = [
     cor: '#ffc93c',
     cor2: '#a8730b',
     icone: 'G',
-    descricao: 'Muita vida e escudo que REFLETE projéteis inimigos. Lento, mas quase não morre.',
-    forcas: ['6 corações', 'Escudo reflete tiros', 'Recarrega escudo rápido'],
+    descricao: 'Mais vida e escudo que REFLETE projéteis inimigos. Lento, mas resistente.',
+    forcas: ['4 corações', 'Escudo reflete tiros', 'Recarrega escudo rápido'],
     fraquezas: ['Movimento lento', 'Dano médio'],
     somTiro: 'pesado',
     ult: { nome: 'IMPACTO', descricao: 'Onda de choque que empurra e destroça tudo em volta.' },
     atributos: {
-      vidaMax: 6, velocidade: 225, cadencia: 0.3, dano: 16, projeteis: 1,
+      vidaMax: 4, velocidade: 225, cadencia: 0.3, dano: 16, projeteis: 1,
       espalhamento: 0.05, balaVel: 950, balaRaio: 8, perfuracao: 1, ricochete: 0,
       homing: 0, critChance: 0.08, critMult: 1.8,
       dashRecarga: 2.2, escudoRecarga: 7, escudoDuracao: 4, ultRecarga: 20,
@@ -76,11 +76,11 @@ const CLASSES = [
     icone: 'E',
     descricao: 'Escopeta de curto alcance e dash que corta. Velocíssimo, frágil, cura ao matar.',
     forcas: ['5 projéteis por tiro', 'Dash causa dano', 'Cura 2% ao matar'],
-    fraquezas: ['Só 3 corações', 'Alcance curto'],
+    fraquezas: ['Só 2 corações', 'Alcance curto'],
     somTiro: 'shotgun',
     ult: { nome: 'CARNIFICINA', descricao: 'Fica intangível e corta tudo que tocar por 3 segundos.' },
     atributos: {
-      vidaMax: 3, velocidade: 400, cadencia: 0.36, dano: 9, projeteis: 5,
+      vidaMax: 2, velocidade: 400, cadencia: 0.36, dano: 9, projeteis: 5,
       espalhamento: 0.5, balaVel: 1050, balaRaio: 4, perfuracao: 0, ricochete: 0,
       homing: 0, critChance: 0.14, critMult: 2,
       dashRecarga: 0.75, escudoRecarga: 14, escudoDuracao: 2, ultRecarga: 24,
@@ -103,7 +103,7 @@ const CLASSES = [
     somTiro: 'arcano',
     ult: { nome: 'SINGULARIDADE', descricao: 'Buraco negro que suga todos os inimigos e explode.' },
     atributos: {
-      vidaMax: 3, velocidade: 310, cadencia: 0.26, dano: 12, projeteis: 1,
+      vidaMax: 2, velocidade: 310, cadencia: 0.26, dano: 12, projeteis: 1,
       espalhamento: 0.08, balaVel: 620, balaRaio: 7, perfuracao: 0, ricochete: 1,
       homing: 0.75, critChance: 0.1, critMult: 2,
       dashRecarga: 1.8, escudoRecarga: 11, escudoDuracao: 3, ultRecarga: 26,
@@ -111,6 +111,34 @@ const CLASSES = [
     }
   }
 ];
+
+// Variantes cosméticas: não alteram atributos nem pontuação.
+const SKINS = {
+  sniper: [
+    { id: 'original', nome: 'Original', cor: '#31e0ff', cor2: '#0b7fa8' },
+    { id: 'polar', nome: 'Polar', cor: '#e6fbff', cor2: '#5289a9' },
+    { id: 'solar', nome: 'Solar', cor: '#ff9f43', cor2: '#87371c' }
+  ],
+  guardiao: [
+    { id: 'original', nome: 'Original', cor: '#ffc93c', cor2: '#a8730b' },
+    { id: 'ferro', nome: 'Ferro', cor: '#c7d5e0', cor2: '#52677b' },
+    { id: 'jade', nome: 'Jade', cor: '#65f0ad', cor2: '#1c7658' }
+  ],
+  espectro: [
+    { id: 'original', nome: 'Original', cor: '#ff4d6d', cor2: '#8a0f31' },
+    { id: 'veneno', nome: 'Veneno', cor: '#b6ff49', cor2: '#4d7916' },
+    { id: 'sombra', nome: 'Sombra', cor: '#b28aff', cor2: '#4c2b77' }
+  ],
+  arcano: [
+    { id: 'original', nome: 'Original', cor: '#b06dff', cor2: '#5a1fa8' },
+    { id: 'aurora', nome: 'Aurora', cor: '#6cf5e9', cor2: '#225c79' },
+    { id: 'rubi', nome: 'Rubi', cor: '#ff6588', cor2: '#87284f' }
+  ]
+};
+
+function skinDaClasse(classeId, skinId) {
+  return SKINS[classeId].find((skin) => skin.id === skinId) || SKINS[classeId][0];
+}
 
 function classePorId(id) {
   for (const c of CLASSES) if (c.id === id) return c;

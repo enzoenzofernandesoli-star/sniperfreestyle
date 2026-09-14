@@ -2,10 +2,16 @@
    ENTIDADES.JS — Jogador, Projétil, Inimigos, Bosses, Coletáveis.
    =========================================================================== */
 
+// Paleta exclusiva por origem: jogador (lima/branco), inimigo (vermelho), boss (laranja).
+const CORES_TIRO = Object.freeze({
+  jogador: '#dcff46', critico: '#ffffff', inimigo: '#ff315d', boss: '#ff9b32'
+});
+
 /* =============================== JOGADOR ================================ */
 class Jogador {
-  constructor(classeId) {
+  constructor(classeId, skinId) {
     this.classe = classePorId(classeId);
+    this.skin = skinDaClasse(classeId, skinId);
     this.attr = Object.assign({}, this.classe.atributos);
 
     this.x = Jogo.LARGURA / 2;
@@ -173,7 +179,7 @@ class Jogador {
         dano: a.dano * (crit ? a.critMult : 1),
         critico: crit,
         dono: 'jogador',
-        cor: crit ? '#fff27a' : this.classe.cor,
+        cor: crit ? CORES_TIRO.critico : CORES_TIRO.jogador,
         perfuracao: a.perfuracao,
         ricochete: a.ricochete,
         homing: a.homing,
@@ -185,7 +191,7 @@ class Jogador {
     this.recuo = 6;
     this.vx -= Math.cos(this.angulo) * 40;
     this.vy -= Math.sin(this.angulo) * 40;
-    Particulas.faisca(this.x + Math.cos(this.angulo) * (this.raio + 12), this.y + Math.sin(this.angulo) * (this.raio + 12), this.angulo, this.classe.cor);
+    Particulas.faisca(this.x + Math.cos(this.angulo) * (this.raio + 12), this.y + Math.sin(this.angulo) * (this.raio + 12), this.angulo, CORES_TIRO.jogador);
     Camera.bater(1.2);
     Som.tiro(this.classe.somTiro);
   }
@@ -240,7 +246,7 @@ class Jogador {
 
     if (this.classe.id === 'sniper') {
       // raio perfurante gigante
-      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 6, cor: this.classe.cor });
+      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 6, cor: CORES_TIRO.jogador });
       Jogo.aplicarRaio(this.x, this.y, this.angulo, this.attr.dano * 6);
     } else if (this.classe.id === 'guardiao') {
       // onda de choque expansiva
@@ -313,11 +319,13 @@ class Jogador {
 
   /* ----------------------------- Desenho ----------------------------- */
   desenhar(ctx) {
+    const cor = this.skin.cor;
+    const cor2 = this.skin.cor2;
     // rastro
     for (const r of this.rastro) {
       const a = Mat.limitar(r.vida / 0.22, 0, 1) * 0.25;
       ctx.globalAlpha = a;
-      ctx.fillStyle = this.classe.cor;
+      ctx.fillStyle = cor;
       ctx.beginPath();
       ctx.arc(r.x, r.y, this.raio * 0.9, 0, Mat.TAU);
       ctx.fill();
@@ -327,8 +335,8 @@ class Jogador {
     // orbes
     for (const o of this.orbes) {
       ctx.save();
-      ctx.shadowBlur = 22; ctx.shadowColor = this.classe.cor;
-      ctx.fillStyle = this.classe.cor;
+      ctx.shadowBlur = 22; ctx.shadowColor = cor;
+      ctx.fillStyle = cor;
       ctx.beginPath();
       ctx.arc(o.x, o.y, o.raio, 0, Mat.TAU);
       ctx.fill();
@@ -347,10 +355,10 @@ class Jogador {
     ctx.globalAlpha = piscando ? 0.4 : 1;
 
     // arma
-    ctx.shadowBlur = 18; ctx.shadowColor = this.classe.cor;
+    ctx.shadowBlur = 18; ctx.shadowColor = cor;
     ctx.fillStyle = '#e9f6ff';
     ctx.fillRect(this.raio - 2 - this.recuo, -4, 22, 8);
-    ctx.fillStyle = this.classe.cor2;
+    ctx.fillStyle = cor2;
     ctx.fillRect(this.raio + 12 - this.recuo, -6, 7, 12);
 
     // corpo: losango com núcleo
@@ -361,8 +369,8 @@ class Jogador {
     ctx.lineTo(-2, this.raio);
     ctx.closePath();
     const grad = ctx.createLinearGradient(-this.raio, 0, this.raio, 0);
-    grad.addColorStop(0, this.classe.cor2);
-    grad.addColorStop(1, this.classe.cor);
+    grad.addColorStop(0, cor2);
+    grad.addColorStop(1, cor);
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.lineWidth = 2;
@@ -457,6 +465,7 @@ class Projetil {
         this.ricochete--;
         this.angulo = Math.PI - this.angulo;
         this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
+        this.atingidos = [];
         Particulas.faisca(this.x, this.y, this.angulo, this.cor);
       } else this.vivo = false;
     }
@@ -465,6 +474,7 @@ class Projetil {
         this.ricochete--;
         this.angulo = -this.angulo;
         this.y = Mat.limitar(this.y, this.raio, Jogo.ALTURA - this.raio);
+        this.atingidos = [];
         Particulas.faisca(this.x, this.y, this.angulo, this.cor);
       } else this.vivo = false;
     }
@@ -474,7 +484,7 @@ class Projetil {
       Particulas.explosao(this.x, this.y, this.cor, 4, 70, 0.2, 2);
     }
 
-    if (Mat.chance(0.5)) {
+    if (Mat.chance(Jogo.modoLeve ? 0.18 : 0.5)) {
       Particulas.emitir({ x: this.x, y: this.y, vida: 0.16, tam: this.raio * 0.7, cor: this.cor, brilho: 10, atrito: 0.9 });
     }
   }
@@ -495,15 +505,16 @@ class Projetil {
     ctx.restore();
 
     ctx.save();
-    ctx.shadowBlur = this.critico ? 30 : 18;
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : (this.critico ? 30 : 18);
     ctx.shadowColor = this.cor;
     ctx.fillStyle = this.cor;
-    if (this.dono === 'inimigo') {
+    if (this.dono !== 'jogador') {
       ctx.translate(this.x, this.y);
       ctx.rotate(this.giro);
       ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const a = (Mat.TAU / 4) * i;
+      const lados = this.dono === 'boss' ? 3 : 4;
+      for (let i = 0; i < lados; i++) {
+        const a = (Mat.TAU / lados) * i;
         ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * this.raio * 1.3, Math.sin(a) * this.raio * 1.3);
       }
       ctx.closePath();
@@ -512,7 +523,7 @@ class Projetil {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.raio, 0, Mat.TAU);
       ctx.fill();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = this.critico ? CORES_TIRO.jogador : '#151c00';
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.raio * 0.45, 0, Mat.TAU);
       ctx.fill();
@@ -735,14 +746,14 @@ class Inimigo {
       ctx.scale(0.4 + p * 0.6, 0.4 + p * 0.6);
       ctx.strokeStyle = t.cor;
       ctx.lineWidth = 2;
-      ctx.shadowBlur = 20; ctx.shadowColor = t.cor;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 20; ctx.shadowColor = t.cor;
       ctx.beginPath();
       ctx.arc(0, 0, this.raio * (2.4 - p * 1.4), 0, Mat.TAU);
       ctx.stroke();
     }
 
     ctx.rotate(this.angulo);
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 20;
     ctx.shadowColor = t.cor;
 
     // corpo poligonal
@@ -754,9 +765,12 @@ class Inimigo {
       ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
     }
     ctx.closePath();
-    const g = ctx.createRadialGradient(0, 0, this.raio * 0.2, 0, 0, this.raio);
-    g.addColorStop(0, this.flash > 0 ? '#ffffff' : t.cor);
-    g.addColorStop(1, t.cor2);
+    let g = t.cor;
+    if (!Jogo.modoLeve) {
+      g = ctx.createRadialGradient(0, 0, this.raio * 0.2, 0, 0, this.raio);
+      g.addColorStop(0, this.flash > 0 ? '#ffffff' : t.cor);
+      g.addColorStop(1, t.cor2);
+    }
     ctx.fillStyle = this.flash > 0 ? '#fff' : g;
     ctx.fill();
     ctx.lineWidth = 2;
@@ -783,7 +797,7 @@ class Inimigo {
       ctx.rotate(angJog);
       ctx.strokeStyle = '#dfe9f5';
       ctx.lineWidth = 5;
-      ctx.shadowBlur = 14; ctx.shadowColor = '#dfe9f5';
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 14; ctx.shadowColor = '#dfe9f5';
       ctx.beginPath();
       ctx.arc(0, 0, this.raio + 8, -0.9, 0.9);
       ctx.stroke();
@@ -809,7 +823,7 @@ const BOSSES = [
     nome: 'SENTINELA CARMESIM',
     titulo: 'Guardião do Corredor',
     cor: '#ff2e5b', cor2: '#5c0018',
-    raio: 62, vida: 1250, lados: 6,
+    raio: 62, vida: 950, lados: 6,
     fases: [
       { movimento: 'horizontal', velocidade: 190, ataques: ['unico'], recarga: 1.1 },
       { movimento: 'horizontal', velocidade: 260, ataques: ['unico', 'leque3'], recarga: 0.85 },
@@ -821,7 +835,7 @@ const BOSSES = [
     nome: 'SERPENTE DE VÍDEO',
     titulo: 'A Onda que Não Quebra',
     cor: '#00e5ff', cor2: '#00485c',
-    raio: 58, vida: 2400, lados: 5,
+    raio: 58, vida: 1800, lados: 5,
     fases: [
       { movimento: 'senoidal', velocidade: 240, ataques: ['leque'], recarga: 1.5 },
       { movimento: 'senoidal', velocidade: 320, ataques: ['leque', 'unico'], recarga: 1.0 },
@@ -833,7 +847,7 @@ const BOSSES = [
     nome: 'OLHO DO VAZIO',
     titulo: 'Aquele que Espirala',
     cor: '#b06dff', cor2: '#3a0d63',
-    raio: 66, vida: 4100, lados: 8,
+    raio: 66, vida: 3000, lados: 8,
     fases: [
       { movimento: 'circular', velocidade: 1.0, ataques: ['espiral'], recarga: 0.14 },
       { movimento: 'circular', velocidade: 1.5, ataques: ['espiral', 'leque'], recarga: 0.12 },
@@ -845,12 +859,49 @@ const BOSSES = [
     nome: 'O ARQUITETO',
     titulo: 'Fim da Linha',
     cor: '#ffd34d', cor2: '#6b4a00',
-    raio: 74, vida: 7000, lados: 3,
+    raio: 74, vida: 4900, lados: 3,
     fases: [
       { movimento: 'perseguir', velocidade: 175, ataques: ['leque', 'laser'], recarga: 1.2 },
       { movimento: 'senoidal', velocidade: 340, ataques: ['espiral', 'anel'], recarga: 0.4 },
       { movimento: 'circular', velocidade: 2.0, ataques: ['laser', 'invocar', 'leque'], recarga: 0.6 },
       { movimento: 'caotico', velocidade: 420, ataques: ['espiral', 'anel', 'laser', 'invocar'], recarga: 0.35 }
+    ]
+  },
+  {
+    id: 'ferreiro', nome: 'FERREIRO SOLAR', titulo: 'Forja em Colapso',
+    cor: '#ff8e45', cor2: '#7a2909', raio: 65, vida: 5100, lados: 6,
+    fases: [
+      { movimento: 'horizontal', velocidade: 250, ataques: ['leque3', 'anel'], recarga: 0.9 },
+      { movimento: 'perseguir', velocidade: 215, ataques: ['leque', 'invocar'], recarga: 0.8 },
+      { movimento: 'caotico', velocidade: 330, ataques: ['laser', 'anel'], recarga: 0.7 }
+    ]
+  },
+  {
+    id: 'oraculo', nome: 'ORÁCULO DE JADE', titulo: 'Geometria Viva',
+    cor: '#56f0b0', cor2: '#176451', raio: 61, vida: 5600, lados: 8,
+    fases: [
+      { movimento: 'circular', velocidade: 1.1, ataques: ['espiral', 'unico'], recarga: 0.26 },
+      { movimento: 'senoidal', velocidade: 280, ataques: ['leque', 'anel'], recarga: 0.85 },
+      { movimento: 'circular', velocidade: 1.8, ataques: ['espiral', 'invocar', 'laser'], recarga: 0.45 }
+    ]
+  },
+  {
+    id: 'eclipse', nome: 'ECLIPSE FANTASMA', titulo: 'Luz Devorada',
+    cor: '#8d83ff', cor2: '#33226e', raio: 70, vida: 6200, lados: 5,
+    fases: [
+      { movimento: 'senoidal', velocidade: 300, ataques: ['leque3', 'laser'], recarga: 0.95 },
+      { movimento: 'caotico', velocidade: 350, ataques: ['anel', 'invocar'], recarga: 0.65 },
+      { movimento: 'perseguir', velocidade: 250, ataques: ['espiral', 'leque', 'laser'], recarga: 0.5 }
+    ]
+  },
+  {
+    id: 'nucleo', nome: 'NÚCLEO INFINITO', titulo: 'Último Pulso',
+    cor: '#ff5cae', cor2: '#791c55', raio: 78, vida: 7600, lados: 7,
+    fases: [
+      { movimento: 'circular', velocidade: 1.15, ataques: ['espiral', 'leque3'], recarga: 0.42 },
+      { movimento: 'horizontal', velocidade: 310, ataques: ['anel', 'invocar'], recarga: 0.68 },
+      { movimento: 'senoidal', velocidade: 350, ataques: ['laser', 'leque'], recarga: 0.6 },
+      { movimento: 'caotico', velocidade: 410, ataques: ['espiral', 'anel', 'laser'], recarga: 0.42 }
     ]
   }
 ];
@@ -862,7 +913,7 @@ class Boss {
     this.y = 150;
     this.direcao = 1;
     this.raio = def.raio;
-    const escala = 1 + (onda - 5) * 0.06;
+    const escala = 1 + (onda - 5) * 0.025;
     this.vidaMax = def.vida * escala;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
@@ -976,7 +1027,7 @@ class Boss {
         this.laser.angulo += this.laser.giro * dt * 0.3;
       } else if (this.laser.tempo < this.laser.aviso + this.laser.duracao) {
         this.laser.angulo += this.laser.giro * dt;
-        Jogo.aplicarRaioBoss(this.x, this.y, this.laser.angulo, this.def.cor);
+        Jogo.aplicarRaioBoss(this.x, this.y, this.laser.angulo, CORES_TIRO.boss);
       } else {
         this.laser = null;
       }
@@ -1005,31 +1056,31 @@ class Boss {
       case 'unico':
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
-            if (this.vivo) Jogo.tiroInimigo(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9);
+            if (this.vivo) Jogo.tiroInimigo(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9, 'boss');
           }, i * 130);
         }
         break;
       case 'leque3':
-        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9);
+        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9, 'boss');
         break;
       case 'leque': {
         const n = 9;
         for (let i = 0; i < n; i++) {
           const a = angJog + Mat.misturar(-0.85, 0.85, i / (n - 1));
-          Jogo.tiroInimigo(this.x, this.y, a, 400, 1, this.def.cor, 8);
+          Jogo.tiroInimigo(this.x, this.y, a, 400, 1, this.def.cor, 8, 'boss');
         }
         break;
       }
       case 'anel': {
         const n = 24;
-        for (let i = 0; i < n; i++) Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8);
+        for (let i = 0; i < n; i++) Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8, 'boss');
         Camera.bater(6);
         break;
       }
       case 'espiral': {
         this.anguloEspiral += 0.42;
         for (let b = 0; b < 3; b++) {
-          Jogo.tiroInimigo(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8);
+          Jogo.tiroInimigo(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8, 'boss');
         }
         break;
       }
@@ -1103,10 +1154,10 @@ class Boss {
       const largura = avisando ? 6 : 30 + Math.sin(Jogo.tempo * 40) * 6;
       const g = ctx.createLinearGradient(0, 0, 2200, 0);
       g.addColorStop(0, '#ffffff');
-      g.addColorStop(0.2, d.cor);
+      g.addColorStop(0.2, CORES_TIRO.boss);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
-      ctx.shadowBlur = 40; ctx.shadowColor = d.cor;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 40; ctx.shadowColor = CORES_TIRO.boss;
       ctx.fillRect(0, -largura / 2, 2200, largura);
       ctx.restore();
     }

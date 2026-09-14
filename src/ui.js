@@ -129,8 +129,10 @@ const UI = {
 
   montarClasses() {
     UI.el.gradeClasses.innerHTML = '';
+    const escolhas = {};
+    try { Object.assign(escolhas, JSON.parse(localStorage.getItem('sniper.skins') || '{}')); } catch (e) { /* armazenamento indisponível */ }
     CLASSES.forEach((c, i) => {
-      const card = document.createElement('button');
+      const card = document.createElement('div');
       card.className = 'cartao-classe';
       card.style.setProperty('--cor', c.cor);
       card.style.setProperty('--cor2', c.cor2);
@@ -139,7 +141,7 @@ const UI = {
         '<div><h3>' + c.nome + '</h3><p class="cc-apelido">' + c.apelido + '</p></div></div>' +
         '<p class="cc-desc">' + c.descricao + '</p>' +
         '<div class="cc-attr">' +
-        UI.barrinha('VIDA', c.atributos.vidaMax / 6) +
+        UI.barrinha('VIDA', c.atributos.vidaMax / 4) +
         UI.barrinha('DANO', Math.min(1, (c.atributos.dano * c.atributos.projeteis) / 45)) +
         UI.barrinha('CADÊNCIA', Math.min(1, 0.12 / c.atributos.cadencia)) +
         UI.barrinha('VELOCIDADE', c.atributos.velocidade / 420) +
@@ -147,13 +149,32 @@ const UI = {
         '<ul class="cc-lista">' + c.forcas.map((f) => '<li class="bom">+ ' + f + '</li>').join('') +
         c.fraquezas.map((f) => '<li class="ruim">− ' + f + '</li>').join('') + '</ul>' +
         '<div class="cc-ult"><b>' + c.ult.nome + '</b><span>' + c.ult.descricao + '</span></div>' +
-        '<span class="cc-jogar">SELECIONAR ▸</span>';
-      card.onclick = () => {
+        '<div class="cc-skins" role="group" aria-label="Skin de ' + c.nome + '"></div>' +
+        '<button type="button" class="cc-jogar">JOGAR COM ' + c.nome + ' ▸</button>';
+      const escolher = (skinId) => {
+        escolhas[c.id] = skinId;
+        try { localStorage.setItem('sniper.skins', JSON.stringify(escolhas)); } catch (e) { /* armazenamento indisponível */ }
+        card.querySelectorAll('.cc-skin').forEach((botao) => {
+          botao.setAttribute('aria-pressed', String(botao.dataset.skin === skinId));
+        });
+      };
+      const grupo = card.querySelector('.cc-skins');
+      SKINS[c.id].forEach((skin) => {
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'cc-skin';
+        botao.dataset.skin = skin.id;
+        botao.style.setProperty('--skin', skin.cor);
+        botao.textContent = skin.nome;
+        botao.onclick = () => escolher(skin.id);
+        grupo.appendChild(botao);
+      });
+      escolher(skinDaClasse(c.id, escolhas[c.id]).id);
+      card.querySelector('.cc-jogar').onclick = () => {
         Som.clique();
         Som.destravar();
-        Jogo.novoJogo(c.id);
+        Jogo.novoJogo(c.id, escolhas[c.id]);
         UI.el.classeNome.textContent = c.nome;
-        document.documentElement.style.setProperty('--cor-classe', c.cor);
       };
       UI.el.gradeClasses.appendChild(card);
     });
@@ -267,8 +288,7 @@ const UI = {
     if (!Placar.configurado()) {
       caixa.innerHTML =
         '<p class="vazio">O placar mundial ainda não está ligado neste arquivo.<br>' +
-        'Preencha <code>src/placar-config.js</code> com a URL e a chave publicável ' +
-        'e todo mundo passa a ver a mesma lista.</p>';
+        'Publique a API com o banco configurado para compartilhar a lista.</p>';
       return;
     }
     caixa.innerHTML = '<p class="vazio">Carregando o placar mundial…</p>';
@@ -347,7 +367,7 @@ const UI = {
     UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
     UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
     UI.el.finalSub.textContent = venceu
-      ? 'As 20 ondas e os 4 bosses foram limpos. Respeito.'
+      ? 'As 40 ondas e os 8 bosses foram limpos. Respeito.'
       : 'Caiu na onda ' + Jogo.onda + ' de ' + Jogo.TOTAL_ONDAS + '. Tenta outra classe.';
 
     const linhas = [

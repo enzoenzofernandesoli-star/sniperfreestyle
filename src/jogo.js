@@ -5,7 +5,11 @@
 const Jogo = {
   LARGURA: 1280,
   ALTURA: 720,
-  TOTAL_ONDAS: 20,
+  TOTAL_ONDAS: 40,
+  modoLeve: false,
+  escalaRender: 1,
+  intervaloHUD: 0,
+  ultimoDesenho: 0,
 
   canvas: null,
   ctx: null,
@@ -53,8 +57,11 @@ const Jogo = {
   iniciar() {
     Jogo.canvas = document.getElementById('telaJogo');
     Jogo.ctx = Jogo.canvas.getContext('2d');
-    Jogo.canvas.width = Jogo.LARGURA;
-    Jogo.canvas.height = Jogo.ALTURA;
+    Jogo.modoLeve = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0);
+    Jogo.escalaRender = Jogo.modoLeve ? 0.75 : 1;
+    Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
+    Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
+    if (Jogo.modoLeve) Particulas.limite = 600;
 
     Config.carregar();
     Recordes.carregar();
@@ -66,8 +73,8 @@ const Jogo = {
     requestAnimationFrame(Jogo.loop);
   },
 
-  novoJogo(classeId) {
-    Jogo.jogador = new Jogador(classeId);
+  novoJogo(classeId, skinId) {
+    Jogo.jogador = new Jogador(classeId, skinId);
     Jogo.inimigos.length = 0;
     Jogo.projeteis.length = 0;
     Jogo.coletaveis.length = 0;
@@ -85,12 +92,13 @@ const Jogo = {
     Jogo.filaDeMelhorias = 0;
     Jogo.imaGlobal = 0;
     Jogo.tempoJogo = 0;
+    Jogo.intervaloHUD = 0;
     Jogo.estat = { abates: 0, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 0 };
     Jogo.estado = 'jogando';
     Som.intensidade = 0;
     Jogo.prepararOnda();
     UI.el.classeNome.textContent = Jogo.jogador.classe.nome;
-    document.documentElement.style.setProperty('--cor-classe', Jogo.jogador.classe.cor);
+    document.documentElement.style.setProperty('--cor-classe', Jogo.jogador.skin.cor);
     UI._maxCoracoes = -1;
     UI.mostrarTela(null);
     UI.atualizarHUD();
@@ -99,7 +107,7 @@ const Jogo = {
   /* ------------------------------ Ondas ------------------------------ */
   ehOndaDeBoss(onda) { return onda % 5 === 0; },
 
-  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.085; },
+  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.055; },
 
   prepararOnda() {
     Jogo.ondaLimpa = false;
@@ -115,7 +123,7 @@ const Jogo = {
       Jogo.aviso('⚠ ONDA ' + Jogo.onda + ' — BOSS');
     } else {
       // orçamento de inimigos cresce com a onda
-      const orcamento = Math.round(4 + Jogo.onda * 2.2);
+      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 2.2 + Math.max(0, Jogo.onda - 20) * 0.8);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       let restante = orcamento;
       while (restante > 0) {
@@ -125,7 +133,7 @@ const Jogo = {
       }
       Mat.embaralhar(Jogo.composicao);
       Jogo.spawnRestante = Jogo.composicao.length;
-      Som.intensidade = Mat.limitar(Jogo.onda / 22, 0, 0.8);
+      Som.intensidade = Mat.limitar(Jogo.onda / 42, 0, 0.8);
       Jogo.aviso('ONDA ' + Jogo.onda);
     }
     UI.atualizarHUD();
@@ -152,7 +160,7 @@ const Jogo = {
   },
 
   spawnarBoss() {
-    const indice = Math.min(BOSSES.length - 1, Math.floor(Jogo.onda / 5) - 1);
+    const indice = Math.floor(Jogo.onda / 5) - 1;
     Jogo.boss = new Boss(BOSSES[indice], Jogo.onda);
     Jogo.flashTela(0.5, BOSSES[indice].cor);
     Camera.bater(20);
@@ -212,10 +220,12 @@ const Jogo = {
     return melhor;
   },
 
-  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio) {
+  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio, origem) {
+    // `cor` vem da entidade; tiros usam a paleta fixa de cada origem.
+    const dono = origem === 'boss' ? 'boss' : 'inimigo';
     Jogo.projeteis.push(new Projetil({
       x: x, y: y, angulo: angulo, velocidade: velocidade,
-      raio: raio || 7, dano: dano, dono: 'inimigo', cor: cor || '#ff4d6d'
+      raio: raio || 7, dano: dano, dono: dono, cor: CORES_TIRO[dono]
     }));
   },
 
@@ -255,7 +265,7 @@ const Jogo = {
         Jogo.projeteis.push(new Projetil({
           x: e.x, y: e.y, angulo: (Mat.TAU / n) * i + Math.random(),
           velocidade: 620, raio: 4, dano: j.attr.dano * 0.45, dono: 'jogador',
-          cor: '#ffb347', perfuracao: 0, ricochete: 0, alcance: 220
+          cor: CORES_TIRO.jogador, perfuracao: 0, ricochete: 0, alcance: 220
         }));
       }
     }
@@ -275,7 +285,7 @@ const Jogo = {
     Som.ultimate();
     // limpa projéteis inimigos
     for (let i = Jogo.projeteis.length - 1; i >= 0; i--) {
-      if (Jogo.projeteis[i].dono === 'inimigo') {
+      if (Jogo.projeteis[i].dono !== 'jogador') {
         Particulas.explosao(Jogo.projeteis[i].x, Jogo.projeteis[i].y, '#ffd34d', 5, 120, 0.3, 2);
         Jogo.projeteis.splice(i, 1);
       }
@@ -317,6 +327,7 @@ const Jogo = {
   /* ------------------------------- Loop ------------------------------ */
   loop(agora) {
     requestAnimationFrame(Jogo.loop);
+    if (document.hidden) { Jogo.ultimoQuadro = agora; return; }
     let dt = (agora - Jogo.ultimoQuadro) / 1000;
     Jogo.ultimoQuadro = agora;
     if (dt > 0.05) dt = 0.05;   // evita salto após aba inativa
@@ -333,7 +344,10 @@ const Jogo = {
     if (Jogo.estado === 'jogando') Jogo.atualizar(dt);
     else { Particulas.atualizar(dt); Jogo.tempo += dt; }
 
-    Jogo.desenhar();
+    if (!Jogo.modoLeve || Jogo.estado === 'jogando' || agora - Jogo.ultimoDesenho >= 1000 / 15) {
+      Jogo.desenhar();
+      Jogo.ultimoDesenho = agora;
+    }
     Input.limparQuadro();
   },
 
@@ -376,7 +390,7 @@ const Jogo = {
       if (Jogo.spawnRestante > 0) {
         Jogo.timerSpawn -= dtReal;
         const ritmo = Math.max(0.26, 1.05 - Jogo.onda * 0.03);
-        const tetoSimultaneo = Math.min(26, Math.round(6 + Jogo.onda * 1.1));
+        const tetoSimultaneo = Math.min(30, Math.round(6 + Jogo.onda * 1.1));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;
@@ -394,7 +408,6 @@ const Jogo = {
     }
     if (Jogo.boss) {
       Jogo.boss.atualizar(dt);
-      UI.atualizarBarraBoss(Jogo.boss);
     }
 
     // projéteis + colisões
@@ -445,7 +458,7 @@ const Jogo = {
             b.dono = 'jogador';
             b.angulo += Math.PI + Mat.aleatorio(-0.2, 0.2);
             b.dano = j.attr.dano * 1.6;
-            b.cor = '#ffd34d';
+            b.cor = CORES_TIRO.jogador;
             b.atingidos = [];
             Particulas.faisca(b.x, b.y, b.angulo, '#ffd34d');
             Som.acerto();
@@ -533,7 +546,12 @@ const Jogo = {
     Particulas.atualizar(dt);
     Textos.atualizar(dtReal);
     Jogo.flash.alpha = Math.max(0, Jogo.flash.alpha - dtReal * 2.6);
-    UI.atualizarHUD();
+    Jogo.intervaloHUD -= dtReal;
+    if (Jogo.intervaloHUD <= 0) {
+      UI.atualizarHUD();
+      if (Jogo.boss) UI.atualizarBarraBoss(Jogo.boss);
+      Jogo.intervaloHUD = Jogo.modoLeve ? 0.1 : 0.05;
+    }
   },
 
   /* ---------------------------- Transições --------------------------- */
@@ -597,7 +615,8 @@ const Jogo = {
   desenhar() {
     const ctx = Jogo.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+    ctx.clearRect(0, 0, Jogo.canvas.width, Jogo.canvas.height);
+    ctx.setTransform(Jogo.escalaRender, 0, 0, Jogo.escalaRender, 0, 0);
 
     Camera.aplicar(ctx, Jogo.LARGURA, Jogo.ALTURA);
     Jogo.desenharFundo(ctx);
@@ -628,7 +647,7 @@ const Jogo = {
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = o.cor;
         ctx.lineWidth = 14 * (1 - p) + 2;
-        ctx.shadowBlur = 30; ctx.shadowColor = o.cor;
+        ctx.shadowBlur = Jogo.modoLeve ? 0 : 30; ctx.shadowColor = o.cor;
         ctx.beginPath();
         ctx.arc(o.x, o.y, o.raio, 0, Mat.TAU);
         ctx.stroke();
@@ -653,7 +672,7 @@ const Jogo = {
         g.addColorStop(0.15, r.cor);
         g.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = g;
-        ctx.shadowBlur = 50; ctx.shadowColor = r.cor;
+        ctx.shadowBlur = Jogo.modoLeve ? 0 : 50; ctx.shadowColor = r.cor;
         ctx.fillRect(0, -r.largura * p / 2, 2200, r.largura * p);
         ctx.restore();
       }
@@ -732,7 +751,7 @@ const Jogo = {
     // moldura da arena
     ctx.save();
     ctx.strokeStyle = Jogo.corComAlpha(corOnda, 0.55);
-    ctx.shadowBlur = 26; ctx.shadowColor = corOnda;
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 26; ctx.shadowColor = corOnda;
     ctx.lineWidth = 3;
     ctx.strokeRect(2, 2, Jogo.LARGURA - 4, Jogo.ALTURA - 4);
     // cantos

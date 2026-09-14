@@ -101,12 +101,12 @@ Sniper Freestyle: Arena Neon
 
 **Descrição curta** (máx. 80) — 78 caracteres:
 ```
-Twin-stick roguelite neon: 4 classes, 4 bosses, 20 ondas e placar mundial.
+  Twin-stick roguelite neon: 4 classes, 8 bosses, 40 ondas e placar mundial.
 ```
 
 **Descrição completa** (máx. 4000):
 ```
-Você contra a arena. Vinte ondas, quatro bosses e nenhuma segunda chance.
+Você contra a arena. Quarenta ondas, oito bosses e nenhuma segunda chance.
 
 SNIPER FREESTYLE é um twin-stick shooter roguelite: você anda, mira e atira ao mesmo tempo,
 sozinho no meio de uma arena neon que só aumenta a pressão. Cada partida começa do zero e
