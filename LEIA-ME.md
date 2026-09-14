@@ -9,6 +9,9 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Oráculo de Jade, Eclipse Fantasma e Núcleo Infinito, cada um com 3–4 fases.
 - 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
+- Arena ampliada para 2560×1440 unidades, com câmera que acompanha o jogador
+  em uma janela de 1280×720. No celular, a janela mantém renderização interna
+  de 960×540 para preservar desempenho.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
 - Migração `banco/migracoes/001_placar_40_ondas.sql` aplicada em 14/09/2026 no
@@ -23,7 +26,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Lasers, fragmentos e projéteis refletidos mantêm suas cores originais.
 - Projétil que atravessa inimigo ou boss pode acertar o mesmo alvo novamente após
   ricochetear na parede. O limite de perfuração continua valendo em cada acerto.
-- Em aparelhos de toque, o canvas usa 75% da resolução interna (960×540 em vez
+- Em aparelhos de toque, o canvas usa 75% da resolução da janela (960×540 em vez
   de 1280×720), preservando coordenadas e tamanho visual. Partículas simultâneas
   caem de 1500 para 600, rastros emitem menos partículas e efeitos de brilho
   caros saem dos projéteis, partículas e moldura.

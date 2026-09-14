@@ -67,6 +67,7 @@ const Config = {
 /* ------------------------------- Câmera -------------------------------- */
 const Camera = {
   x: 0, y: 0,
+  centroX: 640, centroY: 360,
   tremor: 0,
   zoom: 1,
   zoomAlvo: 1,
@@ -78,12 +79,24 @@ const Camera = {
     Camera.x = Mat.aleatorio(-t, t);
     Camera.y = Mat.aleatorio(-t, t);
     Camera.zoom = Mat.suave(Camera.zoom, Camera.zoomAlvo, 8, dt);
+    if (Jogo.jogador) {
+      const meiaLargura = Jogo.VISAO_LARGURA / (2 * Camera.zoom);
+      const meiaAltura = Jogo.VISAO_ALTURA / (2 * Camera.zoom);
+      Camera.centroX = Mat.limitar(Jogo.jogador.x, meiaLargura, Jogo.LARGURA - meiaLargura);
+      Camera.centroY = Mat.limitar(Jogo.jogador.y, meiaAltura, Jogo.ALTURA - meiaAltura);
+    }
   },
   aplicar(ctx, largura, altura) {
     ctx.save();
     ctx.translate(largura / 2, altura / 2);
     ctx.scale(Camera.zoom, Camera.zoom);
-    ctx.translate(-largura / 2 + Camera.x, -altura / 2 + Camera.y);
+    ctx.translate(-Camera.centroX + Camera.x, -Camera.centroY + Camera.y);
+  },
+  telaParaMundo(x, y) {
+    return {
+      x: Camera.centroX + (x - Jogo.VISAO_LARGURA / 2) / Camera.zoom - Camera.x,
+      y: Camera.centroY + (y - Jogo.VISAO_ALTURA / 2) / Camera.zoom - Camera.y
+    };
   },
   restaurar(ctx) { ctx.restore(); }
 };
@@ -110,6 +123,7 @@ const Input = {
   teclas: {},
   pressionadasAgora: {},
   mouseX: 0, mouseY: 0,
+  mouseTelaX: 0, mouseTelaY: 0,
   mouseBaixo: false,
   botaoDireito: false,
   canvas: null,
@@ -134,8 +148,11 @@ const Input = {
 
     const posicao = (clienteX, clienteY) => {
       const r = canvas.getBoundingClientRect();
-      Input.mouseX = (clienteX - r.left) * (Jogo.LARGURA / r.width);
-      Input.mouseY = (clienteY - r.top) * (Jogo.ALTURA / r.height);
+      const x = (clienteX - r.left) * (Jogo.VISAO_LARGURA / r.width);
+      const y = (clienteY - r.top) * (Jogo.VISAO_ALTURA / r.height);
+      Input.mouseTelaX = x;
+      Input.mouseTelaY = y;
+      Input.atualizarMouse();
     };
     Input._posicao = posicao;
 
@@ -155,6 +172,12 @@ const Input = {
     // O toque NÃO é lido do canvas: quem alimenta Input.mover/Input.mira são os
     // controles em tela montados por Toque.iniciar() (ui.js).
     canvas.addEventListener('touchstart', (e) => { Som.destravar(); e.preventDefault(); }, { passive: false });
+  },
+
+  atualizarMouse() {
+    const mundo = Camera.telaParaMundo(Input.mouseTelaX, Input.mouseTelaY);
+    Input.mouseX = mundo.x;
+    Input.mouseY = mundo.y;
   },
 
   apertou(codigo) { return !!Input.pressionadasAgora[codigo] || !!Input.pulsos[codigo]; },

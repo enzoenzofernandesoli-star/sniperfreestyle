@@ -1,6 +1,8 @@
 # Cooperativo online — plano de implementação
 
 O jogo atual simula toda a partida no navegador e usa um único `Jogo.jogador`.
+Sua arena mede 2560×1440 unidades; cada jogador vê uma janela de 1280×720
+acompanhada por uma câmera própria.
 O Neon já armazena o placar mundial, mas não sincroniza combate. Uma segunda
 aba aberta hoje inicia outra partida independente.
 

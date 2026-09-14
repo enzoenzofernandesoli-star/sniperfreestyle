@@ -3,8 +3,10 @@
    =========================================================================== */
 
 const Jogo = {
-  LARGURA: 1280,
-  ALTURA: 720,
+  LARGURA: 2560,
+  ALTURA: 1440,
+  VISAO_LARGURA: 1280,
+  VISAO_ALTURA: 720,
   TOTAL_ONDAS: 40,
   modoLeve: false,
   escalaRender: 1,
@@ -59,8 +61,8 @@ const Jogo = {
     Jogo.ctx = Jogo.canvas.getContext('2d');
     Jogo.modoLeve = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0);
     Jogo.escalaRender = Jogo.modoLeve ? 0.75 : 1;
-    Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
-    Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
+    Jogo.canvas.width = Math.round(Jogo.VISAO_LARGURA * Jogo.escalaRender);
+    Jogo.canvas.height = Math.round(Jogo.VISAO_ALTURA * Jogo.escalaRender);
     if (Jogo.modoLeve) Particulas.limite = 600;
 
     Config.carregar();
@@ -75,6 +77,8 @@ const Jogo = {
 
   novoJogo(classeId, skinId) {
     Jogo.jogador = new Jogador(classeId, skinId);
+    Camera.centroX = Jogo.jogador.x;
+    Camera.centroY = Jogo.jogador.y;
     Jogo.inimigos.length = 0;
     Jogo.projeteis.length = 0;
     Jogo.coletaveis.length = 0;
@@ -145,12 +149,9 @@ const Jogo = {
     const j = Jogo.jogador;
     let x, y, tent = 0;
     do {
-      const borda = Mat.inteiro(0, 3);
-      const margem = 60;
-      if (borda === 0) { x = Mat.aleatorio(margem, Jogo.LARGURA - margem); y = margem; }
-      else if (borda === 1) { x = Jogo.LARGURA - margem; y = Mat.aleatorio(margem, Jogo.ALTURA - margem); }
-      else if (borda === 2) { x = Mat.aleatorio(margem, Jogo.LARGURA - margem); y = Jogo.ALTURA - margem; }
-      else { x = margem; y = Mat.aleatorio(margem, Jogo.ALTURA - margem); }
+      const angulo = Mat.aleatorio(0, Mat.TAU);
+      x = Mat.limitar(j.x + Math.cos(angulo) * 780, 60, Jogo.LARGURA - 60);
+      y = Mat.limitar(j.y + Math.sin(angulo) * 480, 60, Jogo.ALTURA - 60);
       tent++;
     } while (Mat.distancia(x, y, j.x, j.y) < 220 && tent < 40);
 
@@ -338,6 +339,7 @@ const Jogo = {
 
     Som.tocarMusica();
     Camera.atualizar(dt);
+    Input.atualizarMouse();
 
     if (Jogo.estado === 'jogando') Jogo.atualizar(dt);
     else { Particulas.atualizar(dt); Jogo.tempo += dt; }
@@ -610,13 +612,19 @@ const Jogo = {
   },
 
   /* ------------------------------ Render ----------------------------- */
+  visivel(x, y, margem) {
+    const metadeX = Jogo.VISAO_LARGURA / (2 * Camera.zoom) + margem;
+    const metadeY = Jogo.VISAO_ALTURA / (2 * Camera.zoom) + margem;
+    return Math.abs(x - Camera.centroX) <= metadeX && Math.abs(y - Camera.centroY) <= metadeY;
+  },
+
   desenhar() {
     const ctx = Jogo.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, Jogo.canvas.width, Jogo.canvas.height);
     ctx.setTransform(Jogo.escalaRender, 0, 0, Jogo.escalaRender, 0, 0);
 
-    Camera.aplicar(ctx, Jogo.LARGURA, Jogo.ALTURA);
+    Camera.aplicar(ctx, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
     Jogo.desenharFundo(ctx);
 
     if (Jogo.jogador) {
@@ -652,10 +660,10 @@ const Jogo = {
         ctx.restore();
       }
 
-      for (const c of Jogo.coletaveis) c.desenhar(ctx);
-      for (const e of Jogo.inimigos) e.desenhar(ctx);
+      for (const c of Jogo.coletaveis) if (Jogo.visivel(c.x, c.y, 40)) c.desenhar(ctx);
+      for (const e of Jogo.inimigos) if (Jogo.visivel(e.x, e.y, e.raio + 80)) e.desenhar(ctx);
       if (Jogo.boss) Jogo.boss.desenhar(ctx);
-      for (const b of Jogo.projeteis) b.desenhar(ctx);
+      for (const b of Jogo.projeteis) if (Jogo.visivel(b.x, b.y, b.raio + 40)) b.desenhar(ctx);
       Jogo.jogador.desenhar(ctx);
 
       // raios da ult
@@ -686,16 +694,16 @@ const Jogo = {
     if (Jogo.flash.alpha > 0) {
       ctx.globalAlpha = Mat.limitar(Jogo.flash.alpha, 0, 1);
       ctx.fillStyle = Jogo.flash.cor;
-      ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+      ctx.fillRect(0, 0, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
       ctx.globalAlpha = 1;
     }
 
     // vinheta
-    const vin = ctx.createRadialGradient(Jogo.LARGURA / 2, Jogo.ALTURA / 2, Jogo.ALTURA * 0.35, Jogo.LARGURA / 2, Jogo.ALTURA / 2, Jogo.ALTURA * 0.85);
+    const vin = ctx.createRadialGradient(Jogo.VISAO_LARGURA / 2, Jogo.VISAO_ALTURA / 2, Jogo.VISAO_ALTURA * 0.35, Jogo.VISAO_LARGURA / 2, Jogo.VISAO_ALTURA / 2, Jogo.VISAO_ALTURA * 0.85);
     vin.addColorStop(0, 'rgba(0,0,0,0)');
     vin.addColorStop(1, 'rgba(0,0,0,.72)');
     ctx.fillStyle = vin;
-    ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+    ctx.fillRect(0, 0, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
 
     // aviso central
     if (Jogo.avisoTimer > 0 && Jogo.estado === 'jogando') {
@@ -706,10 +714,10 @@ const Jogo = {
       ctx.font = '900 46px Orbitron, Rajdhani, Arial';
       ctx.lineWidth = 6;
       ctx.strokeStyle = 'rgba(0,0,0,.7)';
-      ctx.strokeText(Jogo.avisoTexto, Jogo.LARGURA / 2, 130);
+      ctx.strokeText(Jogo.avisoTexto, Jogo.VISAO_LARGURA / 2, 130);
       ctx.fillStyle = '#ffffff';
       ctx.shadowBlur = 26; ctx.shadowColor = '#7ee8ff';
-      ctx.fillText(Jogo.avisoTexto, Jogo.LARGURA / 2, 130);
+      ctx.fillText(Jogo.avisoTexto, Jogo.VISAO_LARGURA / 2, 130);
       ctx.restore();
     }
   },

@@ -18,6 +18,29 @@ test('40 ondas terminam após o oitavo boss', () => {
   assert.equal(vm.runInContext('BOSSES[Math.floor(40 / 5) - 1].id', contexto), 'nucleo');
 });
 
+test('arena ampliada mantém janela, câmera e mira em coordenadas do mundo', () => {
+  const mundo = vm.createContext({ console, Math });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.jogador = { x: 1900, y: 1000 };
+    Camera.zoom = 1;
+    Camera.zoomAlvo = 1;
+    Camera.atualizar(0);
+    const centro = Camera.telaParaMundo(640, 360);
+    const canto = Camera.telaParaMundo(0, 0);
+    const boss = new Boss(BOSSES[0], 5);
+    return { arena: [Jogo.LARGURA, Jogo.ALTURA], janela: [Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA],
+      centro: [centro.x, centro.y], canto: [canto.x, canto.y], boss: [boss.x, boss.baseY] };
+  })()`, mundo);
+  assert.deepEqual(Array.from(dados.arena), [2560, 1440]);
+  assert.deepEqual(Array.from(dados.janela), [1280, 720]);
+  assert.deepEqual(Array.from(dados.centro), [1900, 1000]);
+  assert.deepEqual(Array.from(dados.canto), [1260, 640]);
+  assert.deepEqual(Array.from(dados.boss), [2200, 760]);
+});
+
 test('cada classe tem três skins cosméticas e menos vida inicial', () => {
   const dados = vm.runInContext('CLASSES.map(c => ({ id: c.id, vida: c.atributos.vidaMax, skins: SKINS[c.id].length }))', contexto);
   assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3]]);

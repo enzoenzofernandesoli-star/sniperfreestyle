@@ -909,8 +909,9 @@ const BOSSES = [
 class Boss {
   constructor(def, onda) {
     this.def = def;
-    this.x = Jogo.LARGURA / 2;
-    this.y = 150;
+    const jogador = Jogo.jogador;
+    this.x = jogador ? Mat.limitar(jogador.x + 300, 150, Jogo.LARGURA - 150) : Jogo.LARGURA / 2;
+    this.y = jogador ? Mat.limitar(jogador.y - 240, 150, Jogo.ALTURA - 150) : 150;
     this.direcao = 1;
     this.raio = def.raio;
     const escala = 1 + (onda - 5) * 0.025;
@@ -925,7 +926,9 @@ class Boss {
     this.flash = 0;
     this.vivo = true;
     this.entrando = 1.6;
-    this.baseY = 150;
+    this.baseY = this.y;
+    this.centroX = this.x;
+    this.centroY = this.y;
     this.orbita = 0;
     this.telegrafo = 0;
     this.laser = null;
@@ -956,7 +959,7 @@ class Boss {
 
     if (this.entrando > 0) {
       this.entrando -= dt;
-      this.y = Mat.misturar(-120, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
+      this.y = Mat.misturar(this.baseY - 300, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
       return;
     }
 
@@ -970,7 +973,7 @@ class Boss {
     switch (f.movimento) {
       case 'horizontal':
         this.x += this.direcao * f.velocidade * dt;
-        if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
+        if (this.x - this.raio < Math.max(0, this.centroX - 500) || this.x + this.raio > Math.min(Jogo.LARGURA, this.centroX + 500)) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
         }
@@ -978,17 +981,16 @@ class Boss {
         break;
       case 'senoidal':
         this.x += this.direcao * f.velocidade * dt;
-        if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
+        if (this.x - this.raio < Math.max(0, this.centroX - 500) || this.x + this.raio > Math.min(Jogo.LARGURA, this.centroX + 500)) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
         }
-        this.y = Jogo.ALTURA / 2 + Math.sin(this.tempoVivo * 1.9) * (Jogo.ALTURA / 2 - this.raio - 30);
+        this.y = Mat.limitar(this.centroY + Math.sin(this.tempoVivo * 1.9) * 230, this.raio, Jogo.ALTURA - this.raio);
         break;
       case 'circular': {
         this.orbita += f.velocidade * dt;
-        const rx = Jogo.LARGURA / 2, ry = Jogo.ALTURA / 2;
-        this.x = rx + Math.cos(this.orbita) * (Jogo.LARGURA / 2 - this.raio - 60);
-        this.y = ry + Math.sin(this.orbita) * (Jogo.ALTURA / 2 - this.raio - 50);
+        this.x = Mat.limitar(this.centroX + Math.cos(this.orbita) * 400, this.raio, Jogo.LARGURA - this.raio);
+        this.y = Mat.limitar(this.centroY + Math.sin(this.orbita) * 230, this.raio, Jogo.ALTURA - this.raio);
         break;
       }
       case 'perseguir': {
@@ -1001,7 +1003,10 @@ class Boss {
       }
       case 'caotico': {
         if (!this.destino || Mat.distancia(this.x, this.y, this.destino.x, this.destino.y) < 40) {
-          this.destino = { x: Mat.aleatorio(this.raio + 20, Jogo.LARGURA - this.raio - 20), y: Mat.aleatorio(this.raio + 20, Jogo.ALTURA - this.raio - 20) };
+          this.destino = {
+            x: Mat.limitar(j.x + Mat.aleatorio(-420, 420), this.raio + 20, Jogo.LARGURA - this.raio - 20),
+            y: Mat.limitar(j.y + Mat.aleatorio(-250, 250), this.raio + 20, Jogo.ALTURA - this.raio - 20)
+          };
         }
         const a = Mat.anguloEntre(this.x, this.y, this.destino.x, this.destino.y);
         this.x += Math.cos(a) * f.velocidade * dt;
