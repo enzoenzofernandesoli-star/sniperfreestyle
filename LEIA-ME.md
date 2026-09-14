@@ -11,10 +11,10 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
-- Antes de publicar, execute `banco/migracoes/001_placar_40_ondas.sql` no Neon
-  com o proprietário da tabela. O banco existente pode rejeitar ondas acima de 20.
-  Depois publique a API e configure `DATABASE_URL` na Vercel. Sem os dois passos,
-  o placar mundial não está ativo.
+- Migração `banco/migracoes/001_placar_40_ondas.sql` aplicada em 14/09/2026 no
+  Neon `sobrecarga-placar`: a tabela aceita ondas até 40. Em outra instalação,
+  execute a migração com o proprietário da tabela antes de publicar a API.
+  O placar online também exige `DATABASE_URL` no servidor da Vercel.
 
 ### Leitura dos tiros e desempenho no celular
 
@@ -224,9 +224,9 @@ navegador (src/placar.js)  →  /api/placar (Vercel)  →  Postgres (Neon)
   faixa, pontuação implausível pra onda alcançada (`30000 × onda + 60000`) e
   reenvio do mesmo nome+pontuação dentro de 2 minutos.
 - Banco: projeto Neon `sobrecarga-placar`, região `sa-east-1`, plano grátis.
-- Em 14/09/2026, a consulta com `placar_app` confirmou 2 resultados (maior onda 7)
-  e a restrição antiga `onda <= 20`. A migração de 40 ondas requer papel
-  proprietário; `placar_app` só pode ler e inserir.
+- Em 14/09/2026, a migração trocou a restrição de `onda <= 20` por `onda <= 40`
+  e criou o índice `placar_sobrecarga_ranking_idx`. Os 2 resultados existentes
+  foram preservados. O papel `placar_app` continua limitado a ler e inserir.
 
 **O que isso não é:** placar à prova de trapaça. Quem entende de HTTP consegue
 mandar uma pontuação plausível na mão. Pra um placar entre amigos, os limites
