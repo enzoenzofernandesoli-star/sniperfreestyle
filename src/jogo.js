@@ -220,12 +220,10 @@ const Jogo = {
     return melhor;
   },
 
-  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio, origem) {
-    // `cor` vem da entidade; tiros usam a paleta fixa de cada origem.
-    const dono = origem === 'boss' ? 'boss' : 'inimigo';
+  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio) {
     Jogo.projeteis.push(new Projetil({
       x: x, y: y, angulo: angulo, velocidade: velocidade,
-      raio: raio || 7, dano: dano, dono: dono, cor: CORES_TIRO[dono]
+      raio: raio || 7, dano: dano, dono: 'inimigo', cor: cor || '#ff4d6d'
     }));
   },
 
@@ -265,7 +263,7 @@ const Jogo = {
         Jogo.projeteis.push(new Projetil({
           x: e.x, y: e.y, angulo: (Mat.TAU / n) * i + Math.random(),
           velocidade: 620, raio: 4, dano: j.attr.dano * 0.45, dono: 'jogador',
-          cor: CORES_TIRO.jogador, perfuracao: 0, ricochete: 0, alcance: 220
+          cor: '#ffb347', perfuracao: 0, ricochete: 0, alcance: 220
         }));
       }
     }
@@ -458,7 +456,7 @@ const Jogo = {
             b.dono = 'jogador';
             b.angulo += Math.PI + Mat.aleatorio(-0.2, 0.2);
             b.dano = j.attr.dano * 1.6;
-            b.cor = CORES_TIRO.jogador;
+            b.cor = '#ffd34d';
             b.atingidos = [];
             Particulas.faisca(b.x, b.y, b.angulo, '#ffd34d');
             Som.acerto();

@@ -2,9 +2,9 @@
    ENTIDADES.JS — Jogador, Projétil, Inimigos, Bosses, Coletáveis.
    =========================================================================== */
 
-// Paleta exclusiva por origem: jogador (lima/branco), inimigo (vermelho), boss (laranja).
+// Só os projéteis disparados pelo jogador usam esta paleta.
 const CORES_TIRO = Object.freeze({
-  jogador: '#dcff46', critico: '#ffffff', inimigo: '#ff315d', boss: '#ff9b32'
+  jogador: '#dcff46', critico: '#ffffff'
 });
 
 /* =============================== JOGADOR ================================ */
@@ -191,7 +191,7 @@ class Jogador {
     this.recuo = 6;
     this.vx -= Math.cos(this.angulo) * 40;
     this.vy -= Math.sin(this.angulo) * 40;
-    Particulas.faisca(this.x + Math.cos(this.angulo) * (this.raio + 12), this.y + Math.sin(this.angulo) * (this.raio + 12), this.angulo, CORES_TIRO.jogador);
+    Particulas.faisca(this.x + Math.cos(this.angulo) * (this.raio + 12), this.y + Math.sin(this.angulo) * (this.raio + 12), this.angulo, this.classe.cor);
     Camera.bater(1.2);
     Som.tiro(this.classe.somTiro);
   }
@@ -246,7 +246,7 @@ class Jogador {
 
     if (this.classe.id === 'sniper') {
       // raio perfurante gigante
-      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 6, cor: CORES_TIRO.jogador });
+      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 6, cor: this.classe.cor });
       Jogo.aplicarRaio(this.x, this.y, this.angulo, this.attr.dano * 6);
     } else if (this.classe.id === 'guardiao') {
       // onda de choque expansiva
@@ -508,11 +508,11 @@ class Projetil {
     ctx.shadowBlur = Jogo.modoLeve ? 0 : (this.critico ? 30 : 18);
     ctx.shadowColor = this.cor;
     ctx.fillStyle = this.cor;
-    if (this.dono !== 'jogador') {
+    if (this.dono === 'inimigo') {
       ctx.translate(this.x, this.y);
       ctx.rotate(this.giro);
       ctx.beginPath();
-      const lados = this.dono === 'boss' ? 3 : 4;
+      const lados = 4;
       for (let i = 0; i < lados; i++) {
         const a = (Mat.TAU / lados) * i;
         ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * this.raio * 1.3, Math.sin(a) * this.raio * 1.3);
@@ -1027,7 +1027,7 @@ class Boss {
         this.laser.angulo += this.laser.giro * dt * 0.3;
       } else if (this.laser.tempo < this.laser.aviso + this.laser.duracao) {
         this.laser.angulo += this.laser.giro * dt;
-        Jogo.aplicarRaioBoss(this.x, this.y, this.laser.angulo, CORES_TIRO.boss);
+        Jogo.aplicarRaioBoss(this.x, this.y, this.laser.angulo, this.def.cor);
       } else {
         this.laser = null;
       }
@@ -1056,31 +1056,31 @@ class Boss {
       case 'unico':
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
-            if (this.vivo) Jogo.tiroInimigo(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9, 'boss');
+            if (this.vivo) Jogo.tiroInimigo(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9);
           }, i * 130);
         }
         break;
       case 'leque3':
-        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9, 'boss');
+        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9);
         break;
       case 'leque': {
         const n = 9;
         for (let i = 0; i < n; i++) {
           const a = angJog + Mat.misturar(-0.85, 0.85, i / (n - 1));
-          Jogo.tiroInimigo(this.x, this.y, a, 400, 1, this.def.cor, 8, 'boss');
+          Jogo.tiroInimigo(this.x, this.y, a, 400, 1, this.def.cor, 8);
         }
         break;
       }
       case 'anel': {
         const n = 24;
-        for (let i = 0; i < n; i++) Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8, 'boss');
+        for (let i = 0; i < n; i++) Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8);
         Camera.bater(6);
         break;
       }
       case 'espiral': {
         this.anguloEspiral += 0.42;
         for (let b = 0; b < 3; b++) {
-          Jogo.tiroInimigo(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8, 'boss');
+          Jogo.tiroInimigo(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8);
         }
         break;
       }
@@ -1154,10 +1154,10 @@ class Boss {
       const largura = avisando ? 6 : 30 + Math.sin(Jogo.tempo * 40) * 6;
       const g = ctx.createLinearGradient(0, 0, 2200, 0);
       g.addColorStop(0, '#ffffff');
-      g.addColorStop(0.2, CORES_TIRO.boss);
+      g.addColorStop(0.2, d.cor);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
-      ctx.shadowBlur = Jogo.modoLeve ? 0 : 40; ctx.shadowColor = CORES_TIRO.boss;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 40; ctx.shadowColor = d.cor;
       ctx.fillRect(0, -largura / 2, 2200, largura);
       ctx.restore();
     }

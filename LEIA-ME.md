@@ -18,9 +18,9 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 
 ### Leitura dos tiros e desempenho no celular
 
-- Tiros do jogador são verde-lima (críticos brancos), tiros inimigos são vermelhos
-  e tiros de boss são laranja. Formatos: círculo, losango e triângulo. Lasers e
-  fragmentos seguem a mesma paleta por origem; projéteis refletidos viram do jogador.
+- Tiros disparados pelo jogador são verde-lima (críticos brancos). Tiros inimigos
+  e de boss preservam as cores próprias de cada entidade e o formato de losango.
+  Lasers, fragmentos e projéteis refletidos mantêm suas cores originais.
 - Projétil que atravessa inimigo ou boss pode acertar o mesmo alvo novamente após
   ricochetear na parede. O limite de perfuração continua valendo em cada acerto.
 - Em aparelhos de toque, o canvas usa 75% da resolução interna (960×540 em vez

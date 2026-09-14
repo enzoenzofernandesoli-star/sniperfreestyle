@@ -31,15 +31,15 @@ test('vida dos inimigos cresce mais devagar durante as novas ondas', () => {
   assert.ok(fim > inicio && fim < 3.2);
 });
 
-test('cores de tiros não se repetem entre jogador, inimigos e bosses', () => {
+test('só tiros disparados pelo jogador usam a nova paleta', () => {
   const cores = vm.runInContext('CORES_TIRO', contexto);
-  assert.equal(new Set([cores.jogador, cores.critico, cores.inimigo, cores.boss]).size, 4);
+  assert.notEqual(cores.jogador, cores.critico);
   vm.runInContext(`Jogo.projeteis = [];
-    Jogo.tiroInimigo(10, 10, 0, 100, 1, '#ffffff', 7);
-    Jogo.tiroInimigo(10, 10, 0, 100, 1, '#ffffff', 7, 'boss');`, contexto);
+    Jogo.tiroInimigo(10, 10, 0, 100, 1, '#c874ff', 7);
+    Jogo.tiroInimigo(10, 10, 0, 100, 1, '#00e5ff', 9);`, contexto);
   const tiros = vm.runInContext('Jogo.projeteis.map(t => ({ dono: t.dono, cor: t.cor }))', contexto);
   assert.deepEqual(Array.from(tiros, (t) => [t.dono, t.cor]), [
-    ['inimigo', cores.inimigo], ['boss', cores.boss]
+    ['inimigo', '#c874ff'], ['inimigo', '#00e5ff']
   ]);
   assert.notEqual(tiros[0].cor, cores.jogador);
   assert.notEqual(tiros[1].cor, cores.jogador);
