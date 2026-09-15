@@ -238,9 +238,15 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   onda 10 grita **ENCAIXA!** com uma das três falas de `assets/encaixa-*.m4a`,
   sorteada na hora — a mesma fase pode soar diferente a cada partida. São os
   únicos arquivos de som do projeto; o resto do áudio continua sintetizado.
-- Os clipes passam pelo WebAudio com `GainNode`, e não por um `<audio>` comum,
-  justamente para poder estourar acima de 1.0: `CLIPES[nome].ganho` é 1,2 no 67
-  (o arquivo já veio alto) e 2,4 nas falas da onda 10.
+- Os clipes passam pelo WebAudio com `GainNode` ligado direto ao destino — não
+  por um `<audio>` comum nem pelo mixer de efeitos — justamente para poder
+  estourar acima de 1.0: `CLIPES[nome].ganho` é 1,2 no 67 (o arquivo já veio
+  alto) e 2,4 nas falas da onda 10, multiplicado por `volumeEfeitos * 2,2`.
+  Medido com um analisador no destino: pico de 1,45, bem acima do teto de 1,0
+  que um `<audio>` permitiria.
+- `Som.prepararClipes()` decodifica os quatro arquivos assim que o áudio
+  destrava, e `tocarClipe` acorda o contexto antes de tocar — sem isso a fala
+  saía muda quando o navegador tinha suspendido o áudio no meio da partida.
 - **67.** Qualquer outro boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
   o estilo muda de boss para boss — cor, fonte, sombra e faixa de leitura vêm de
   `Jogo.ESTILOS_67`, escolhidos pela posição do boss na tabela. O CEIFADOR tem o

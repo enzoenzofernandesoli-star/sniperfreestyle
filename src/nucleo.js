@@ -226,6 +226,7 @@ const Som = {
     Som.aplicarVolumes();
     Som.pronto = true;
     Som.proximaNota = Som.ctx.currentTime + 0.1;
+    Som.prepararClipes();   // decodifica as falas antes de precisarem tocar
   },
 
   aplicarVolumes() {
@@ -367,25 +368,41 @@ const Som = {
 
   tocarClipe(nome) {
     const grupo = Som.CLIPES[nome];
-    if (!grupo || Config.volumeSom <= 0) return;
+    if (!grupo || Config.volumeEfeitos <= 0) return;
     const caminho = Mat.escolher(grupo.arquivos);
+
+    // O navegador só libera áudio depois de um gesto, e o contexto pode ter
+    // adormecido no meio da partida: acorda antes de tentar tocar.
+    Som.destravar();
+    if (Som.ctx && Som.ctx.state === 'suspended' && Som.ctx.resume) Som.ctx.resume();
     if (!Som.pronto || !Som.ctx) { Som._tocarClipeSimples(caminho); return; }
+
     Som._carregarClipe(caminho).then((buffer) => {
       const fonte = Som.ctx.createBufferSource();
       fonte.buffer = buffer;
       const ganho = Som.ctx.createGain();
-      // sem teto de 1.0: é aqui que a fala fica alta de verdade
-      ganho.gain.value = grupo.ganho * Mat.limitar(Config.volumeSom, 0, 1) * 3;
+      // Vai direto ao destino, e não pelo mixer de efeitos, justamente para
+      // poder passar de 1.0 — é o que faz a fala estourar por cima do jogo.
+      ganho.gain.value = grupo.ganho * Mat.limitar(Config.volumeEfeitos * 2.2, 0, 3);
       fonte.connect(ganho).connect(Som.ctx.destination);
       fonte.start();
     }).catch(() => Som._tocarClipeSimples(caminho));
+  },
+
+  // Deixa os clipes decodificados antes da hora, para a fala não atrasar quando
+  // o boss cai.
+  prepararClipes() {
+    if (!Som.pronto || !Som.ctx) return;
+    for (const nome of Object.keys(Som.CLIPES)) {
+      for (const caminho of Som.CLIPES[nome].arquivos) Som._carregarClipe(caminho).catch(() => {});
+    }
   },
 
   // Reserva para quando o WebAudio ainda não acordou.
   _tocarClipeSimples(caminho) {
     try {
       const audio = new Audio(caminho);
-      audio.volume = Mat.limitar(Config.volumeSom, 0, 1);
+      audio.volume = Mat.limitar(Config.volumeEfeitos * 1.8, 0, 1);
       const p = audio.play();
       if (p && p.catch) p.catch(() => { /* sem gesto do usuário ainda */ });
     } catch (e) { /* sem áudio: o jogo segue igual */ }
