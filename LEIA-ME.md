@@ -257,6 +257,13 @@ outra.
   A tela mostra "REGENERAÇÃO ABSOLUTA" no lugar do título e acende uma couraça
   branca quando o acerto é grande demais, para o jogador ver o que está
   acontecendo.
+- **EMBOSCADA**, o movimento dele nas quatro fases: ele não teleporta para
+  qualquer lugar — ele aparece **nas suas costas**, no lado oposto ao que a sua
+  nave está mirando, a 150–240 px, e abre fogo no instante em que chega. A cada
+  0,9 s na fúria, 1,5 s fora dela.
+- **TODOS OS LADOS**, o ataque de assinatura: dois anéis girados um contra o
+  outro, 70 projéteis de uma vez, sem brecha confortável. Some com o `volumeExtra: 1.6`
+  do `def` dele, que engrossa **todo** ataque que ele usa em 60%.
 - **EXECUÇÃO**, em todas as quatro fases: telegrafo branco com aviso na tela e
   então **três rajadas de cinco lâminas com 99 de dano** — mata com seis corações,
   com escudo, com o que for. Não existe tankar: ou desvia, ou morre.

@@ -1462,12 +1462,13 @@ const BOSSES = [
     // ultimate nem crítico gigante furem a conta. A onda 100 é onde a corrida
     // termina, não onde ela é vencida.
     regenera: 0.07, tetoDeDano: 0.004, tetoPorSegundo: 0.02,
+    volumeExtra: 1.6,   // cada ataque dele sai com 60% mais bala que o normal
     cor: '#ff1744', cor2: '#3d0010', raio: 92, vida: 21000, lados: 3,
     fases: [
-      { movimento: 'investida', velocidade: 360, ataques: ['execucao', 'leque', 'precisao'], recarga: 0.7 },
-      { movimento: 'teleporte', velocidade: 320, ataques: ['execucao', 'parede', 'cacador'], recarga: 0.55 },
-      { movimento: 'cerco', velocidade: 2.3, ataques: ['execucao', 'espiral', 'cruz', 'minas'], recarga: 0.42 },
-      { movimento: 'caotico', velocidade: 520, ataques: ['execucao', 'parede', 'laser', 'chuva', 'cacador', 'cruz'], recarga: 0.3 }
+      { movimento: 'emboscada', velocidade: 360, ataques: ['execucao', 'todosOsLados', 'precisao'], recarga: 0.6 },
+      { movimento: 'emboscada', velocidade: 380, ataques: ['execucao', 'todosOsLados', 'parede', 'cacador'], recarga: 0.48 },
+      { movimento: 'emboscada', velocidade: 420, ataques: ['execucao', 'todosOsLados', 'espiral', 'cruz', 'minas'], recarga: 0.36 },
+      { movimento: 'emboscada', velocidade: 520, ataques: ['execucao', 'todosOsLados', 'parede', 'laser', 'chuva', 'cacador', 'cruz'], recarga: 0.26 }
     ]
   },
   {
@@ -1756,6 +1757,29 @@ class Boss {
         }
         break;
       }
+      // Emboscada: pisca para as COSTAS do jogador — atrás de para onde ele
+      // está mirando — e abre fogo em todas as direções assim que chega. Quem
+      // fica de costas para o meio da arena não tem para onde correr.
+      case 'emboscada': {
+        this.tempoMov = (this.tempoMov || 0) - dt;
+        const a = Mat.anguloEntre(this.x, this.y, j.x, j.y);
+        this.x += Math.cos(a) * f.velocidade * 0.45 * impeto * dt;
+        this.y += Math.sin(a) * f.velocidade * 0.45 * impeto * dt;
+        if (this.tempoMov <= 0) {
+          this.tempoMov = (this.furioso ? 0.9 : 1.5) * Mat.aleatorio(0.85, 1.15);
+          Particulas.anel(this.x, this.y, this.def.cor, 90, 34);
+          // as costas do jogador: o oposto de onde a nave dele aponta
+          const costas = (j.angulo || 0) + Math.PI + Mat.aleatorio(-0.35, 0.35);
+          const perto = 150 + Math.random() * 90;
+          this.x = Mat.limitar(j.x + Math.cos(costas) * perto, this.raio, Jogo.LARGURA - this.raio);
+          this.y = Mat.limitar(j.y + Math.sin(costas) * perto, this.raio, Jogo.ALTURA - this.raio);
+          Particulas.anel(this.x, this.y, '#ffffff', 110, 36);
+          Camera.bater(16);
+          Jogo.flashTela(0.22, this.def.cor);
+          this.executarAtaque('todosOsLados');
+        }
+        break;
+      }
       // Órbita colada no jogador: ele não sai do seu pé.
       case 'cerco': {
         this.orbita += f.velocidade * 0.9 * impeto * dt;
@@ -1849,7 +1873,8 @@ class Boss {
   // Quantidade de bala por ataque: o mesmo leque tem 5 tiros cedo e 11 no fim.
   // `cheio` é o valor da versão dura; a fração vem da dureza da campanha.
   volume(minimo, cheio) {
-    return Math.round(Mat.misturar(minimo, cheio, this.dureza));
+    const base = Mat.misturar(minimo, cheio, this.dureza);
+    return Math.round(base * (this.def.volumeExtra || 1));
   }
 
   // Tudo que o boss atira passa por aqui: é o ponto onde o CEIFADOR acelera os
@@ -1944,6 +1969,18 @@ class Boss {
             Mat.limitar(this.y + Math.sin(a) * d, 40, Jogo.ALTURA - 40),
             0, 0, 1, this.def.cor, 11, { explodeEm: this.furioso ? 1.4 : 2, estilhacos: 10 });
         }
+        break;
+      }
+      // Dois anéis girados um contra o outro: bala para todo lado, sem brecha
+      // confortável. É o ataque de assinatura da emboscada.
+      case 'todosOsLados': {
+        const n = this.volume(14, 22);
+        for (let i = 0; i < n; i++) {
+          const a = (Mat.TAU / n) * i + this.tempoVivo;
+          this.atirar(this.x, this.y, a, 330, 1, this.def.cor, 8);
+          this.atirar(this.x, this.y, a + Math.PI / n, 220, 1, this.def.cor, 7);
+        }
+        Camera.bater(8);
         break;
       }
       // Parede de tiros com uma única brecha: obriga a achar o buraco e passar.
