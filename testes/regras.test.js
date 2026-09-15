@@ -17,18 +17,22 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
   const dados = vm.runInContext(`(() => {
     const rodizio = BOSSES.filter((b) => !b.final);
     const finais = BOSSES.filter((b) => b.final);
+    // mesma conta que Jogo.spawnarBoss faz
     const naOnda = (o) => (o >= Jogo.TOTAL_ONDAS)
       ? finais[0].id
-      : rodizio[(Math.floor(o / 5) - 1) % rodizio.length].id;
+      : rodizio[(Jogo.encontroDeBoss(o) - 1) % rodizio.length].id;
     return { rodizio: rodizio.length, finais: finais.map((b) => b.id),
-      onda40: naOnda(40), onda45: naOnda(45), onda100: naOnda(100),
+      onda40: naOnda(40), onda50: naOnda(50), onda90: naOnda(90), onda100: naOnda(100),
+      nomes: rodizio.map((b) => b.id),
       vidaFinal: finais[0].vida, tiroFinal: finais[0].velocidadeTiro };
   })()`, contexto);
-  assert.equal(dados.rodizio, 8, 'os oito bosses de sempre seguem no rodízio');
+  assert.equal(dados.rodizio, 13, 'um boss diferente para cada encontro até a onda 90');
   assert.deepEqual(Array.from(dados.finais), ['ceifador'], 'só um boss final');
   assert.equal(dados.onda40, 'nucleo');
-  assert.equal(dados.onda45, 'sentinela', 'depois do oitavo o rodízio recomeça');
+  assert.equal(dados.onda50, 'tita', 'a segunda volta traz bosses novos, não repetição');
+  assert.equal(dados.onda90, 'arauto', 'o último do rodízio fecha a onda 90');
   assert.equal(dados.onda100, 'ceifador', 'a onda 100 é sempre o CEIFADOR');
+  assert.equal(new Set(Array.from(dados.nomes)).size, 13, 'nenhum boss repetido no rodízio');
   assert.ok(dados.vidaFinal >= 9000 && dados.tiroFinal > 2, 'o final tem mais vida e bala mais rápida');
 });
 

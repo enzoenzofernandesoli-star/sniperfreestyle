@@ -1473,6 +1473,59 @@ const BOSSES = [
       { movimento: 'teleporte', velocidade: 280, ataques: ['laser', 'cruz', 'chuva'], recarga: 0.5 },
       { movimento: 'cerco', velocidade: 2.1, ataques: ['espiral', 'parede', 'laser', 'cruz', 'chuva', 'minas', 'cacador'], recarga: 0.34 }
     ]
+  },
+
+  /* ------------------ Segunda volta: ondas 50, 60, 70, 80 e 90 -------------
+     Da onda 40 em diante o boss vem de 10 em 10, e cada encontro é um bicho
+     novo em vez do rodízio repetido. São cinco, e ficam progressivamente mais
+     próximos do CEIFADOR — o último deles é o ensaio geral da onda 100.
+     ------------------------------------------------------------------------ */
+  {
+    id: 'tita', nome: 'TITÃ DE FERRO', titulo: 'A Muralha que Anda',
+    cor: '#9fb3c8', cor2: '#38485c', raio: 96, vida: 9200, lados: 6,
+    fases: [
+      { movimento: 'investida', velocidade: 240, ataques: ['leque3', 'minas'], recarga: 0.95 },
+      { movimento: 'perseguir', velocidade: 210, ataques: ['parede', 'anel', 'precisao'], recarga: 0.7 },
+      { movimento: 'investida', velocidade: 330, ataques: ['parede', 'minas', 'chuva', 'invocar'], recarga: 0.5 }
+    ]
+  },
+  {
+    id: 'vidro', nome: 'CORTEJO DE VIDRO', titulo: 'Mil Reflexos',
+    cor: '#7ef9ff', cor2: '#12586b', raio: 64, vida: 10400, lados: 4,
+    fases: [
+      { movimento: 'circular', velocidade: 1.5, ataques: ['cruz', 'precisao'], recarga: 0.4 },
+      { movimento: 'teleporte', velocidade: 300, ataques: ['cruz', 'espiral', 'leque'], recarga: 0.34 },
+      { movimento: 'cerco', velocidade: 2.0, ataques: ['cruz', 'espiral', 'parede', 'cacador'], recarga: 0.28 }
+    ]
+  },
+  {
+    id: 'rainha', nome: 'RAINHA ESTÁTICA', titulo: 'Tempestade Presa',
+    cor: '#ffe14d', cor2: '#6b5a0c', raio: 72, vida: 11800, lados: 5,
+    fases: [
+      { movimento: 'teleporte', velocidade: 280, ataques: ['laser', 'leque'], recarga: 0.8 },
+      { movimento: 'caotico', velocidade: 400, ataques: ['laser', 'cacador', 'chuva'], recarga: 0.55 },
+      { movimento: 'cerco', velocidade: 2.2, ataques: ['laser', 'cacador', 'anel', 'cruz'], recarga: 0.4 }
+    ]
+  },
+  {
+    id: 'abismo', nome: 'ABISMO CARMESIM', titulo: 'O Que Engole a Arena',
+    cor: '#c2185b', cor2: '#4a0322', raio: 88, vida: 13600, lados: 8,
+    fases: [
+      { movimento: 'cerco', velocidade: 1.4, ataques: ['anel', 'invocar'], recarga: 0.7 },
+      { movimento: 'caotico', velocidade: 380, ataques: ['anel', 'parede', 'minas'], recarga: 0.5 },
+      { movimento: 'cerco', velocidade: 2.4, ataques: ['anel', 'parede', 'espiral', 'invocar', 'chuva'], recarga: 0.36 }
+    ]
+  },
+  {
+    id: 'arauto', nome: 'ÚLTIMO ARAUTO', titulo: 'A Sombra do Ceifador',
+    cor: '#ff5252', cor2: '#5c0b0b', raio: 82, vida: 16000, lados: 3,
+    velocidadeTiro: 1.35,
+    fases: [
+      { movimento: 'investida', velocidade: 340, ataques: ['precisao', 'leque'], recarga: 0.62 },
+      { movimento: 'teleporte', velocidade: 320, ataques: ['precisao', 'parede', 'cacador'], recarga: 0.48 },
+      { movimento: 'caotico', velocidade: 440, ataques: ['cruz', 'laser', 'minas', 'chuva'], recarga: 0.4 },
+      { movimento: 'cerco', velocidade: 2.5, ataques: ['espiral', 'parede', 'cacador', 'laser', 'anel', 'chuva'], recarga: 0.3 }
+    ]
   }
 ];
 

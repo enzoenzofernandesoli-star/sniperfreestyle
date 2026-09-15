@@ -217,60 +217,25 @@ outra.
 - Movimentos: investida, teleporte, cerco e caótico — um por fase, do mais lento
   ao mais rápido — somados a parede, caçador, minas, cruz, espiral, chuva e laser.
 
-## Bosses do rodízio (ondas 5 a 40 de 5 em 5, depois 50, 60, 70, 80 e 90)
+## Bosses do rodízio (13, um por encontro)
 
-Três movimentos e quatro ataques novos entraram para o boss deixar de ser alvo
-parado que cospe bala:
+Nenhum se repete na campanha: de 5 em 5 até a onda 40 e de 10 em 10 até a 90.
 
-| Movimento | O que faz |
-|---|---|
-| `investida` | encara, trava a mira, atravessa a arena na sua linha e solta um anel ao bater na parede |
-| `teleporte` | pisca para 300 px de você e cospe um leque ao chegar |
-| `cerco` | orbita colado, entre 210 e 390 px — não dá para resolver de longe |
-
-| Ataque | O que faz |
-|---|---|
-| `parede` | anel fechado com **uma** brecha: ache o buraco e passe (a brecha encolhe na fúria) |
-| `cruz` | quatro braços giratórios varrendo a arena |
-| `precisao` | mira onde você **vai** estar, não onde está |
-| `chuva` | cortina caindo do topo, com colunas vazias por onde correr |
-
-Dois ataques a mais, para o boss negar espaço em vez de só cuspir bala:
-
-| Ataque | O que faz |
-|---|---|
-| `cacador` | 3 a 5 tiros lentos que **perseguem por 2,5 s** — andar reto não resolve |
-| `minas` | 4 a 7 minas paradas piscando; cada uma abre um anel de 10 tiros ao estourar |
-
-E três camadas de pressão:
-
-- **A luta cresce por fase.** A primeira fase é de leitura: ritmo de ataque em
-  145% do valor da tabela e passo em 80%. Depois vem 110%/95%, 85%/110% e, na
-  quarta fase, **70% de intervalo e 125% de velocidade**. O boss não começa no
-  talo — ele chega lá.
-- **Fúria** abaixo de 25% de vida e **desespero** abaixo de 10%: mais rápido,
-  mais ataques, aviso de laser mais curto e brecha da parede menor.
-- Cada rotação completa aumenta devagar o ímpeto e a frequência dos ataques. A
-  dificuldade alta demora para chegar, mas a ascensão nunca para.
-- Encostar no boss tira 1 nas duas primeiras fases e 2 da terceira em diante.
-
-Os guardas blindados saíram: fase que travava o dano no boss enquanto uma escolta
-elite vivia transformava toda luta em muro. A dificuldade agora vem do padrão e do
-ritmo, não de um escudo.
-
-
-1. **SENTINELA CARMESIM** — movimento horizontal → tiro único, leque de 3, anel
-2. **SERPENTE DE VÍDEO** — movimento senoidal → leque de 9, invocação
-3. **OLHO DO VAZIO** — movimento circular → espiral contínua, anel, invocação
-4. **O ARQUITETO** — 4 fases: persegue → senoidal → circular → caótico, com laser em varredura
-5. **FERREIRO SOLAR** — leque e anel → perseguição e invocação → movimento caótico e laser
-6. **ORÁCULO DE JADE** — espiral orbital → leque senoidal → invocação e laser
-7. **ECLIPSE FANTASMA** — laser senoidal → anel e invocação → perseguição e espiral
-8. **NÚCLEO INFINITO** — espiral orbital → anel horizontal → laser senoidal → caos
-
-Cada boss troca de fase por faixa de vida, com telégrafo visual e sonoro antes de retomar.
-
----
+| # | Onda | Boss | O que ele faz |
+|---|---|---|---|
+| 1 | 5 | **SENTINELA CARMESIM** | horizontal e tiro único; investida e cerco no fim |
+| 2 | 10 | **SERPENTE DE VÍDEO** | senoidal, leque e chuva |
+| 3 | 15 | **OLHO DO VAZIO** | circular com espiral contínua; teleporta na fase 2 |
+| 4 | 20 | **O ARQUITETO** | 4 fases: laser, parede, teleporte e caos |
+| 5 | 25 | **FERREIRO SOLAR** | investida, cerco, minas e invocação |
+| 6 | 30 | **ORÁCULO DE JADE** | espiral orbital, cruz giratória e precisão |
+| 7 | 35 | **ECLIPSE FANTASMA** | teleporte constante, some e reaparece do seu lado |
+| 8 | 40 | **NÚCLEO INFINITO** | 4 fases, o mais duro da primeira volta |
+| 9 | 50 | **TITÃ DE FERRO** | lento e gigante (raio 96): investida, parede e minas |
+| 10 | 60 | **CORTEJO DE VIDRO** | losango rápido: cruz giratória e precisão, teleportando |
+| 11 | 70 | **RAINHA ESTÁTICA** | laser e caçador; movimento caótico |
+| 12 | 80 | **ABISMO CARMESIM** | cerco colado, anel atrás de anel e invocação |
+| 13 | 90 | **ÚLTIMO ARAUTO** | 4 fases, bala 1,35× mais rápida — o ensaio do CEIFADOR |
 
 ## Arquitetura
 
