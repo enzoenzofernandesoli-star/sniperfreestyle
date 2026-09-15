@@ -76,6 +76,12 @@ function codigoNovo() {
   do { valor = crypto.randomBytes(4).toString('hex').toUpperCase(); } while (salas.has(valor));
   return valor;
 }
+// Código escolhido pelo anfitrião: aceita só o que cabe num convite falado em
+// voz alta, e nunca rouba o código de uma sala que já existe.
+function codigoPedido(bruto) {
+  const limpo = String(bruto || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  return /^[A-Z0-9]{4,8}$/.test(limpo) ? limpo : null;
+}
 // janela deslizante de 1 segundo: se estourar, a mensagem é descartada em vez
 // de derrubar a conexão — perder um comando é melhor que perder o jogador.
 function passouDoLimite(cliente, chave, limite) {
@@ -112,7 +118,13 @@ wss.on('connection', (cliente) => {
     if (!dados || typeof dados.tipo !== 'string') return;
 
     if (dados.tipo === 'criar' && !cliente.sala) {
-      const sala = { codigo: codigoNovo(), anfitriao: cliente, convidados: new Set(), criada: Date.now() };
+      let codigo = codigoNovo();
+      if (dados.codigo !== undefined && dados.codigo !== '') {
+        codigo = codigoPedido(dados.codigo);
+        if (!codigo) { enviar(cliente, { tipo: 'erro', mensagem: 'Código inválido: use de 4 a 8 letras ou números.' }); return; }
+        if (salas.has(codigo)) { enviar(cliente, { tipo: 'erro', mensagem: 'Esse código já está em uso. Escolha outro.' }); return; }
+      }
+      const sala = { codigo, anfitriao: cliente, convidados: new Set(), criada: Date.now() };
       salas.set(sala.codigo, sala);
       cliente.sala = sala;
       enviar(cliente, { tipo: 'criada', codigo: sala.codigo });
@@ -124,8 +136,19 @@ wss.on('connection', (cliente) => {
       cliente.sala = sala;
       sala.convidados.add(cliente);
       enviar(cliente, { tipo: 'entrou', id: cliente.id, codigo: sala.codigo });
-      enviar(sala.anfitriao, { tipo: 'entrou', id: cliente.id,
+      enviar(sala.anfitriao, { tipo: 'entrou', id: cliente.id, nome: String(dados.nome || '').slice(0, 12) });
+
+    } else if (dados.tipo === 'pronto' && cliente.sala && !anfitriaoDaSala) {
+      // convidado avisa ao anfitrião com que classe e skin quer entrar na arena
+      enviar(cliente.sala.anfitriao, { tipo: 'pronto', id: cliente.id,
         classe: String(dados.classe || ''), skin: String(dados.skin || ''), nome: String(dados.nome || '').slice(0, 12) });
+
+    } else if ((dados.tipo === 'lobby' || dados.tipo === 'comecou') && anfitriaoDaSala) {
+      // painel da sala e largada saem do anfitrião; o servidor só repassa
+      const pacote = dados.tipo === 'lobby'
+        ? { tipo: 'lobby', lista: Array.isArray(dados.lista) ? dados.lista.slice(0, 4) : [] }
+        : { tipo: 'comecou' };
+      for (const convidado of cliente.sala.convidados) enviar(convidado, pacote);
 
     } else if (dados.tipo === 'controle' && cliente.sala && !anfitriaoDaSala) {
       if (passouDoLimite(cliente, 'controle', LIMITE_CONTROLE)) return;

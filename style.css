@@ -60,7 +60,7 @@ body { width: 100%; }
   touch-action: none;
 }
 
-.sala-convite, .sala-status { color: #8fe3ff; font: 600 15px Rajdhani, sans-serif; }
+.sala-rotulo, .sala-status { color: #8fe3ff; font: 600 15px Rajdhani, sans-serif; letter-spacing: .1em; }
 .sala-codigo { width: 100%; padding: 10px 12px; color: #fff; background: #0c1020; border: 1px solid #45789c; border-radius: 5px; font: 700 18px Rajdhani, sans-serif; text-transform: uppercase; }
 .sala-status { min-height: 22px; overflow-wrap: anywhere; }
 .bt-sair-sala { display: none; pointer-events: auto; padding: 4px 10px; color: #ffb3c0; background: #2a0d16; border: 1px solid #7d2b3f; border-radius: 4px; font: 700 12px Rajdhani, sans-serif; letter-spacing: .06em; cursor: pointer; }
@@ -78,6 +78,24 @@ body { width: 100%; }
 .eq-vida > i { display: block; height: 100%; background: linear-gradient(90deg, #ff4d6d, #ffd34d); }
 
 @media (max-height: 560px) { .sala-equipe { display: none; } }
+
+/* ------------------------------ Tela da sala ---------------------------- */
+.sala-painel { display: grid; gap: 14px; width: min(440px, 88vw); }
+.sala-bloco { display: grid; gap: 10px; padding: 16px; background: rgba(8, 14, 30, .72); border: 1px solid #244a68; border-radius: 8px; }
+.sala-bloco[hidden] { display: none; }
+.sala-linha { display: flex; gap: 8px; align-items: center; }
+.sala-linha .sala-codigo { flex: 1; }
+.sala-dica { color: #8aa6bd; font: 500 13px Rajdhani, sans-serif; line-height: 1.35; }
+.sala-codigo-grande { flex: 1; padding: 8px 12px; color: #dcff46; background: #0c1020; border: 1px dashed #5c8fae; border-radius: 5px; font: 900 26px Orbitron, Rajdhani, sans-serif; letter-spacing: .18em; text-align: center; }
+.sala-lista { display: grid; gap: 6px; }
+.sala-vaga { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 10px; background: #0c1526; border: 1px solid #1d3550; border-radius: 5px; color: #cfe8f5; font: 600 14px Rajdhani, sans-serif; }
+.sala-vaga.esperando { color: #8aa6bd; }
+.sala-vaga b { color: #dcff46; font-weight: 700; }
+.sala-vaga span { font-size: 12px; letter-spacing: .08em; opacity: .8; }
+.sala-avancado { color: #6f8ba3; font: 600 12px Rajdhani, sans-serif; letter-spacing: .1em; }
+.sala-avancado summary { cursor: pointer; padding: 4px 0; }
+.sala-avancado .servidor { margin-top: 8px; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.sala-avancado .sala-dica { margin-top: 6px; }
 
 #scanlines {
   position: absolute;

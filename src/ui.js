@@ -43,7 +43,10 @@ const UI = {
       toqueUlt: g('btToqueUlt'),
       listaMelhoriasAtivas: g('listaMelhoriasAtivas'),
       salaEquipe: g('salaEquipe'),
-      salaEspera: g('salaEspera')
+      salaEspera: g('salaEspera'),
+      listaSala: g('listaSala'),
+      codigoSala: g('codigoSala'),
+      salaAviso: g('salaAviso')
     };
 
     UI.montarClasses();
@@ -54,21 +57,20 @@ const UI = {
     UI.montarRecordes();
 
     g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
-    g('btCriarSala').onclick = () => { Coop.intencao = 'criar'; UI.mostrarTela('classes'); };
-    g('btEntrarSala').onclick = () => {
-      const codigo = g('campoCodigo').value.trim().toUpperCase();
-      if (!/^[A-F0-9]{8}$/.test(codigo)) { Coop.status('Digite código de 8 caracteres.'); return; }
-      Coop.codigo = codigo;
-      Coop.intencao = 'entrar';
-      UI.mostrarTela('classes');
-    };
+    g('btCriarSala').onclick = () => { Som.clique(); UI.abrirSala('criar'); };
+    g('btEntrarSala').onclick = () => { Som.clique(); UI.abrirSala('entrar'); };
     g('btSairSala').onclick = () => { Som.clique(); Coop.sair(); };
+    UI.ligarSala();
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
     g('btRecordes').onclick = () => { Som.clique(); UI.montarRecordes(); UI.montarMundial(); UI.mostrarTela('recordes'); };
 
     document.querySelectorAll('[data-voltar]').forEach((b) => {
-      b.onclick = () => { Som.clique(); UI.mostrarTela('menu'); };
+      b.onclick = () => {
+        Som.clique();
+        if (Coop.ativo()) Coop.sair();      // sair da tela da sala solta a conexao
+        UI.mostrarTela('menu');
+      };
     });
 
     g('btPausar').onclick = () => { Som.clique(); Jogo.pausar(); };
@@ -184,10 +186,14 @@ const UI = {
       card.querySelector('.cc-jogar').onclick = () => {
         Som.clique();
         Som.destravar();
-        if (Coop.intencao === 'criar') Coop.criar(c.id, escolhas[c.id]);
-        else if (Coop.intencao === 'entrar') Coop.entrar(c.id, escolhas[c.id]);
-        else Jogo.novoJogo(c.id, escolhas[c.id]);
         UI.el.classeNome.textContent = c.nome;
+        // Na sala a classe só é anotada: quem dá a largada é o anfitrião.
+        if (Coop.intencao === 'sala') {
+          Coop.escolherClasse(c.id, escolhas[c.id]);
+          UI.mostrarTela('sala');
+          return;
+        }
+        Jogo.novoJogo(c.id, escolhas[c.id]);
       };
       UI.el.gradeClasses.appendChild(card);
     });
@@ -413,6 +419,91 @@ const UI = {
 
   /* Mostra se a run foi pro placar mundial (e repinta quando a resposta chega). */
   /* --------------------------- Cooperativo --------------------------- */
+  // Painel da sala: criar com código escolhido, entrar com o código do amigo,
+  // ver quem já está dentro e só então começar.
+  ligarSala() {
+    const g = (id) => document.getElementById(id);
+    g('btSortearCodigo').onclick = () => { Som.clique(); g('campoCodigoNovo').value = Coop.codigoSugerido(); };
+    g('btAbrirSala').onclick = () => {
+      const codigo = UI.codigoDigitado(g('campoCodigoNovo'));
+      if (!codigo) { Coop.status('Código inválido: use de 4 a 8 letras ou números.'); return; }
+      Som.clique();
+      Coop.abrir(codigo);
+    };
+    g('btConectarSala').onclick = () => {
+      const codigo = UI.codigoDigitado(g('campoCodigoEntrar'));
+      if (!codigo) { Coop.status('Digite o código da sala (4 a 8 letras ou números).'); return; }
+      Som.clique();
+      Coop.entrar(codigo);
+    };
+    g('btCopiarCodigo').onclick = () => {
+      Som.clique();
+      const texto = Coop.codigo || '';
+      if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => Coop.status('Código copiado: ' + texto), () => Coop.status('Copie na mão: ' + texto));
+      else Coop.status('Copie na mão: ' + texto);
+    };
+    g('btMinhaClasse').onclick = () => { Som.clique(); Coop.intencao = 'sala'; UI.mostrarTela('classes'); };
+    g('btComecarSala').onclick = () => { Som.clique(); Som.destravar(); Coop.comecar(); };
+
+    const servidor = g('campoServidor');
+    servidor.value = Coop.servidorSalvo();
+    servidor.onchange = () => {
+      Coop.guardarServidor(servidor.value.trim());
+      Coop.status(servidor.value.trim() ? 'Servidor de salas salvo neste aparelho.' : 'Voltou a usar o servidor deste endereço.');
+    };
+  },
+
+  codigoDigitado(campo) {
+    const valor = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    campo.value = valor;
+    return /^[A-Z0-9]{4,8}$/.test(valor) ? valor : '';
+  },
+
+  abrirSala(modo) {
+    UI.modoSala = modo;
+    if (modo === 'criar' && !document.getElementById('campoCodigoNovo').value) {
+      document.getElementById('campoCodigoNovo').value = Coop.codigoSugerido();
+    }
+    Coop.status('');
+    UI.mostrarTela('sala');
+    UI.montarSala();
+  },
+
+  montarSala() {
+    const g = (id) => document.getElementById(id);
+    if (!g('blocoSala')) return;
+    const dentro = Coop.fase === 'sala' || Coop.fase === 'partida';
+    g('blocoCriar').hidden = dentro || UI.modoSala !== 'criar';
+    g('blocoEntrar').hidden = dentro || UI.modoSala !== 'entrar';
+    g('blocoSala').hidden = !dentro;
+    g('salaTitulo').textContent = dentro
+      ? (Coop.anfitriao() ? 'SUA SALA' : 'SALA DO ANFITRIÃO')
+      : (UI.modoSala === 'entrar' ? 'ENTRAR NUMA SALA' : 'CRIAR UMA SALA');
+    if (!dentro) return;
+
+    UI.el.codigoSala.textContent = Coop.codigo || '------';
+    const nomeClasse = (id) => (CLASSES.find((c) => c.id === id) || {}).nome || '';
+    const minha = Coop.minhaClasse ? nomeClasse(Coop.minhaClasse) : '';
+    g('btMinhaClasse').textContent = minha ? 'TROCAR CLASSE (' + minha + ')' : 'ESCOLHER MINHA CLASSE';
+    g('btComecarSala').hidden = !Coop.anfitriao();
+
+    const lista = Coop.listaSala.length ? Coop.listaSala : [{ id: 'anfitriao', nome: Perfil.exibir().toUpperCase(), classe: Coop.minhaClasse, anfitriao: true }];
+    let html = '';
+    for (const m of lista) {
+      const classe = m.classe ? nomeClasse(m.classe) : 'escolhendo classe…';
+      html += '<div class="sala-vaga' + (m.classe ? '' : ' esperando') + '">'
+        + '<b>' + UI.escapar(m.nome || 'COLEGA') + (m.anfitriao ? ' · ANFITRIÃO' : '') + '</b>'
+        + '<span>' + UI.escapar(classe.toUpperCase()) + '</span></div>';
+    }
+    for (let i = lista.length; i < Coop.MAX_JOGADORES; i++) {
+      html += '<div class="sala-vaga esperando"><b>VAGA LIVRE</b><span>—</span></div>';
+    }
+    UI.el.listaSala.innerHTML = html;
+    UI.el.salaAviso.textContent = Coop.anfitriao()
+      ? (Coop.minhaClasse ? 'Comece quando quiser: quem entrar depois cai direto na arena.' : 'Escolha sua classe para poder começar.')
+      : (Coop.minhaClasse ? 'Pronto. Esperando o anfitrião começar a partida.' : 'Escolha sua classe para entrar na arena quando começar.');
+  },
+
   // Painel de equipe: quem está na arena, com que classe e com quanta vida.
   // Serve aos dois lados — o convidado monta a partir do snapshot recebido.
   montarEquipe() {

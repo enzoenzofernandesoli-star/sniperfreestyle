@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8123"],
       "port": 8123
+    },
+    {
+      "name": "salas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["servidor/salas.js", "8131"],
+      "port": 8131
     }
   ]
 }

@@ -23,9 +23,53 @@ Ele roda o jogo na própria máquina. Enquanto for sala privada entre amigos, tu
 No dia em que a pontuação cooperativa valer ranking público, a simulação precisa sair
 do navegador — e aí o trabalho do plano original volta à mesa.
 
+## Como a sala funciona na tela
+
+O menu tem **CRIAR SALA** e **ENTRAR NA SALA**; os dois abrem a tela `data-tela="sala"`.
+
+1. Quem cria vê um código sugerido, já editável — pode digitar o que quiser (4 a 8
+   letras ou números) ou sortear outro — e clica em ABRIR A SALA.
+2. A sala abre na hora, antes de qualquer escolha de classe, e o código fica grande na
+   tela com um botão COPIAR. É esse código que o amigo digita em ENTRAR NA SALA.
+3. Quem entra aparece no painel da sala dos dois lados, com nome e classe. Enquanto
+   não escolher classe, a linha dele fica como "escolhendo classe…".
+4. A largada é do anfitrião: COMEÇAR A PARTIDA só aparece para ele, e só funciona
+   depois que ele escolheu a própria classe.
+5. Quem entrar com a partida já rolando não espera nada: assim que escolhe a classe,
+   o anfitrião cria a nave e manda o snapshot — o convidado cai direto na arena.
+
+O painel da sala é publicado pelo anfitrião (mensagem `lobby`), como todo o resto: o
+servidor não sabe quem está na sala além das conexões que precisa encaminhar.
+
+### Mensagens do protocolo
+
+| Mensagem | Direção | Para quê |
+|---|---|---|
+| `criar {codigo?}` | anfitrião → servidor | abre a sala; sem código o servidor sorteia um |
+| `criada {codigo}` | servidor → anfitrião | código confirmado |
+| `entrar {codigo, nome}` | convidado → servidor | entra na sala, ainda sem classe |
+| `entrou {id, nome}` | servidor → os dois | avisa quem chegou |
+| `pronto {classe, skin}` | convidado → anfitrião | escolheu classe |
+| `lobby {lista}` | anfitrião → convidados | painel da sala |
+| `comecou` | anfitrião → convidados | largada |
+| `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s |
+
+## Jogar pela internet, não só na rede local
+
+O servidor de salas é WebSocket e precisa de um processo vivo. **A Vercel não hospeda
+isso**: no `sniperfreestyle.vercel.app` o jogo abre, mas a sala não conecta. Duas
+saídas:
+
+- **Mesma rede**: rode `npm run salas` e todo mundo abre o IP da máquina, ex.
+  `http://192.168.0.10:8123`. Funciona sem mais nada.
+- **Pela internet**: suba `servidor/salas.js` em qualquer host que aceite WebSocket
+  (Render, Railway, Fly, uma VPS) e cole o endereço em SERVIDOR DE SALAS (AVANÇADO),
+  na tela da sala — ex. `wss://salas-sniper.onrender.com/sala`. Fica salvo no
+  aparelho (`sniper.coopServidor`) e vale para o site publicado também.
+
 ## O que está pronto
 
-- Salas privadas por código de convite, 2 a 4 pessoas na mesma arena.
+- Salas privadas por código de convite escolhido pelo anfitrião, 2 a 4 pessoas.
 - Cada um escolhe classe e skin; todos veem as mesmas ondas, inimigos, bosses,
   projéteis e coletáveis, com os mesmos números.
 - Comando do convidado (movimento, mira, tiro, dash, escudo, ult) sobe a 30/s; o

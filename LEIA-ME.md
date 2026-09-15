@@ -12,6 +12,9 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 - Arena de 1280×720 unidades, toda visível de uma vez: a câmera fica no centro
   e só treme e dá zoom, nunca acompanha o jogador. No celular a renderização
   interna cai para 960×540 para preservar desempenho.
+- Cooperativo: CRIAR SALA abre a tela da sala com código editável e lista de quem
+  está dentro; ENTRAR NA SALA pede o código do anfitrião. Detalhes e limites em
+  `COOPERATIVO.md`.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
 - Migração `banco/migracoes/001_placar_40_ondas.sql` aplicada em 14/09/2026 no

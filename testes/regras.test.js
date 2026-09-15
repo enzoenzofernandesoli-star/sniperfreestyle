@@ -339,6 +339,42 @@ test('serviço de salas encaminha comandos, lota em 4 e recusa o quinto', async 
     s.on('open', () => ok(s));
   });
 
+  // código escolhido pelo anfitrião: aceito uma vez, recusado em duplicata
+  const dono = await abrir();
+  dono.send(JSON.stringify({ tipo: 'criar', codigo: 'enzo01' }));
+  assert.equal((await dono.esperar('criada')).codigo, 'ENZO01');
+
+  const clone = await abrir();
+  clone.send(JSON.stringify({ tipo: 'criar', codigo: 'ENZO01' }));
+  assert.match((await clone.esperar('erro')).mensagem, /já está em uso/);
+  clone.send(JSON.stringify({ tipo: 'criar', codigo: 'A!' }));
+  assert.match((await clone.esperar('erro')).mensagem, /inválido/);
+  clone.close();
+
+  // painel da sala: convidado entra sem classe, avisa a classe depois e só
+  // entra na arena quando o anfitrião manda começar
+  const cedo = await abrir();
+  cedo.send(JSON.stringify({ tipo: 'entrar', codigo: 'ENZO01', nome: 'ANA' }));
+  assert.equal((await cedo.esperar('entrou')).codigo, 'ENZO01');
+  assert.equal((await dono.esperar('entrou')).nome, 'ANA');
+
+  cedo.send(JSON.stringify({ tipo: 'pronto', classe: 'guardiao', skin: 'padrao', nome: 'ANA' }));
+  assert.equal((await dono.esperar('pronto')).classe, 'guardiao');
+
+  dono.send(JSON.stringify({ tipo: 'lobby', lista: [{ id: 'anfitriao', nome: 'EU' }, { id: 'x', nome: 'ANA' }] }));
+  assert.equal((await cedo.esperar('lobby')).lista.length, 2);
+  dono.send(JSON.stringify({ tipo: 'comecou' }));
+  assert.equal((await cedo.esperar('comecou')).tipo, 'comecou');
+
+  // convidado não dá largada nem publica painel: só o anfitrião
+  cedo.send(JSON.stringify({ tipo: 'comecou' }));
+  cedo.send(JSON.stringify({ tipo: 'lobby', lista: [] }));
+  dono.send(JSON.stringify({ tipo: 'estado', estado: { onda: 1 } }));
+  assert.equal((await cedo.esperar('estado')).estado.onda, 1, 'nada do convidado voltou como comando de sala');
+
+  cedo.close();
+  dono.close();
+
   const anfitriao = await abrir();
   anfitriao.send(JSON.stringify({ tipo: 'criar' }));
   const criada = await anfitriao.esperar('criada');
@@ -347,7 +383,7 @@ test('serviço de salas encaminha comandos, lota em 4 e recusa o quinto', async 
   const convidados = [];
   for (let i = 0; i < 3; i++) {
     const c = await abrir();
-    c.send(JSON.stringify({ tipo: 'entrar', codigo: criada.codigo, classe: 'sniper', skin: 'padrao', nome: 'P' + i }));
+    c.send(JSON.stringify({ tipo: 'entrar', codigo: criada.codigo, nome: 'P' + i }));
     const entrou = await c.esperar('entrou');
     assert.ok(entrou.id, 'convidado recebe um id');
     await anfitriao.esperar('entrou');
@@ -356,7 +392,7 @@ test('serviço de salas encaminha comandos, lota em 4 e recusa o quinto', async 
   assert.equal(salas.get(criada.codigo).convidados.size, 3);
 
   const quinto = await abrir();
-  quinto.send(JSON.stringify({ tipo: 'entrar', codigo: criada.codigo, classe: 'sniper', skin: 'padrao', nome: 'X' }));
+  quinto.send(JSON.stringify({ tipo: 'entrar', codigo: criada.codigo, nome: 'X' }));
   const erro = await quinto.esperar('erro');
   assert.match(erro.mensagem, /cheia/);
 

@@ -105,9 +105,7 @@
       <p class="subtitulo">4 classes · 12 skins · 7 tipos de inimigo · 8 bosses com fases · 22 melhorias · 40 ondas</p>
       <div class="menu-botoes">
         <button id="btJogar" class="bt principal">JOGAR</button>
-        <button id="btCriarSala" class="bt">CRIAR SALA COOPERATIVA</button>
-        <label class="sala-convite" for="campoCodigo">CÓDIGO DA SALA</label>
-        <input id="campoCodigo" class="sala-codigo" maxlength="8" placeholder="EX.: A1B2C3D4" autocomplete="off" spellcheck="false" />
+        <button id="btCriarSala" class="bt">CRIAR SALA</button>
         <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
         <button id="btComoJogar" class="bt">COMO JOGAR</button>
         <button id="btRecordes" class="bt">RECORDES</button>
@@ -133,6 +131,54 @@
     </div>
     <div id="gradeClasses" class="grade-classes"></div>
     <p class="dica-arraste">◂ ARRASTE PARA VER AS 4 CLASSES ▸</p>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- SALA COOPERATIVA -->
+  <section class="tela" data-tela="sala">
+    <div class="cabecalho-tela">
+      <h2 id="salaTitulo">SALA COOPERATIVA</h2>
+      <p>Até 4 jogadores na mesma arena. Quem abre a sala hospeda a partida.</p>
+    </div>
+
+    <div class="sala-painel">
+      <div class="sala-bloco" id="blocoCriar" hidden>
+        <label class="sala-rotulo" for="campoCodigoNovo">CÓDIGO DA SALA</label>
+        <div class="sala-linha">
+          <input id="campoCodigoNovo" class="sala-codigo" maxlength="8" autocomplete="off" spellcheck="false" />
+          <button id="btSortearCodigo" class="bt fantasma" title="Sortear outro código">SORTEAR</button>
+        </div>
+        <p class="sala-dica">De 4 a 8 letras ou números. É esse código que seus amigos vão digitar.</p>
+        <button id="btAbrirSala" class="bt principal">ABRIR A SALA</button>
+      </div>
+
+      <div class="sala-bloco" id="blocoEntrar" hidden>
+        <label class="sala-rotulo" for="campoCodigoEntrar">CÓDIGO DO ANFITRIÃO</label>
+        <input id="campoCodigoEntrar" class="sala-codigo" maxlength="8" placeholder="EX.: K7M2PQ" autocomplete="off" spellcheck="false" />
+        <p class="sala-dica">Peça o código para quem abriu a sala.</p>
+        <button id="btConectarSala" class="bt principal">ENTRAR</button>
+      </div>
+
+      <div class="sala-bloco" id="blocoSala" hidden>
+        <span class="sala-rotulo">CÓDIGO PARA CONVIDAR</span>
+        <div class="sala-linha">
+          <b id="codigoSala" class="sala-codigo-grande">------</b>
+          <button id="btCopiarCodigo" class="bt fantasma">COPIAR</button>
+        </div>
+        <div id="listaSala" class="sala-lista"></div>
+        <button id="btMinhaClasse" class="bt">ESCOLHER MINHA CLASSE</button>
+        <button id="btComecarSala" class="bt principal">COMEÇAR A PARTIDA</button>
+        <p id="salaAviso" class="sala-dica"></p>
+      </div>
+
+      <details class="sala-avancado">
+        <summary>SERVIDOR DE SALAS (AVANÇADO)</summary>
+        <input id="campoServidor" class="sala-codigo servidor" placeholder="wss://meu-servidor/sala" autocomplete="off" spellcheck="false" />
+        <p class="sala-dica">Vazio usa o servidor do próprio endereço onde o jogo está aberto. O site na Vercel não hospeda salas: para jogar online por lá, rode <b>npm run salas</b> em um servidor com WebSocket e cole aqui o endereço dele.</p>
+      </details>
+    </div>
+
+    <p id="salaStatusTela" class="sala-status" role="status" aria-live="polite"></p>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 

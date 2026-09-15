@@ -22,7 +22,12 @@ const Coop = {
 
   papel: null,            // 'anfitriao' | 'convidado' | null
   intencao: null,         // o que o menu pediu antes de escolher a classe
+  fase: 'fora',           // 'fora' | 'sala' (painel aberto) | 'partida'
   codigo: '',
+  minhaClasse: '',
+  minhaSkin: '',
+  partidaComecou: false,
+  listaSala: [],
   id: '',
   classe: '',
   skin: '',
@@ -50,7 +55,7 @@ const Coop = {
   /* ------------------------------ Avisos ----------------------------- */
   status(texto) {
     Coop.ultimoStatus = texto;
-    for (const id of ['salaStatus', 'salaHud']) {
+    for (const id of ['salaStatus', 'salaHud', 'salaStatusTela']) {
       const el = document.getElementById(id);
       if (el) el.textContent = texto;
     }
@@ -65,9 +70,30 @@ const Coop = {
   },
 
   /* ---------------------------- Transporte --------------------------- */
+  // O site publicado na Vercel nao hospeda WebSocket: quem quiser jogar fora da
+  // rede local aponta aqui para o endereco onde roda o `npm run salas`.
+  servidorSalvo() {
+    try { return localStorage.getItem('sniper.coopServidor') || ''; } catch { return ''; }
+  },
+  guardarServidor(valor) {
+    try {
+      if (valor) localStorage.setItem('sniper.coopServidor', valor);
+      else localStorage.removeItem('sniper.coopServidor');
+    } catch { /* navegador sem storage: vale so nesta sessao */ }
+  },
   endereco() {
+    const escolhido = Coop.servidorSalvo();
+    if (escolhido) return escolhido;
     if (window.COOP_URL) return window.COOP_URL;
     return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/sala';
+  },
+  // Codigo sugerido para o anfitriao editar antes de abrir a sala. Sem I, O, 0
+  // e 1, que viram engano quando alguem dita o convite em voz alta.
+  codigoSugerido() {
+    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let valor = '';
+    for (let i = 0; i < 6; i++) valor += letras[Math.floor(Math.random() * letras.length)];
+    return valor;
   },
   conectar(aoAbrir) {
     if (Coop.conexao) { Coop.conexao.onclose = null; Coop.conexao.close(); }
@@ -98,6 +124,9 @@ const Coop = {
     const era = Coop.papel;
     Coop.papel = null;
     Coop.intencao = null;
+    Coop.fase = 'fora';
+    Coop.partidaComecou = false;
+    Coop.listaSala = [];
     Coop.equipe.clear();
     Coop.controlesRemotos.clear();
     Jogo.outros.clear();
@@ -112,21 +141,72 @@ const Coop = {
   sair() { Coop.encerrar('Você saiu da sala.'); },
 
   /* ------------------------------ Entrada ---------------------------- */
-  criar(classe, skin) {
+  // O anfitriao abre a sala ANTES de escolher classe: o codigo aparece na hora
+  // e ele ja tem o que mandar para os amigos enquanto decide com quem jogar.
+  abrir(codigo) {
+    if (Coop.papel) return;
     Coop.papel = 'anfitriao';
+    Coop.codigo = codigo || '';
+    Coop.partidaComecou = false;
     Coop.equipe.clear();
-    Coop.equipe.set('anfitriao', { nome: Perfil.exibir(), classe, skin });
-    Jogo.novoJogo(classe, skin);
-    Jogo.jogador.nome = Perfil.exibir().slice(0, 12).toUpperCase();
-    Coop.status('Criando sala…');
-    Coop.conectar(() => Coop.enviar({ tipo: 'criar' }));
+    Coop.equipe.set('anfitriao', { nome: Perfil.exibir(), classe: Coop.minhaClasse, skin: Coop.minhaSkin });
+    Coop.status('Abrindo a sala...');
+    Coop.conectar(() => Coop.enviar({ tipo: 'criar', codigo: Coop.codigo }));
   },
-  entrar(classe, skin) {
+  entrar(codigo) {
+    if (Coop.papel) return;
     Coop.papel = 'convidado';
-    Coop.classe = classe;
-    Coop.skin = skin;
-    Coop.status('Entrando na sala…');
-    Coop.conectar(() => Coop.enviar({ tipo: 'entrar', codigo: Coop.codigo, classe, skin, nome: Perfil.exibir() }));
+    Coop.codigo = codigo;
+    Coop.partidaComecou = false;
+    Coop.status('Entrando na sala...');
+    Coop.conectar(() => Coop.enviar({ tipo: 'entrar', codigo: Coop.codigo, nome: Perfil.exibir() }));
+  },
+
+  // Classe escolhida dentro da sala: o convidado avisa o anfitriao, o anfitriao
+  // guarda para si. Ninguem entra na arena so por escolher.
+  escolherClasse(classe, skin) {
+    Coop.minhaClasse = classe;
+    Coop.minhaSkin = skin;
+    if (Coop.anfitriao()) {
+      Coop.equipe.set('anfitriao', { nome: Perfil.exibir(), classe, skin });
+      Coop.publicarLista();
+    } else if (Coop.convidado()) {
+      Coop.enviar({ tipo: 'pronto', classe, skin, nome: Perfil.exibir() });
+    }
+    UI.montarSala();
+  },
+
+  // Largada: o anfitriao monta a partida, cria a nave de quem ja escolheu
+  // classe e so entao avisa a sala.
+  comecar() {
+    if (!Coop.anfitriao() || Coop.partidaComecou) return;
+    if (!Coop.minhaClasse) { Coop.status('Escolha sua classe antes de comecar.'); return; }
+    Coop.partidaComecou = true;
+    Jogo.novoJogo(Coop.minhaClasse, Coop.minhaSkin);
+    Jogo.jogador.nome = Perfil.exibir().slice(0, 12).toUpperCase();
+    for (const [id, membro] of Coop.equipe) {
+      if (id === 'anfitriao' || !membro.classe) continue;
+      Coop.criarNave(id, membro);
+    }
+    Coop.fase = 'partida';
+    Jogo.estado = 'jogando';
+    UI.mostrarTela(null);
+    Coop.enviar({ tipo: 'comecou' });
+    Coop.statusSala();
+    UI.montarEquipe();
+    Coop.enviarEstado(performance.now(), true);
+  },
+
+  // Lista da sala: o anfitriao e a fonte, o convidado so recebe e desenha.
+  publicarLista() {
+    if (!Coop.anfitriao()) return;
+    const lista = [];
+    for (const [id, m] of Coop.equipe) {
+      lista.push({ id, nome: (m.nome || 'COLEGA').toUpperCase(), classe: m.classe || '', anfitriao: id === 'anfitriao' });
+    }
+    Coop.listaSala = lista;
+    Coop.enviar({ tipo: 'lobby', lista });
+    UI.montarSala();
   },
 
   /* ----------------------------- Mensagens --------------------------- */
@@ -134,13 +214,38 @@ const Coop = {
     switch (dados.tipo) {
       case 'criada':
         Coop.codigo = dados.codigo;
-        Coop.statusSala();
-        UI.montarEquipe();
+        Coop.fase = 'sala';
+        Coop.status('Sala aberta. Passe o codigo para quem for jogar com voce.');
+        Coop.publicarLista();
+        UI.montarSala();
         break;
 
       case 'entrou':
-        if (Coop.anfitriao()) Coop.receberConvidado(dados);
-        else Coop.confirmarEntrada(dados);
+        if (Coop.anfitriao()) {
+          Coop.equipe.set(dados.id, { nome: String(dados.nome || 'COLEGA').toUpperCase(), classe: '', skin: '' });
+          if (Coop.partidaComecou) Jogo.aviso(String(dados.nome || 'COLEGA').toUpperCase() + ' ENTROU NA SALA');
+          Coop.publicarLista();
+          Coop.statusSala();
+        } else {
+          Coop.id = dados.id;
+          Coop.codigo = dados.codigo || Coop.codigo;
+          Coop.fase = 'sala';
+          Coop.status('Na sala ' + Coop.codigo + '. Escolha sua classe e espere o anfitriao comecar.');
+          UI.montarSala();
+          if (Coop.minhaClasse) Coop.enviar({ tipo: 'pronto', classe: Coop.minhaClasse, skin: Coop.minhaSkin, nome: Perfil.exibir() });
+        }
+        break;
+
+      case 'pronto':
+        if (Coop.anfitriao()) Coop.registrarPronto(dados);
+        break;
+
+      case 'lobby':
+        if (Coop.convidado()) { Coop.listaSala = Array.isArray(dados.lista) ? dados.lista : []; UI.montarSala(); }
+        break;
+
+      case 'comecou':
+        if (Coop.convidado() && !Coop.partidaComecou && Coop.minhaClasse) Coop.entrarNaArena();
         break;
 
       case 'controle':
@@ -160,7 +265,8 @@ const Coop = {
         Coop.equipe.delete(dados.id);
         Coop.statusSala();
         UI.montarEquipe();
-        Jogo.aviso('UM COLEGA SAIU DA SALA');
+        Coop.publicarLista();
+        if (Coop.partidaComecou) Jogo.aviso('UM COLEGA SAIU DA SALA');
         break;
 
       case 'erro':
@@ -177,7 +283,22 @@ const Coop = {
     }
   },
 
-  receberConvidado(dados) {
+  // Convidado avisou a classe: se a partida ja rola, entra na hora; se a sala
+  // ainda esta no painel, fica guardado ate o anfitriao dar a largada.
+  registrarPronto(dados) {
+    const atual = Coop.equipe.get(dados.id) || {};
+    const membro = { nome: String(dados.nome || atual.nome || 'COLEGA').toUpperCase(), classe: dados.classe, skin: dados.skin };
+    Coop.equipe.set(dados.id, membro);
+    if (Coop.partidaComecou && !Jogo.outros.has(dados.id)) {
+      Coop.criarNave(dados.id, membro);
+      Coop.enviar({ tipo: 'comecou' });
+      Coop.enviarEstado(performance.now(), true);
+    }
+    Coop.publicarLista();
+    Coop.statusSala();
+  },
+
+  criarNave(id, dados) {
     if (Jogo.outros.size + 1 >= Coop.MAX_JOGADORES) return;
     const classe = CLASSES.some((c) => c.id === dados.classe) ? dados.classe : 'sniper';
     const novo = new Jogador(classe, dados.skin);
@@ -187,18 +308,17 @@ const Coop = {
     novo.y = Mat.limitar(base.y + Math.sin(volta) * 90, 30, Jogo.ALTURA - 30);
     novo.invulneravel = 3;
     novo.nome = String(dados.nome || 'COLEGA').slice(0, 12).toUpperCase();
-    Jogo.outros.set(dados.id, novo);
-    Coop.equipe.set(dados.id, { nome: novo.nome, classe, skin: novo.skin.id });
+    Jogo.outros.set(id, novo);
+    Coop.equipe.set(id, { nome: novo.nome, classe, skin: novo.skin.id });
     Coop.statusSala();
     UI.montarEquipe();
     Jogo.aviso(novo.nome + ' ENTROU NA ARENA');
-    Coop.enviarEstado(performance.now(), true);
   },
 
-  confirmarEntrada(dados) {
-    Coop.id = dados.id;
-    Coop.codigo = dados.codigo || Coop.codigo;
-    Jogo.novoJogo(Coop.classe, Coop.skin);
+  entrarNaArena() {
+    Coop.partidaComecou = true;
+    Coop.fase = 'partida';
+    Jogo.novoJogo(Coop.minhaClasse, Coop.minhaSkin);
     Jogo.jogador.nome = Perfil.exibir().slice(0, 12).toUpperCase();
     Jogo.inimigos.length = 0;
     Jogo.estado = 'jogando';
