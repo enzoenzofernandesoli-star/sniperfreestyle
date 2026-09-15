@@ -5,7 +5,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 
 ## A corrida
 
-- **100 ondas**, com boss a cada 5. Depois do oitavo a rotação recomeça em versões
+- **100 ondas**. Boss a cada 5 até a onda 40 e a cada 10 daí em diante. Depois do oitavo a rotação recomeça em versões
   ascendidas, mais resistentes — e a onda 100 é sempre o **CEIFADOR ABSOLUTO**,
   o boss final, que fica fora do rodízio.
 - **Teto de 6 corações.** Nenhuma classe, melhoria ou cura passa disso
@@ -150,7 +150,7 @@ entre todos.
 | 4 | `KAMIKAZE` | carrega, investe e explode por 2 |
 | 5 | `DIVISOR` | racha em 2 ao morrer |
 | 6 | `ORBITADOR` | circula e solta rajada tripla |
-| 7 | `COURAÇA` | bloqueia tiro pela frente, **2 de dano** (flanqueie ou ricocheteie) |
+| 7 | `COURAÇA` | escudo frontal **com vida própria** (70, mais a escala da onda; 1,8× no elite). Quebrou, ele acelera 25% e fica exposto |
 | 8 | `LANCEIRO` | para, mira e dispara o corpo em linha reta — 3 de dano na investida |
 | 9 | `TECELÃO` | espiral contínua de projéteis enquanto recua |
 | 10 | `FANTASMA` | teleporta para o lado do jogador |
@@ -220,7 +220,7 @@ outra.
 - Movimentos: investida, teleporte, cerco e caótico — um por fase, do mais lento
   ao mais rápido — somados a parede, caçador, minas, cruz, espiral, chuva e laser.
 
-## Bosses do rodízio (a cada 5 ondas, até a 95)
+## Bosses do rodízio (ondas 5 a 40 de 5 em 5, depois 50, 60, 70, 80 e 90)
 
 Três movimentos e quatro ataques novos entraram para o boss deixar de ser alvo
 parado que cospe bala:

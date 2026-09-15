@@ -26,7 +26,7 @@ if (!CONEXAO) {
   try { CONEXAO = require('./conexao-local.js'); } catch (e) { CONEXAO = ''; }
 }
 
-const CLASSES = ['SNIPER', 'GUARDIÃO', 'ESPECTRO', 'ARCANO'];
+const CLASSES = ['SNIPER', 'GUARDIÃO', 'ESPECTRO', 'ARCANO', 'INVOCADOR'];
 const PROIBIDAS = ['VIADO', 'PUTA', 'CARALHO', 'BUCETA', 'PORRA', 'FDP', 'MACACO', 'NAZI', 'HITLER'];
 
 function limparNome(valor) {
@@ -99,8 +99,8 @@ module.exports = async function (req, res) {
       return;
     }
 
-    const pontos = inteiro(corpo.pontos, 0, 2000000000);
-    const onda = inteiro(corpo.onda, 1, 9999);
+    const pontos = inteiro(corpo.pontos, 0, 5000000);
+    const onda = inteiro(corpo.onda, 1, 100);   // a corrida termina na onda 100
     const nivel = inteiro(corpo.nivel, 1, 99) || 1;
     const tempo = inteiro(corpo.tempo, 0, 86400);
     const abates = inteiro(corpo.abates, 0, 100000);

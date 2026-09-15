@@ -412,7 +412,7 @@ test('ricochete vertical também libera novo acerto', () => {
   assert.equal(resultado, true);
 });
 
-test('API aceita progresso infinito', async () => {
+test('API aceita até a onda 100, recusa além, e conhece o INVOCADOR', async () => {
   const Module = require('node:module');
   const carregar = Module._load;
   const consultas = [];
@@ -429,7 +429,7 @@ test('API aceita progresso infinito', async () => {
   try { api = require(path.join(raiz, 'api/placar.js')); }
   finally { Module._load = carregar; }
 
-  const responder = async (onda) => {
+  const responder = async (onda, classe) => {
     const resposta = {
       codigo: 0,
       setHeader() {},
@@ -437,14 +437,17 @@ test('API aceita progresso infinito', async () => {
       json(corpo) { this.corpo = corpo; return this; }
     };
     await api({ method: 'POST', body: {
-      nome: 'TESTE', pontos: 1000, classe: 'SNIPER', onda,
+      nome: 'TESTE', pontos: 1000, classe: classe || 'SNIPER', onda,
       nivel: 1, tempo: 60, abates: 5, venceu: false
     } }, resposta);
     return resposta;
   };
 
   assert.equal((await responder(40)).codigo, 201);
-  assert.equal((await responder(141)).codigo, 201);
+  assert.equal((await responder(100)).codigo, 201, 'a onda final entra no placar');
+  assert.equal((await responder(101)).codigo, 400, 'onda acima do teto é recusada');
+  assert.equal((await responder(40, 'INVOCADOR')).codigo, 201, 'a classe nova é aceita');
+  assert.equal((await responder(40, 'MAGO')).codigo, 400, 'classe inventada é recusada');
   assert.ok(consultas.some((consulta) => consulta.texto.includes('insert into public.placar_sobrecarga')));
 });
 
@@ -727,4 +730,42 @@ test('placar cai para o servidor de reserva quando o site está sem banco', asyn
   assert.equal(pedidos.length, 2, 'tentou o próprio site e só então a reserva');
   assert.ok(pedidos[1].startsWith('https://'), 'a segunda tentativa foi no endereço de reserva');
   assert.equal(vm.runInContext('Placar.usandoReserva', mundo), true);
+});
+
+test('boss é de 5 em 5 até a 40 e de 10 em 10 depois', () => {
+  const dados = vm.runInContext(`(() => {
+    const ondas = [];
+    for (let o = 1; o <= 100; o++) if (Jogo.ehOndaDeBoss(o)) ondas.push(o);
+    return { ondas, encontro40: Jogo.encontroDeBoss(40), encontro100: Jogo.encontroDeBoss(100),
+      passouDoFim: Jogo.ehOndaDeBoss(105) };
+  })()`, contexto);
+  const ondas = Array.from(dados.ondas);
+  assert.deepEqual(ondas.slice(0, 8), [5, 10, 15, 20, 25, 30, 35, 40], 'de 5 em 5 até a 40');
+  assert.deepEqual(ondas.slice(8), [50, 60, 70, 80, 90, 100], 'de 10 em 10 daí em diante');
+  assert.equal(dados.encontro40, 8, 'oito bosses até a onda 40');
+  assert.equal(dados.encontro100, 14, 'catorze encontros até o final');
+  assert.equal(dados.passouDoFim, false, 'não existe boss depois da onda 100');
+});
+
+test('escudo da couraça tem vida própria e quebra', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 10;
+    const couraca = new Inimigo('couraca', 300, 300, 1, false);
+    const elite = new Inimigo('couraca', 300, 300, 1, true);
+    const corredor = new Inimigo('corredor', 300, 300, 1, false);
+    const antes = { escudo: couraca.escudoVida, veloc: couraca.velocidade };
+    couraca.escudoVida = 0;
+    couraca.quebrarEscudo();
+    return { escudoComum: antes.escudo, escudoElite: elite.escudoVida, semEscudo: corredor.escudoVidaMax,
+      acelerou: couraca.velocidade > antes.veloc, depois: couraca.escudoVida };
+  })()`, mundo);
+  assert.ok(dados.escudoComum > 0, 'a couraça nasce com escudo');
+  assert.ok(dados.escudoElite > dados.escudoComum, 'elite carrega escudo reforçado');
+  assert.equal(dados.semEscudo, 0, 'quem não tem escudo continua sem');
+  assert.equal(dados.depois, 0);
+  assert.equal(dados.acelerou, true, 'ao perder o escudo o bicho fica mais rápido');
 });

@@ -915,7 +915,7 @@ const TIPOS_INIMIGO = {
   couraca: {
     nome: 'COURAÇA', cor: '#9aa7b5', cor2: '#3a4450', raio: 26, vida: 110, velocidade: 96,
     dano: 2, xp: 26, pontos: 40, lados: 4, comportamento: 'perseguir', desde: 7,
-    escudoFrontal: true
+    escudoFrontal: true, escudoVida: 70
   },
   // Da onda 8 em diante cada onda ainda estreia um jeito novo de atacar: não é
   // só mais bicho na tela, é um problema diferente para resolver.
@@ -973,6 +973,13 @@ class Inimigo {
     this.timerEstado = 0;
     this.fase = Math.random() * Mat.TAU;
     this.direcaoOrbita = Mat.chance(0.5) ? 1 : -1;
+    // Escudo da couraça: acompanha a escala da onda como a vida do corpo, e o
+    // elite carrega um escudo reforçado.
+    this.escudoVidaMax = t.escudoFrontal
+      ? (t.escudoVida || 60) * this.escala * Jogo.multiplicadorVida() * (this.elite ? 1.8 : 1)
+      : 0;
+    this.escudoVida = this.escudoVidaMax;
+    this.escudoFlash = 0;
   }
 
   atualizar(dt) {
@@ -982,6 +989,7 @@ class Inimigo {
       return;
     }
     this.flash = Math.max(0, this.flash - dt * 4);
+    if (this.escudoFlash > 0) this.escudoFlash = Math.max(0, this.escudoFlash - dt * 3);
     this.angulo += this.giro * dt;
     const j = Jogo.alvoJogador(this.x, this.y);
     if (!j) {
@@ -1196,6 +1204,18 @@ class Inimigo {
     Jogo.marcarMorte(this, false);
   }
 
+  // Escudo quebrado: anel de estilhaços, o bicho acelera de raiva e o jogador
+  // ganha o flanco de graça pelo resto da vida dele.
+  quebrarEscudo() {
+    if (this.escudoVida > 0) return;
+    this.escudoVida = 0;
+    this.velocidade *= 1.25;
+    this.escudoFlash = 0.4;
+    Particulas.anel(this.x, this.y, '#dfe9f5', this.raio * 1.6, 14);
+    Som.acerto();
+    Textos.criar(this.x, this.y - this.raio - 10, 'ESCUDO QUEBRADO', '#dfe9f5', 14);
+  }
+
   morrer(porTiro) {
     if (!this.vivo) return;
     this.vivo = false;
@@ -1281,17 +1301,19 @@ class Inimigo {
     ctx.fill();
     ctx.restore();
 
-    // escudo frontal da couraça
-    if (t.escudoFrontal) {
+    // escudo frontal da couraça: encolhe e escurece conforme apanha
+    if (t.escudoFrontal && this.escudoVida > 0 && Jogo.jogador) {
+      const p = Mat.limitar(this.escudoVida / this.escudoVidaMax, 0, 1);
       const angJog = Mat.anguloEntre(this.x, this.y, Jogo.jogador.x, Jogo.jogador.y);
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(angJog);
-      ctx.strokeStyle = '#dfe9f5';
-      ctx.lineWidth = 5;
+      ctx.globalAlpha = 0.35 + p * 0.65;
+      ctx.strokeStyle = this.escudoFlash > 0 ? '#ffffff' : '#dfe9f5';
+      ctx.lineWidth = 2 + p * 3;
       ctx.shadowBlur = Jogo.modoLeve ? 0 : 14; ctx.shadowColor = '#dfe9f5';
       ctx.beginPath();
-      ctx.arc(0, 0, this.raio + 8, -0.9, 0.9);
+      ctx.arc(0, 0, this.raio + 8, -0.9 * p, 0.9 * p);
       ctx.stroke();
       ctx.restore();
     }

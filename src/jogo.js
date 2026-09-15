@@ -130,7 +130,20 @@ const Jogo = {
   },
 
   /* ------------------------------ Ondas ------------------------------ */
-  ehOndaDeBoss(onda) { return onda % 5 === 0; },
+  // Boss a cada 5 ondas até a 40. Depois disso as ondas ficam longas demais
+  // para um boss a cada cinco: passa a ser de 10 em 10 — e a 100, o final.
+  ehOndaDeBoss(onda) {
+    if (onda > Jogo.TOTAL_ONDAS) return false;
+    return onda <= 40 ? onda % 5 === 0 : onda % 10 === 0;
+  },
+
+  // Quantos bosses já apareceram até esta onda (usado para escolher qual vem
+  // e para escalar a vida dele).
+  encontroDeBoss(onda) {
+    const ate40 = Math.floor(Math.min(onda, 40) / 5);
+    const depois = onda > 40 ? Math.floor((onda - 40) / 10) : 0;
+    return ate40 + depois;
+  },
 
   multiplicadorVida() {
     const depoisDe40 = Math.max(0, Jogo.onda - 40);
@@ -214,7 +227,7 @@ const Jogo = {
     // fora do rodízio das ondas múltiplas de 5.
     const rodizio = BOSSES.filter((b) => !b.final);
     const final = Jogo.onda >= Jogo.TOTAL_ONDAS;
-    const encontro = Math.floor(Jogo.onda / 5) - 1;
+    const encontro = Jogo.encontroDeBoss(Jogo.onda) - 1;
     const def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
     Jogo.boss = new Boss(def, Jogo.onda);
     Jogo.flashTela(final ? 0.9 : 0.5, def.cor);
@@ -488,13 +501,18 @@ const Jogo = {
         for (const e of Jogo.inimigos) {
           if (!e.vivo || b.atingidos.indexOf(e) >= 0) continue;
           if (Mat.distancia(b.x, b.y, e.x, e.y) < b.raio + e.raio) {
-            // couraça bloqueia tiro que vem de frente
-            if (e.def.escudoFrontal) {
+            // Couraça bloqueia tiro de frente — mas o escudo tem vida: cada
+            // tiro absorvido gasta uma parte dele, e quando quebra o bicho
+            // fica exposto pelo resto da onda.
+            if (e.def.escudoFrontal && e.escudoVida > 0) {
               const angDoTiro = Mat.anguloEntre(e.x, e.y, b.x, b.y);
               const angJog = Mat.anguloEntre(e.x, e.y, Jogo.jogador.x, Jogo.jogador.y);
               if (Math.abs(Mat.normalizarAngulo(angDoTiro - angJog)) < 0.9) {
+                e.escudoVida -= b.dano;
+                e.escudoFlash = 0.25;
                 Particulas.faisca(b.x, b.y, b.angulo + Math.PI, '#dfe9f5');
                 Som.acerto();
+                if (e.escudoVida <= 0) e.quebrarEscudo();
                 acabou = true;
                 break;
               }
