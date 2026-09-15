@@ -929,7 +929,7 @@ const TIPOS_INIMIGO = {
   couraca: {
     nome: 'COURAÇA', cor: '#9aa7b5', cor2: '#3a4450', raio: 26, vida: 110, velocidade: 96,
     dano: 2, xp: 26, pontos: 40, lados: 4, comportamento: 'perseguir', desde: 7,
-    escudoFrontal: true, escudoVida: 70
+    escudoFrontal: true, escudoVida: 26
   },
   // Da onda 8 em diante cada onda ainda estreia um jeito novo de atacar: não é
   // só mais bicho na tela, é um problema diferente para resolver.
@@ -990,7 +990,7 @@ class Inimigo {
     // Escudo da couraça: acompanha a escala da onda como a vida do corpo, e o
     // elite carrega um escudo reforçado.
     this.escudoVidaMax = t.escudoFrontal
-      ? (t.escudoVida || 60) * this.escala * Jogo.multiplicadorVida() * (this.elite ? 1.8 : 1)
+      ? (t.escudoVida || 26) * this.escala * Math.sqrt(Jogo.multiplicadorVida()) * (this.elite ? 1.4 : 1)
       : 0;
     this.escudoVida = this.escudoVidaMax;
     this.escudoFlash = 0;
@@ -1342,6 +1342,21 @@ class Inimigo {
       ctx.fillRect(this.x - largura / 2, this.y - this.raio - 12, largura * p, 5);
     }
 
+    // Barra do escudo, logo acima da de vida: dá para ver o escudo descendo a
+    // cada tiro em vez de adivinhar quanto falta para quebrar.
+    if (this.escudoVidaMax > 0 && this.escudoVida > 0) {
+      const largura = this.raio * 2;
+      const p = Mat.limitar(this.escudoVida / this.escudoVidaMax, 0, 1);
+      const y = this.y - this.raio - 20;
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      ctx.fillRect(this.x - largura / 2, y, largura, 5);
+      ctx.fillStyle = this.escudoFlash > 0 ? '#ffffff' : '#7fd4ff';
+      ctx.fillRect(this.x - largura / 2, y, largura * p, 5);
+      ctx.strokeStyle = 'rgba(160,220,255,.55)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(this.x - largura / 2, y, largura, 5);
+    }
+
     // Convite contextual. Só o jogador local vê; em cooperativo cada tela
     // calcula o próprio alcance, sem criar estado de jogo no convidado.
     const j = Jogo.jogador;
@@ -1465,12 +1480,20 @@ const BOSSES = [
 class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
-  static VIDA_EXTRA = 1.35;
-  static RITMO_ATAQUE = 0.9;    // < 1 = ataca mais vezes
+  static VIDA_EXTRA = 1.0;
+  static RITMO_ATAQUE = 1.15;   // < 1 = ataca mais vezes
   static FURIA_VIDA = 0.25;     // abaixo disso o boss acelera
   static FURIA_RITMO = 0.75;
   static DESESPERO_VIDA = 0.1;  // e no fim da barra ele perde o freio
   static DESESPERO_RITMO = 0.6;
+
+  // Rampa por encontro: o boss da onda 5 é uma aula e o da onda 90 é um muro.
+  // `dureza` vai de 0 (primeiro boss) a 1 (último antes do final) e controla
+  // ritmo de ataque e passo — sem isso o primeiro boss já vinha no talo.
+  static dureza(onda) {
+    const encontro = Jogo.encontroDeBoss ? Jogo.encontroDeBoss(onda) : Math.floor(onda / 5);
+    return Mat.limitar((encontro - 1) / 12, 0, 1);
+  }
 
   // A luta tem que crescer, não começar no talo: a primeira fase é de leitura
   // e cada fase seguinte aperta o ritmo e o passo do boss.
@@ -1489,6 +1512,8 @@ class Boss {
     this.ritmoAscensao = Math.max(0.72, 1 - this.ascensao * 0.035);
     this.impetoAscensao = Math.min(1.18, 1 + this.ascensao * 0.025);
     const escala = 1 + Math.min(encontro - 1, 7) * 0.13 + Math.pow(Math.max(0, encontro - 8), 0.78) * 0.09;
+    // Boss final ignora a rampa: ele é o teto, não um degrau.
+    this.dureza = def.final ? 1 : Boss.dureza(onda);
     this.vidaMax = def.vida * escala * Boss.VIDA_EXTRA;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
@@ -1554,7 +1579,9 @@ class Boss {
     this.furioso = this.porcentagem <= Boss.FURIA_VIDA;
     this.desesperado = this.porcentagem <= Boss.DESESPERO_VIDA;
     const passoFase = Boss.IMPETO_FASE[Math.min(this.faseIndice, Boss.IMPETO_FASE.length - 1)];
-    const impeto = passoFase * this.impetoAscensao * (this.desesperado ? 1.35 : this.furioso ? 1.15 : 1);
+    // Boss cedo anda a 80% do que a tabela pede; boss tardio, a 105%.
+    const passoEncontro = 0.8 + this.dureza * 0.25;
+    const impeto = passoFase * passoEncontro * this.impetoAscensao * (this.desesperado ? 1.35 : this.furioso ? 1.15 : 1);
 
     // movimento
     switch (f.movimento) {
@@ -1670,7 +1697,10 @@ class Boss {
       this.executarAtaque(ataque);
       const ritmo = this.desesperado ? Boss.DESESPERO_RITMO : this.furioso ? Boss.FURIA_RITMO : 1;
       const daFase = Boss.RITMO_FASE[Math.min(this.faseIndice, Boss.RITMO_FASE.length - 1)];
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * ritmo * this.ritmoAscensao * Mat.aleatorio(0.85, 1.15);
+      // 1,6x de intervalo no primeiro boss, 0,85x no último: o começo dá tempo
+      // de ler o padrão, o fim não dá.
+      const doEncontro = 1.6 - this.dureza * 0.75;
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo * this.ritmoAscensao * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1706,7 +1736,7 @@ class Boss {
   // Boss sozinho vira duelo de decorar padrão. A escolta obriga a dividir a
   // atenção — e cresce com a onda.
   chamarEscolta() {
-    const quantos = Math.min(3, Math.floor(Jogo.onda / 15));
+    const quantos = Math.min(3, Math.floor(this.dureza * 3.2));
     for (let i = 0; i < quantos; i++) {
       const a = (Mat.TAU / quantos) * i;
       Jogo.inimigos.push(new Inimigo(
@@ -1784,7 +1814,7 @@ class Boss {
         break;
       }
       case 'laser':
-        this.laser = { tempo: 0, aviso: this.furioso ? 0.55 : 0.75, duracao: 2.1,
+        this.laser = { tempo: 0, aviso: (this.furioso ? 0.55 : 0.75) + (1 - this.dureza) * 0.35, duracao: 2.1,
           angulo: angJog - 0.6, giro: 1.5 * (Mat.chance(0.5) ? 1 : -1) };
         Som.bossEntra();
         break;

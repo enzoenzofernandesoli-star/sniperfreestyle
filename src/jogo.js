@@ -512,7 +512,14 @@ const Jogo = {
                 e.escudoFlash = 0.25;
                 Particulas.faisca(b.x, b.y, b.angulo + Math.PI, '#dfe9f5');
                 Som.acerto();
-                if (e.escudoVida <= 0) e.quebrarEscudo();
+                Textos.criar(b.x, b.y, Math.round(Math.min(b.dano, e.escudoVida + b.dano)), '#7fd4ff', 13);
+                if (e.escudoVida <= 0) {
+                  // o que sobrou do tiro atravessa: escudo quebrando no meio do
+                  // pente não devolve dano de graça para o inimigo
+                  const sobra = -e.escudoVida;
+                  e.quebrarEscudo();
+                  if (sobra > 0) Jogo.danificarInimigo(e, sobra, b.critico, b.x, b.y);
+                }
                 acabou = true;
                 break;
               }

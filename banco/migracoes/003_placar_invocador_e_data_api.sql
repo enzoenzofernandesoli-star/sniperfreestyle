@@ -28,3 +28,30 @@ ALTER TABLE public.placar_sobrecarga
   CHECK (nome ~ '^[A-Z0-9 ._-]{1,12}$');
 
 COMMIT;
+
+-- Acesso pelo Data API (aplicado em 15/09/2026). O papel `anonymous` do Neon
+-- recebe o mínimo: ler tudo, inserir uma linha que passe nas checagens, e nada
+-- mais. Sem grant de UPDATE/DELETE, sem poder escrever id nem criado_em.
+ALTER TABLE public.placar_sobrecarga ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA public TO anonymous;
+GRANT SELECT ON public.placar_sobrecarga TO anonymous;
+GRANT INSERT (nome, pontos, classe, onda, nivel, tempo, abates, venceu)
+  ON public.placar_sobrecarga TO anonymous;
+
+DROP POLICY IF EXISTS placar_leitura_publica ON public.placar_sobrecarga;
+CREATE POLICY placar_leitura_publica ON public.placar_sobrecarga
+  FOR SELECT TO anonymous USING (true);
+
+DROP POLICY IF EXISTS placar_gravacao_publica ON public.placar_sobrecarga;
+CREATE POLICY placar_gravacao_publica ON public.placar_sobrecarga
+  FOR INSERT TO anonymous WITH CHECK (
+    nome ~ '^[A-Z0-9 ._-]{1,12}$'
+    AND replace(replace(replace(replace(nome, ' ', ''), '.', ''), '_', ''), '-', '')
+        !~ '(VIADO|PUTA|CARALHO|BUCETA|PORRA|FDP|MACACO|NAZI|HITLER)'
+    AND classe = ANY (ARRAY['SNIPER','GUARDIÃO','ESPECTRO','ARCANO','INVOCADOR'])
+    AND onda BETWEEN 1 AND 100
+    AND pontos BETWEEN 0 AND 5000000
+    AND nivel BETWEEN 1 AND 99
+    AND tempo BETWEEN 0 AND 86400
+    AND abates BETWEEN 0 AND 100000
+  );

@@ -84,12 +84,21 @@ const Placar = {
           venceu: entrada.venceu
         })
       });
-      if (!resposta.ok && Placar._podeTentarReserva()) {
+      if (!resposta.ok) {
         let motivo = '';
         try { motivo = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
         if (/banco|DATABASE_URL/i.test(motivo)) {
-          Placar.usandoReserva = true;
-          return Placar.enviar(entrada);
+          if (Placar._podeTentarReserva()) {
+            Placar.usandoReserva = true;
+            return Placar.enviar(entrada);
+          }
+          const gravou = await Placar._gravarDataApi(entrada);
+          if (gravou) {
+            Placar.usandoDataApi = true;
+            Placar.ultimoEnvio = 'ok';
+            Placar.cache = null;
+            return true;
+          }
         }
       }
       Placar.ultimoEnvio = resposta.ok ? 'ok' : 'erro';
@@ -104,6 +113,59 @@ const Placar = {
   /* Lê o top geral. Devolve null quando não dá — quem chama decide o que mostrar. */
   ultimoErro: '',
   usandoReserva: false,
+  usandoDataApi: false,
+  _token: null,
+  _tokenAte: 0,
+
+  /* ------------------------- Data API do Neon ------------------------- */
+  // Token anônimo de curta duração. Guardado em memória e renovado um minuto
+  // antes de expirar, para não pedir um por requisição.
+  async _tokenAnonimo() {
+    const cfg = PLACAR_CONFIG.dataApi;
+    if (!cfg) return null;
+    const agora = Date.now();
+    if (Placar._token && agora < Placar._tokenAte) return Placar._token;
+    const resposta = await fetch(cfg.token);
+    if (!resposta.ok) return null;
+    const dados = await resposta.json();
+    if (!dados || !dados.token) return null;
+    Placar._token = dados.token;
+    Placar._tokenAte = agora + 50 * 60 * 1000;
+    return Placar._token;
+  },
+
+  async _lerDataApi() {
+    const cfg = PLACAR_CONFIG.dataApi;
+    const token = cfg && await Placar._tokenAnonimo();
+    if (!token) return null;
+    const campos = 'nome,pontos,classe,onda,venceu,criado_em';
+    const endereco = cfg.tabela + '?select=' + campos
+      + '&order=pontos.desc,criado_em.asc&limit=' + PLACAR_CONFIG.limite;
+    const resposta = await fetch(endereco, { headers: { Authorization: 'Bearer ' + token } });
+    if (!resposta.ok) return null;
+    const linhas = await resposta.json();
+    return Array.isArray(linhas) ? linhas : null;
+  },
+
+  async _gravarDataApi(entrada) {
+    const cfg = PLACAR_CONFIG.dataApi;
+    const token = cfg && await Placar._tokenAnonimo();
+    if (!token) return false;
+    const resposta = await fetch(cfg.tabela, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({
+        nome: entrada.nome, pontos: entrada.pontos, classe: entrada.classe,
+        onda: entrada.onda, nivel: entrada.nivel, tempo: entrada.tempo,
+        abates: entrada.abates, venceu: entrada.venceu === true
+      })
+    });
+    return resposta.ok;
+  },
 
   // Endereço em uso: começa no do próprio site e cai para a reserva assim que
   // o site responde que está sem banco configurado.
@@ -129,10 +191,20 @@ const Placar = {
         // deploy, não de rede, e a tela precisa dizer isso em vez de chutar.
         Placar.ultimoErro = '';
         try { Placar.ultimoErro = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
-        // Site sem banco: tenta o servidor de reserva uma vez antes de desistir.
-        if (/banco|DATABASE_URL/i.test(Placar.ultimoErro) && Placar._podeTentarReserva()) {
-          Placar.usandoReserva = true;
-          return Placar.top(true);
+        // Site sem banco: tenta o servidor de reserva e, se ele também estiver
+        // sem credencial, fala direto com o banco pelo Data API.
+        if (/banco|DATABASE_URL/i.test(Placar.ultimoErro)) {
+          if (Placar._podeTentarReserva()) {
+            Placar.usandoReserva = true;
+            return Placar.top(true);
+          }
+          const doBanco = await Placar._lerDataApi();
+          if (doBanco) {
+            Placar.usandoDataApi = true;
+            Placar.cache = doBanco;
+            Placar.cacheEm = Date.now();
+            return doBanco;
+          }
         }
         return null;
       }
