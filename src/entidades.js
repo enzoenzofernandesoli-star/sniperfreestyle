@@ -1490,9 +1490,12 @@ class Boss {
   // Rampa por encontro: o boss da onda 5 é uma aula e o da onda 90 é um muro.
   // `dureza` vai de 0 (primeiro boss) a 1 (último antes do final) e controla
   // ritmo de ataque e passo — sem isso o primeiro boss já vinha no talo.
+  // Curva da campanha inteira, de 0 (boss da onda 5) a 1 (boss da onda 90).
+  // Até a onda 50 ela sobe devagar — é a metade tranquila do jogo, onde dá para
+  // aprender o padrão. Da 50 em diante ela acelera e o jogo mostra os dentes.
   static dureza(onda) {
-    const encontro = Jogo.encontroDeBoss ? Jogo.encontroDeBoss(onda) : Math.floor(onda / 5);
-    return Mat.limitar((encontro - 1) / 12, 0, 1);
+    if (onda <= 50) return Mat.limitar((onda - 5) / 45, 0, 1) * 0.35;
+    return Mat.limitar(0.35 + ((onda - 50) / 40) * 0.65, 0, 1);
   }
 
   // A luta tem que crescer, não começar no talo: a primeira fase é de leitura
@@ -1693,8 +1696,7 @@ class Boss {
     // ataques
     this.recarga -= dt;
     if (this.recarga <= 0) {
-      const ataque = Mat.escolher(f.ataques);
-      this.executarAtaque(ataque);
+      this.executarAtaque(Mat.escolher(this.ataquesLiberados(f)));
       const ritmo = this.desesperado ? Boss.DESESPERO_RITMO : this.furioso ? Boss.FURIA_RITMO : 1;
       const daFase = Boss.RITMO_FASE[Math.min(this.faseIndice, Boss.RITMO_FASE.length - 1)];
       // 1,6x de intervalo no primeiro boss, 0,85x no último: o começo dá tempo
@@ -1748,6 +1750,20 @@ class Boss {
     Particulas.anel(this.x, this.y, this.def.cor, 120, 40);
   }
 
+  // Boss cedo usa só os primeiros ataques da lista da fase; os outros vão
+  // entrando conforme a campanha avança. É isso que faz o mesmo boss parecer
+  // outro bicho na onda 15 e na onda 90 — e que mantém a onda 15 legível.
+  ataquesLiberados(f) {
+    const quantos = Math.max(1, Math.round(1 + this.dureza * (f.ataques.length - 1)));
+    return f.ataques.slice(0, quantos);
+  }
+
+  // Quantidade de bala por ataque: o mesmo leque tem 5 tiros cedo e 11 no fim.
+  // `cheio` é o valor da versão dura; a fração vem da dureza da campanha.
+  volume(minimo, cheio) {
+    return Math.round(Mat.misturar(minimo, cheio, this.dureza));
+  }
+
   // Tudo que o boss atira passa por aqui: é o ponto onde o CEIFADOR acelera os
   // projéteis dele sem precisar duplicar cada ataque.
   atirar(x, y, angulo, velocidade, dano, cor, raio, extra) {
@@ -1793,7 +1809,7 @@ class Boss {
         for (let i = -1; i <= 1; i++) this.atirar(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9);
         break;
       case 'leque': {
-        const n = 9;
+        const n = this.volume(5, 11);
         for (let i = 0; i < n; i++) {
           const a = angJog + Mat.misturar(-0.85, 0.85, i / (n - 1));
           this.atirar(this.x, this.y, a, 400, 1, this.def.cor, 8);
@@ -1801,15 +1817,16 @@ class Boss {
         break;
       }
       case 'anel': {
-        const n = 24;
+        const n = this.volume(12, 26);
         for (let i = 0; i < n; i++) this.atirar(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8);
         Camera.bater(6);
         break;
       }
       case 'espiral': {
         this.anguloEspiral += 0.42;
-        for (let b = 0; b < 3; b++) {
-          this.atirar(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8);
+        const bracos = this.volume(2, 3);
+        for (let b = 0; b < bracos; b++) {
+          this.atirar(this.x, this.y, this.anguloEspiral + (Mat.TAU / bracos) * b, 330, 1, this.def.cor, 8);
         }
         break;
       }
@@ -1821,7 +1838,7 @@ class Boss {
       // Caçador: tiros lentos que perseguem por 2,5 s. Não dá para só andar
       // reto — tem que quebrar a linha com dash ou com o canto da arena.
       case 'cacador': {
-        const n = this.desesperado ? 5 : 3;
+        const n = this.desesperado ? 5 : this.volume(2, 3);
         for (let i = 0; i < n; i++) {
           this.atirar(this.x, this.y, angJog + (i - (n - 1) / 2) * 0.5, 230, 1, this.def.cor, 9,
             { perseguePor: 2.5 });
@@ -1830,7 +1847,7 @@ class Boss {
       }
       // Minas: nega o espaço. Ficam paradas, piscando, e abrem um anel.
       case 'minas': {
-        const n = 4 + this.faseIndice;
+        const n = this.volume(2, 4) + this.faseIndice;
         for (let i = 0; i < n; i++) {
           const a = (Mat.TAU / n) * i + Math.random();
           const d = 200 + Math.random() * 260;
@@ -1843,7 +1860,7 @@ class Boss {
       }
       // Parede de tiros com uma única brecha: obriga a achar o buraco e passar.
       case 'parede': {
-        const n = 30;
+        const n = this.volume(18, 32);
         const brecha = Math.random() * Mat.TAU;
         const largura = this.furioso ? 0.5 : 0.75;
         for (let i = 0; i < n; i++) {
@@ -1857,9 +1874,11 @@ class Boss {
       // Cruz giratória: quatro braços que varrem a arena inteira.
       case 'cruz': {
         this.anguloEspiral += 0.3;
-        for (let b = 0; b < 4; b++) {
-          const a = this.anguloEspiral + (Mat.TAU / 4) * b;
-          for (let k = 1; k <= 3; k++) this.atirar(this.x, this.y, a, 260 + k * 70, 1, this.def.cor, 8);
+        const bracos = this.volume(2, 4);
+        const porBraco = this.volume(2, 3);
+        for (let b = 0; b < bracos; b++) {
+          const a = this.anguloEspiral + (Mat.TAU / bracos) * b;
+          for (let k = 1; k <= porBraco; k++) this.atirar(this.x, this.y, a, 260 + k * 70, 1, this.def.cor, 8);
         }
         break;
       }
@@ -1873,7 +1892,7 @@ class Boss {
       }
       // Chuva: cai uma cortina do topo da arena, some o lugar seguro parado.
       case 'chuva': {
-        const colunas = 12;
+        const colunas = this.volume(7, 13);
         for (let i = 0; i < colunas; i++) {
           if (Mat.chance(0.22)) continue;   // buracos por onde dá para correr
           const x = (Jogo.LARGURA / colunas) * (i + 0.5);
@@ -1882,7 +1901,7 @@ class Boss {
         break;
       }
       case 'invocar': {
-        const quantos = 2 + this.faseIndice;
+        const quantos = this.volume(1, 2) + this.faseIndice;
         for (let i = 0; i < quantos; i++) {
           const a = Math.random() * Mat.TAU;
           Jogo.inimigos.push(new Inimigo(

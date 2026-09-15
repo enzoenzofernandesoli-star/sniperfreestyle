@@ -156,9 +156,10 @@ const Jogo = {
   ritmoInimigo() { return Math.max(0.52, 1 - Math.log2(1 + (Jogo.onda - 1) / 12) * 0.11); },
 
   // Chance de um inimigo nascer elite. Começa na onda 8 e satura em 30%.
+  // Elite é assunto da segunda metade: tímido na onda 25, comum depois da 60.
   sorteiaElite() {
-    if (Jogo.onda < 10) return false;
-    return Mat.chance(Math.min(0.42, (Jogo.onda - 9) * 0.009));
+    if (Jogo.onda < 25) return false;
+    return Mat.chance(Math.min(0.32, (Jogo.onda - 24) * 0.008));
   },
 
   prepararOnda() {
@@ -174,11 +175,12 @@ const Jogo = {
       Som.intensidade = 1;
       Jogo.aviso('⚠ ONDA ' + Jogo.onda + ' — BOSS');
     } else {
-      // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
-      // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
-      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 1.65
-        + Math.min(35, Math.max(0, Jogo.onda - 20) * 0.7)
-        + Math.log2(1 + Math.max(0, Jogo.onda - 70)) * 3);
+      // Metade tranquila: até a onda 50 a arena enche devagar e dá para ler o
+      // que está acontecendo. Da 50 em diante o orçamento acelera e a tela vira
+      // o caos que o fim da campanha pede.
+      const ate50 = Math.min(Jogo.onda, 50);
+      const depois50 = Math.max(0, Jogo.onda - 50);
+      const orcamento = Math.round(3 + ate50 * 0.9 + depois50 * 2.1);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
@@ -467,10 +469,11 @@ const Jogo = {
     } else if (!Jogo.ondaLimpa) {
       if (Jogo.spawnRestante > 0) {
         Jogo.timerSpawn -= dtReal;
-        const ritmo = Math.max(0.2, 0.95 - Jogo.onda * 0.026);
-        // teto alto de novo: a arena cresceu e o perfil de custo aguenta
-        // sobe devagar no começo e fecha alto no fim: onda 5 tem 9, onda 30 tem 30
-        const tetoSimultaneo = Math.min(Jogo.modoLeve ? 20 : 30, Math.round(5 + Jogo.onda * 0.85));
+        const ritmo = Math.max(0.24, 1.05 - Jogo.onda * 0.016);
+        // Teto de inimigos vivos: 7 na onda 5, 13 na 30, 18 na 50 — e daí sobe
+        // rápido até 30 na onda 90. A tela só fica cheia quando tem que ficar.
+        const base = Jogo.onda <= 50 ? 6 + Jogo.onda * 0.24 : 18 + (Jogo.onda - 50) * 0.3;
+        const tetoSimultaneo = Math.min(Jogo.modoLeve ? 20 : 30, Math.round(base));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;

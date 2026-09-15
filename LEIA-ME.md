@@ -163,52 +163,45 @@ entre todos.
 
 ## Dificuldade
 
-O jogo foi reapertado duas vezes: **menos inimigos na tela, cada um pesando muito
-mais** — e, do meio do jogo em diante, elites.
+A campanha tem duas metades. **Até a onda 50 o jogo é tranquilo**: dá para ler a
+tela, aprender o padrão de cada boss e montar a build. **Da 50 em diante ele
+acelera de verdade**, e a onda 100 é feita para não ser vencida.
 
-### Elites
+| Onda | Inimigos vivos (teto) | Orçamento da onda | Dureza do boss | Chance de elite |
+|---|---|---|---|---|
+| 5 | 7 | 8 | 0,00 | — |
+| 15 | 10 | 17 | 0,08 | — |
+| 25 | 12 | 26 | 0,16 | 1% |
+| 40 | 16 | 39 | 0,27 | 13% |
+| 50 | 18 | 48 | 0,35 | 21% |
+| 60 | 21 | 69 | 0,51 | 29% |
+| 75 | 26 | 101 | 0,76 | 32% |
+| 90 | 30 | 132 | 1,00 | 32% |
 
-A partir da onda 8, cada inimigo tem chance de nascer **elite**: anel dourado, 22%
-maior, **2,6× de vida**, 12% mais rápido e +1 de dano no contato (o encostão nunca
-passa de 2 — só a investida do lanceiro chega a 3). Vale 2,5× em XP e pontos, e é
-o que mais solta item. A chance começa em 2% na onda 8 e satura em 30%.
+`Boss.dureza` é a curva que comanda a luta de boss: até a onda 50 ela sobe só até
+0,35, e daí vai a 1. Ela controla três coisas ao mesmo tempo:
 
-### Escalada
+- **Quais ataques ele usa.** `ataquesLiberados` corta a lista da fase: o boss da
+  onda 5 usa só o primeiro ataque dela, e os outros vão entrando conforme a
+  campanha anda. O mesmo boss parece outro bicho na onda 15 e na 90.
+- **Quanta bala cada ataque cospe.** `volume(min, cheio)` interpola: o leque sai
+  com 5 tiros cedo e 11 no fim; o anel, 12 e 26; a cruz, 2 braços e 4.
+- **O ritmo e o passo.** Intervalo entre ataques 1,6× maior no primeiro boss,
+  0,85× no último; velocidade de 80% a 105% do que a tabela pede.
 
-| O quê | Como cresce |
-|---|---|
-| Vida do inimigo | cresce forte até a 40 e depois em curva sublinear contínua |
-| Velocidade | crescimento logarítmico, teto de +48% |
-| Recarga de tiro | aceleração logarítmica, piso de 52% do tempo original |
-| Vida do boss | cresce por encontro; depois da primeira rotação, ascende lentamente |
+Medido com o boss atirando num alvo parado por 29 s:
 
-### Menos folga
+| Onda | Boss | Ataques liberados | Pico de balas na tela |
+|---|---|---|---|
+| 5 | SENTINELA | `unico` | 3 |
+| 15 | OLHO DO VAZIO | `espiral` | 14 |
+| 30 | ORÁCULO | `espiral` | 9 |
+| 60 | SERPENTE | `leque+chuva` | 13 |
+| 90 | FERREIRO | `leque3+anel` | 77 |
+| 100 | CEIFADOR | arsenal inteiro | 43 + as lâminas letais |
 
-- Intervalo entre ondas de 1,8 s, com 1,2 s de fôlego invulnerável no começo.
-- Item raro caiu de 6% para 3,5% por morte (10% no elite), e **cura é só um quarto
-  dos sorteios** — vida perdida dói até o fim.
-- Cada nível custa mais XP: base 60 em vez de 50, e fator 1,45 em vez de 1,38. Dá
-  menos melhorias por partida, então cada carta importa.
-- Boss: encostar nele tira 2, ele chama escolta assim que aterrissa (até 5 no fim
-  do jogo) e entra em fúria já com 40% de vida.
-
-Medido com bot de teste e vida infinita, atirando sem parar: o primeiro boss cai em
-~14 s, o da onda 20 em ~43 s e o NÚCLEO INFINITO da onda 40 em ~103 s. É maratona,
-não tiro de sorte.
-
-
-- Orçamento da onda cresce até 4 + 1,9 por onda, e o teto de inimigos vivos sobe
-  junto: 9 na onda 5, 22 na onda 20, **30** na onda 30 (20 no celular). A arena de
-  1760×990 aguenta a multidão e o perfil de custo também.
-- Elite só a partir da onda 10 — antes disso a onda ainda é escola.
-- Vida base subiu 35–50% em todos os tipos e a escala por onda passou de +5,5% para +8%
-  (onda 40 vale ~4,1× a vida da onda 1).
-- `BRUTO`, `COURAÇA` e `LANCEIRO` tiram 2 corações no contato — a investida do lanceiro, 3.
-- Bosses: +35% de vida, escala por onda maior, atacam ~20% mais rápido e o telegrafo de
-  troca de fase caiu de 0,8 s para 0,6 s.
-- Melhoria repetida fica mais rara a cada cópia (peso × 0,45) e os tetos caíram: no máximo
-  **3 projéteis extras** por tiro, 4 cópias de dano ou cadência, 2 de regeneração — que
-  agora cura 0,025 coração/s em vez de 0,06.
+O elite só aparece a partir da onda 25, e a velocidade e a cadência do inimigo
+comum crescem na metade do ritmo de antes.
 
 ## CEIFADOR ABSOLUTO — onda 100
 
