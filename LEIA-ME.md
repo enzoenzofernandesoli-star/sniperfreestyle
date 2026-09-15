@@ -3,10 +3,13 @@
 Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependência:
 é só abrir o `index.html` no navegador. O placar mundial requer site publicado com API e banco.
 
-## Modo infinito
+## A corrida
 
-- Ondas infinitas, com boss a cada 5. Depois do oitavo, a rotação recomeça em
-  versões ascendidas, mais resistentes, sem encerrar a partida.
+- **100 ondas**, com boss a cada 5. Depois do oitavo a rotação recomeça em versões
+  ascendidas, mais resistentes — e a onda 100 é sempre o **CEIFADOR ABSOLUTO**,
+  o boss final, que fica fora do rodízio.
+- **Teto de 6 corações.** Nenhuma classe, melhoria ou cura passa disso
+  (`Jogador.VIDA_MAXIMA`), então nenhuma build vira esponja.
 - 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
 - Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
@@ -16,7 +19,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 - Cooperativo: CRIAR SALA abre a tela da sala com código editável e lista de quem
   está dentro; ENTRAR NA SALA pede o código do anfitrião. Detalhes e limites em
   `COOPERATIVO.md`.
-- Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
+- Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2, Invocador 4 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
 - Instalação que já usa o placar de 40 ondas precisa executar
   `banco/migracoes/002_placar_ondas_infinitas.sql` antes de publicar esta API.
@@ -198,7 +201,21 @@ não tiro de sorte.
   **3 projéteis extras** por tiro, 4 cópias de dano ou cadência, 2 de regeneração — que
   agora cura 0,025 coração/s em vez de 0,06.
 
-## Bosses (a cada 5 ondas, para sempre)
+## CEIFADOR ABSOLUTO — onda 100
+
+O boss final não entra no rodízio: ele só aparece na última onda, e a regra dele é
+outra.
+
+- **~72.000 de vida** na onda 100, contra ~12.000 de um boss de onda 20.
+- **Bala 2,1× mais rápida** que a de qualquer outro boss — `velocidadeTiro` no
+  `def` multiplica tudo que ele dispara, passando por `Boss.atirar`.
+- **EXECUÇÃO**, em todas as quatro fases: telegrafo branco com aviso na tela e
+  então **três rajadas de cinco lâminas com 99 de dano** — mata com seis corações,
+  com escudo, com o que for. Não existe tankar: ou desvia, ou morre.
+- Movimentos: investida, teleporte, cerco e caótico — um por fase, do mais lento
+  ao mais rápido — somados a parede, caçador, minas, cruz, espiral, chuva e laser.
+
+## Bosses do rodízio (a cada 5 ondas, até a 95)
 
 Três movimentos e quatro ataques novos entraram para o boss deixar de ser alvo
 parado que cospe bala:
@@ -404,7 +421,7 @@ deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
 | Vida e padrões de boss | `src/entidades.js` → `BOSSES` |
 | Densidade das ondas | `src/jogo.js` → `prepararOnda()` (`orcamento`) e `tetoSimultaneo` |
 | Escala de vida por onda | `src/jogo.js` → `multiplicadorVida()` |
-| Progressão infinita | `src/jogo.js` → curvas de onda e `spawnarBoss()` |
+| Progressão até a onda 100 | `src/jogo.js` → `TOTAL_ONDAS`, curvas de onda e `spawnarBoss()` |
 | Curva de XP (frequência das melhorias) | `src/entidades.js` → `xpProximo` (`50` e `1.38`) |
 
 Medido no pior caso (onda 19, 34 inimigos, 300 projéteis): **0,14 ms de lógica e 0,27 ms de
