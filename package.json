@@ -4,6 +4,7 @@
   "private": true,
   "description": "SNIPER FREESTYLE — Arena Neon: twin-stick shooter roguelite em canvas 2D com salas cooperativas.",
   "scripts": {
+    "start": "node servidor/salas.js",
     "salas": "node servidor/salas.js",
     "test": "node --test testes/*.test.js"
   },

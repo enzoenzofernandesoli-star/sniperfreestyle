@@ -80,6 +80,8 @@ body { width: 100%; }
 @media (max-height: 560px) { .sala-equipe { display: none; } }
 
 /* ------------------------------ Tela da sala ---------------------------- */
+.sala-alerta { padding: 10px 12px; color: #ffd8a8; background: rgba(60, 28, 8, .7); border: 1px solid #8a5a22; border-radius: 6px; font: 600 13px Rajdhani, sans-serif; line-height: 1.4; }
+.sala-alerta b { color: #ffe14d; }
 .sala-painel { display: grid; gap: 14px; width: min(440px, 88vw); }
 .sala-bloco { display: grid; gap: 10px; padding: 16px; background: rgba(8, 14, 30, .72); border: 1px solid #244a68; border-radius: 8px; }
 .sala-bloco[hidden] { display: none; }

@@ -32,6 +32,7 @@ const Coop = {
   classe: '',
   skin: '',
   conexao: null,
+  abriu: false,           // o socket chegou a abrir? separa "sem servidor" de "caiu"
   equipe: new Map(),      // id -> { nome, classe, skin } — só para HUD
 
   controlesRemotos: new Map(),
@@ -95,23 +96,34 @@ const Coop = {
     for (let i = 0; i < 6; i++) valor += letras[Math.floor(Math.random() * letras.length)];
     return valor;
   },
+  // Endereço sem servidor de salas atrás (o caso mais comum: o site publicado na
+  // Vercel, que não hospeda WebSocket). Vale a pena dizer isso com todas as
+  // letras em vez de deixar o jogador achando que a sala caiu.
+  semServidor() {
+    const onde = Coop.servidorSalvo() || Coop.endereco();
+    return 'Nenhum servidor de salas respondeu em ' + onde + '. '
+      + 'Rode `npm run salas` e abra o endereço dele, ou cole o endereço do seu servidor em SERVIDOR DE SALAS (AVANÇADO).';
+  },
   conectar(aoAbrir) {
     if (Coop.conexao) { Coop.conexao.onclose = null; Coop.conexao.close(); }
     let socket;
     try { socket = new WebSocket(Coop.endereco()); }
-    catch { Coop.status('Servidor de salas indisponível.'); Coop.papel = null; return; }
+    catch { Coop.status(Coop.semServidor()); Coop.papel = null; return; }
     Coop.conexao = socket;
-    socket.onopen = aoAbrir;
+    Coop.abriu = false;
+    socket.onopen = () => { Coop.abriu = true; aoAbrir(); };
     socket.onmessage = (evento) => {
       let dados;
       try { dados = JSON.parse(evento.data); } catch { return; }
       Coop.receber(dados);
     };
-    socket.onerror = () => Coop.status('Não foi possível conectar ao servidor de salas.');
+    socket.onerror = () => { if (!Coop.abriu) Coop.status(Coop.semServidor()); };
     socket.onclose = () => {
       if (Coop.conexao !== socket) return;
       Coop.conexao = null;
       const era = Coop.papel;
+      // conexão que nunca abriu não é queda de sala: é servidor que não existe
+      if (!Coop.abriu) { Coop.encerrar(Coop.semServidor()); UI.mostrarTela('sala'); return; }
       Coop.encerrar(era === 'convidado'
         ? 'Conexão perdida. Você voltou ao menu.'
         : 'Sala encerrada — os convidados foram desconectados.');

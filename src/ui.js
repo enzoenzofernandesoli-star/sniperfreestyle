@@ -449,6 +449,7 @@ const UI = {
     servidor.value = Coop.servidorSalvo();
     servidor.onchange = () => {
       Coop.guardarServidor(servidor.value.trim());
+      UI.avisarServidor();
       Coop.status(servidor.value.trim() ? 'Servidor de salas salvo neste aparelho.' : 'Voltou a usar o servidor deste endereço.');
     };
   },
@@ -459,6 +460,15 @@ const UI = {
     return /^[A-Z0-9]{4,8}$/.test(valor) ? valor : '';
   },
 
+  // Site publicado sem WebSocket (Vercel): melhor avisar antes do clique do que
+  // deixar o jogador esperando uma sala que nunca vai abrir.
+  avisarServidor() {
+    const caixa = document.getElementById('avisoServidor');
+    if (!caixa) return;
+    const proprio = !Coop.servidorSalvo() && location.protocol === 'https:' && /vercel\.app$/.test(location.hostname);
+    caixa.hidden = !proprio;
+  },
+
   abrirSala(modo) {
     UI.modoSala = modo;
     if (modo === 'criar' && !document.getElementById('campoCodigoNovo').value) {
@@ -466,6 +476,7 @@ const UI = {
     }
     Coop.status('');
     UI.mostrarTela('sala');
+    UI.avisarServidor();
     UI.montarSala();
   },
 

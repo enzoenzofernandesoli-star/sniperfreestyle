@@ -62,10 +62,15 @@ saídas:
 
 - **Mesma rede**: rode `npm run salas` e todo mundo abre o IP da máquina, ex.
   `http://192.168.0.10:8123`. Funciona sem mais nada.
-- **Pela internet**: suba `servidor/salas.js` em qualquer host que aceite WebSocket
-  (Render, Railway, Fly, uma VPS) e cole o endereço em SERVIDOR DE SALAS (AVANÇADO),
-  na tela da sala — ex. `wss://salas-sniper.onrender.com/sala`. Fica salvo no
-  aparelho (`sniper.coopServidor`) e vale para o site publicado também.
+- **Pela internet, pelo Render**: o repositório tem `render.yaml`. No Render, New →
+  Blueprint → aponte para este repositório → Apply. O mesmo processo serve o jogo e
+  as salas na mesma porta, então quem abrir `https://sniper-salas.onrender.com` joga
+  online sem configurar nada. Para jogar pelo endereço da Vercel, cole
+  `wss://sniper-salas.onrender.com/sala` em SERVIDOR DE SALAS (AVANÇADO) — fica salvo
+  no aparelho em `sniper.coopServidor`.
+  O plano gratuito hiberna depois de 15 minutos parado: a primeira sala depois da
+  soneca demora uns 50 segundos. Qualquer outro host com WebSocket (Railway, Fly,
+  VPS) serve do mesmo jeito.
 
 ## O que está pronto
 
