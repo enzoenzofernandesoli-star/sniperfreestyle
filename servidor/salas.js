@@ -24,7 +24,7 @@ const placar = require('../api/placar.js');
 
 const raiz = path.resolve(__dirname, '..');
 const salas = new Map();
-const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4' };
+const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4', '.mp3': 'audio/mpeg' };
 const porta = Number(process.env.PORT) || Number(process.argv[2]) || 8123;
 
 const MAX_CONVIDADOS = 3;          // + anfitrião = 4 na arena

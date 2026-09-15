@@ -207,6 +207,9 @@ comum crescem na metade do ritmo de antes.
 
 `Boss.VIDA_EXTRA` multiplica a vida de **todos** os bosses de uma vez — é o botão
 para engrossar ou afinar a luta inteira sem mexer em tabela. Hoje está em **3,0**.
+Ao lado dele, `Boss.DIFICULDADE` (hoje **1,5**) aperta o resto: divide o intervalo
+entre ataques e multiplica a quantidade de bala de cada ataque. Os dois juntos
+valem para os catorze bosses.
 
 | Onda | Boss | Vida |
 |---|---|---|
@@ -230,10 +233,14 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   `2 + índice da fase × 0,8` segundos — 2,8 s na segunda fase, 3,6 s na terceira,
   4,4 s na quarta. O contador roda em tempo de relógio, então hitstop não
   encurta. Enquanto durar, nada entra: nem ultimate, nem crítico.
-- **ENCAIXA!** O segundo boss da corrida — o da onda 10 — não dá 67: enche a
-  tela com **ENCAIXA!** por 3,4 s e toca uma das três falas gravadas em
-  `assets/encaixa-*.m4a`, sorteada na hora. São os únicos arquivos de som do
-  projeto; todo o resto do áudio continua sintetizado no WebAudio.
+- **SIX SEVEN** e **ENCAIXA!** Os dois primeiros bosses têm letreiro e som
+  próprios: o da onda 5 grita **SIX SEVEN** com `assets/sixseven.mp3`, e o da
+  onda 10 grita **ENCAIXA!** com uma das três falas de `assets/encaixa-*.m4a`,
+  sorteada na hora — a mesma fase pode soar diferente a cada partida. São os
+  únicos arquivos de som do projeto; o resto do áudio continua sintetizado.
+- Os clipes passam pelo WebAudio com `GainNode`, e não por um `<audio>` comum,
+  justamente para poder estourar acima de 1.0: `CLIPES[nome].ganho` é 1,2 no 67
+  (o arquivo já veio alto) e 2,4 nas falas da onda 10.
 - **67.** Qualquer outro boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
   o estilo muda de boss para boss — cor, fonte, sombra e faixa de leitura vêm de
   `Jogo.ESTILOS_67`, escolhidos pela posição do boss na tabela. O CEIFADOR tem o

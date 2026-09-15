@@ -343,26 +343,51 @@ const Som = {
   // Cada boss derrubado troca a trilha: raiz, escala e timbre mudam juntos, e
   // a faixa 0 é a de sempre. É a mesma música procedural — o que muda é o modo.
   /* Clipes gravados. O resto do áudio do jogo é sintetizado no WebAudio; estes
-     três são a exceção: são falas curtas que tocam quando o boss da onda 10
-     cai. Ficam em `assets/`, carregam sob demanda e respeitam o volume de
-     efeitos como qualquer outro som. */
+     são a exceção: falas curtas que tocam na queda de certos bosses. Cada lista
+     é sorteada na hora, então a mesma fase pode soar diferente a cada partida.
+
+     `ganho` é o quanto o clipe é amplificado. Um elemento <audio> comum trava
+     em 1.0; passando pelo WebAudio dá para ir além, que é o que deixa a fala
+     estourando por cima da música. O arquivo do 67 já veio alto e fica em 1,2;
+     os da onda 10 sobem para 2,4. */
   CLIPES: {
-    encaixa: ['assets/encaixa-1.m4a', 'assets/encaixa-2.m4a', 'assets/encaixa-3.m4a']
+    sixseven: { ganho: 1.2, arquivos: ['assets/sixseven.mp3'] },
+    encaixa: { ganho: 2.4, arquivos: ['assets/encaixa-1.m4a', 'assets/encaixa-2.m4a', 'assets/encaixa-3.m4a'] }
   },
-  _clipes: {},
+  _buffers: {},
+
+  async _carregarClipe(caminho) {
+    if (Som._buffers[caminho]) return Som._buffers[caminho];
+    const resposta = await fetch(caminho);
+    const dados = await resposta.arrayBuffer();
+    const buffer = await Som.ctx.decodeAudioData(dados);
+    Som._buffers[caminho] = buffer;
+    return buffer;
+  },
 
   tocarClipe(nome) {
-    if (Config.volumeSom <= 0) return;
-    const lista = Som.CLIPES[nome];
-    if (!lista || !lista.length) return;
-    const caminho = lista[Math.floor(Math.random() * lista.length)];
+    const grupo = Som.CLIPES[nome];
+    if (!grupo || Config.volumeSom <= 0) return;
+    const caminho = Mat.escolher(grupo.arquivos);
+    if (!Som.pronto || !Som.ctx) { Som._tocarClipeSimples(caminho); return; }
+    Som._carregarClipe(caminho).then((buffer) => {
+      const fonte = Som.ctx.createBufferSource();
+      fonte.buffer = buffer;
+      const ganho = Som.ctx.createGain();
+      // sem teto de 1.0: é aqui que a fala fica alta de verdade
+      ganho.gain.value = grupo.ganho * Mat.limitar(Config.volumeSom, 0, 1) * 3;
+      fonte.connect(ganho).connect(Som.ctx.destination);
+      fonte.start();
+    }).catch(() => Som._tocarClipeSimples(caminho));
+  },
+
+  // Reserva para quando o WebAudio ainda não acordou.
+  _tocarClipeSimples(caminho) {
     try {
-      let audio = Som._clipes[caminho];
-      if (!audio) { audio = new Audio(caminho); Som._clipes[caminho] = audio; }
-      audio.currentTime = 0;
+      const audio = new Audio(caminho);
       audio.volume = Mat.limitar(Config.volumeSom, 0, 1);
       const p = audio.play();
-      if (p && p.catch) p.catch(() => { /* navegador ainda sem gesto do usuário */ });
+      if (p && p.catch) p.catch(() => { /* sem gesto do usuário ainda */ });
     } catch (e) { /* sem áudio: o jogo segue igual */ }
   },
 

@@ -1541,6 +1541,9 @@ class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
   static VIDA_EXTRA = 3.0;   // vida de todo boss, num lugar só
+  // Aperto geral aplicado a todo boss: ataca 50% mais vezes e cospe 50% mais
+  // bala por ataque. Mexer aqui mexe nos catorze de uma vez.
+  static DIFICULDADE = 1.5;
   static RITMO_ATAQUE = 1.15;   // < 1 = ataca mais vezes
   static FURIA_VIDA = 0.25;     // abaixo disso o boss acelera
   static FURIA_RITMO = 0.75;
@@ -1803,7 +1806,8 @@ class Boss {
       // 1,6x de intervalo no primeiro boss, 0,85x no último: o começo dá tempo
       // de ler o padrão, o fim não dá.
       const doEncontro = 1.6 - this.dureza * 0.75;
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo * this.ritmoAscensao * Mat.aleatorio(0.85, 1.15);
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo
+        * this.ritmoAscensao / Boss.DIFICULDADE * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1874,7 +1878,7 @@ class Boss {
   // `cheio` é o valor da versão dura; a fração vem da dureza da campanha.
   volume(minimo, cheio) {
     const base = Mat.misturar(minimo, cheio, this.dureza);
-    return Math.round(base * (this.def.volumeExtra || 1));
+    return Math.round(base * (this.def.volumeExtra || 1) * Boss.DIFICULDADE);
   }
 
   // Tudo que o boss atira passa por aqui: é o ponto onde o CEIFADOR acelera os

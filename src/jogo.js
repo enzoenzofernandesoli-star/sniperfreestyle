@@ -413,16 +413,16 @@ const Jogo = {
     const indice = def && def.final
       ? Jogo.ESTILOS_67.length - 1
       : Math.max(0, BOSSES.indexOf(def)) % (Jogo.ESTILOS_67.length - 1);
-    // Segundo encontro da corrida — o boss da onda 10 — troca o 67 por ENCAIXA!
-    const encaixa = !def.final && Jogo.encontroDeBoss(Jogo.onda) === 2;
-    const estilo = encaixa ? Jogo.ESTILO_ENCAIXA : Jogo.ESTILOS_67[indice];
-    Jogo.festa67 = {
-      estilo, texto: encaixa ? 'ENCAIXA!' : '67',
-      vida: encaixa ? 3.4 : 2.6, vidaMax: encaixa ? 3.4 : 2.6,
-      semente: Math.random() * 10
-    };
+    // Os dois primeiros encontros têm festa com nome e som próprios: o da onda 5
+    // grita SIX SEVEN, o da onda 10 grita ENCAIXA!. Do terceiro em diante é o 67.
+    const encontro = def.final ? 0 : Jogo.encontroDeBoss(Jogo.onda);
+    const estilo = encontro === 2 ? Jogo.ESTILO_ENCAIXA : Jogo.ESTILOS_67[indice];
+    const texto = encontro === 1 ? 'SIX SEVEN' : encontro === 2 ? 'ENCAIXA!' : '67';
+    const duracao = encontro === 1 || encontro === 2 ? 3.4 : 2.6;
+    Jogo.festa67 = { estilo, texto, vida: duracao, vidaMax: duracao, semente: Math.random() * 10 };
     Jogo.flashTela(0.55, estilo.cor);
-    if (encaixa) Som.tocarClipe('encaixa');
+    if (encontro === 1) Som.tocarClipe('sixseven');
+    else if (encontro === 2) Som.tocarClipe('encaixa');
   },
 
   desenhar67(ctx) {
@@ -442,13 +442,16 @@ const Jogo = {
     ctx.textBaseline = 'middle';
     ctx.font = e.fonte;
 
-    // Texto comprido não pode vazar da arena: encolhe a fonte até caber.
+    // Texto comprido não pode vazar da arena: encolhe a fonte até caber. O
+    // limite desconta a escala da animação, senão "SIX SEVEN" mede certo aqui
+    // e sai pelas beiradas depois do ctx.scale.
     const texto = f.texto || '67';
     const largura = ctx.measureText(texto).width;
-    const limite = Jogo.LARGURA * 0.8;
+    const limite = (Jogo.LARGURA * 0.82) / Math.max(0.2, escala);
     if (largura > limite) {
-      const tamanho = parseInt(e.fonte, 10) || 300;
-      ctx.font = e.fonte.replace(/\d+px/, Math.round(tamanho * (limite / largura)) + 'px');
+      // o número que importa é o do "px", não o peso da fonte
+      const tamanho = parseInt((e.fonte.match(/(\d+)px/) || [])[1], 10) || 300;
+      ctx.font = e.fonte.replace(/\d+px/, Math.max(60, Math.round(tamanho * (limite / largura))) + 'px');
     }
 
     // tremor curto na entrada, para o número "bater" na tela
