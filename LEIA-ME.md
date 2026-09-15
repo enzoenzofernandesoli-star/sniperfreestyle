@@ -203,6 +203,24 @@ Medido com o boss atirando num alvo parado por 29 s:
 O elite só aparece a partir da onda 25, e a velocidade e a cadência do inimigo
 comum crescem na metade do ritmo de antes.
 
+## Vida de boss
+
+`Boss.VIDA_EXTRA` multiplica a vida de **todos** os bosses de uma vez — é o botão
+para engrossar ou afinar a luta inteira sem mexer em tabela. Hoje está em **3,0**.
+
+| Onda | Boss | Vida |
+|---|---|---|
+| 5 | SENTINELA CARMESIM | 2.850 |
+| 20 | O ARQUITETO | 20.433 |
+| 40 | NÚCLEO INFINITO | 43.548 |
+| 50 | TITÃ DE FERRO | 56.981 |
+| 70 | RAINHA ESTÁTICA | 80.503 |
+| 90 | ÚLTIMO ARAUTO | 117.711 |
+| 100 | CEIFADOR ABSOLUTO | 159.716 (e regenera 7% disso por segundo) |
+
+Tempo de matar medido com o jogador imóvel acertando tudo: 39 s no boss da onda
+5 com nível 3, ~1,5 min nos da 20 e 40, ~3,5 min no da 70 e ~5 min no da 90.
+
 ## Escudo de fase, trilha e o 67
 
 Duas coisas acontecem em toda luta de boss, do primeiro ao último:
