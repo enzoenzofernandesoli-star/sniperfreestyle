@@ -20,6 +20,7 @@ const UI = {
       classeNome: g('classeNome'),
       habDash: g('habDash'),
       habEscudo: g('habEscudo'),
+      habPossessao: g('habPossessao'),
       habUlt: g('habUlt'),
       bossBarra: g('bossBarra'),
       bossNome: g('bossNome'),
@@ -40,6 +41,7 @@ const UI = {
       buffs: g('buffs'),
       toqueDash: g('btToqueDash'),
       toqueEscudo: g('btToqueEscudo'),
+      toquePossessao: g('btToquePossessao'),
       toqueUlt: g('btToqueUlt'),
       listaMelhoriasAtivas: g('listaMelhoriasAtivas'),
       salaEquipe: g('salaEquipe'),
@@ -390,13 +392,13 @@ const UI = {
     UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
     UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
     UI.el.finalSub.textContent = venceu
-      ? 'As 40 ondas e os 8 bosses foram limpos. Respeito.'
-      : 'Caiu na onda ' + Jogo.onda + ' de ' + Jogo.TOTAL_ONDAS + '. Tenta outra classe.';
+      ? 'A arena infinita foi dominada.'
+      : 'Caiu na onda ' + Jogo.onda + '. Tenta superar esse recorde.';
 
     const linhas = [
       ['PONTOS', Math.round(Jogo.pontos).toLocaleString('pt-BR')],
       ['CLASSE', j.classe.nome],
-      ['ONDA', Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
+      ['ONDA', Jogo.onda + ' / ∞'],
       ['NÍVEL', j.nivel],
       ['ABATES', Jogo.estat.abates],
       ['BOSSES', Jogo.estat.bosses],
@@ -603,7 +605,7 @@ const UI = {
     if (!j) return;
 
     // corações (suportam fração) — só reconstrói o DOM quando o total muda
-    const max = Math.ceil(j.attr.vidaMax);
+    const max = j.corpoPossuido ? 10 : Math.ceil(j.attr.vidaMax);
     if (UI._maxCoracoes !== max) {
       UI._maxCoracoes = max;
       let html = '';
@@ -612,11 +614,14 @@ const UI = {
       UI._coracoes = UI.el.coracoes.querySelectorAll('.coracao');
     }
     for (let i = 0; i < UI._coracoes.length; i++) {
-      UI._coracoes[i].style.setProperty('--p', Mat.limitar(j.vida - i, 0, 1) * 100 + '%');
+      const preenchimento = j.corpoPossuido
+        ? Mat.limitar(j.vida / j.corpoPossuido.vidaMax * max - i, 0, 1)
+        : Mat.limitar(j.vida - i, 0, 1);
+      UI._coracoes[i].style.setProperty('--p', preenchimento * 100 + '%');
     }
 
     UI.el.pontos.textContent = Math.round(Jogo.pontos).toLocaleString('pt-BR');
-    UI.el.onda.textContent = Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
+    UI.el.onda.textContent = Jogo.onda + '/∞';
     UI.el.nivel.textContent = j.nivel;
     UI.el.barraXP.style.width = Mat.limitar(j.xp / j.xpProximo, 0, 1) * 100 + '%';
     UI.el.fps.textContent = Jogo.fps;
@@ -626,14 +631,26 @@ const UI = {
     UI.el.multi.className = 'multi' + (m >= 6 ? ' fogo' : m >= 3 ? ' quente' : '');
 
     const pDash = j.dashCarga / j.attr.dashRecarga;
-    const pEscudo = j.escudoAtivo ? 1 : j.escudoCarga / j.attr.escudoRecarga;
+    const pEscudo = j.corpoPossuido
+      ? 1 - j.corpoPossuido.especial / 3.2
+      : j.escudoAtivo ? 1 : j.escudoCarga / j.attr.escudoRecarga;
     const pUlt = j.ultCarga / j.attr.ultRecarga;
+    const alvoPossessao = !j.corpoPossuido && j.alvoPossessao();
+    const pPossessao = j.corpoPossuido ? j.corpoPossuido.tempo / j.possessaoMax : alvoPossessao ? 1 : 0;
     UI.pintarHabilidade(UI.el.habDash, pDash, j.dashRestante > 0);
-    UI.pintarHabilidade(UI.el.habEscudo, pEscudo, j.escudoAtivo);
+    UI.pintarHabilidade(UI.el.habEscudo, pEscudo, j.corpoPossuido ? false : j.escudoAtivo);
     UI.pintarHabilidade(UI.el.habUlt, pUlt, j.ultAtiva > 0);
+    UI.pintarHabilidade(UI.el.habPossessao, pPossessao, !!j.corpoPossuido);
     UI.pintarHabilidade(UI.el.toqueDash, pDash, j.dashRestante > 0);
-    UI.pintarHabilidade(UI.el.toqueEscudo, pEscudo, j.escudoAtivo);
+    UI.pintarHabilidade(UI.el.toqueEscudo, pEscudo, j.corpoPossuido ? false : j.escudoAtivo);
     UI.pintarHabilidade(UI.el.toqueUlt, pUlt, j.ultAtiva > 0);
+    UI.pintarHabilidade(UI.el.toquePossessao, pPossessao, !!j.corpoPossuido);
+    if (UI.el.habPossessao) UI.el.habPossessao.querySelector('.nome').textContent = j.corpoPossuido ? 'ABANDONAR' : alvoPossessao ? 'POSSUIR AGORA' : 'POSSUIR';
+    UI.el.habEscudo.querySelector('.nome').textContent = j.corpoPossuido ? 'ESPECIAL' : 'ESCUDO';
+    UI.el.toqueEscudo.textContent = j.corpoPossuido ? '✦' : '⛨';
+    UI.el.classeNome.textContent = j.corpoPossuido
+      ? TIPOS_INIMIGO[j.corpoPossuido.tipo].nome + ' · ' + j.classe.nome
+      : j.classe.nome;
 
     // buffs temporários
     const buffs = [];
@@ -641,6 +658,7 @@ const UI = {
     if (Jogo.imaGlobal > 0) buffs.push('<span class="buff roxo">◈ ÍMÃ ' + Jogo.imaGlobal.toFixed(1) + 's</span>');
     if (j.escudoAtivo) buffs.push('<span class="buff amarelo">⛨ ESCUDO ' + j.escudoRestante.toFixed(1) + 's</span>');
     if (j.ultAtiva > 0) buffs.push('<span class="buff vermelho">★ ULT ' + j.ultAtiva.toFixed(1) + 's</span>');
+    if (j.corpoPossuido) buffs.push('<span class="buff roxo">Ψ ' + TIPOS_INIMIGO[j.corpoPossuido.tipo].nome + ' ' + j.corpoPossuido.tempo.toFixed(1) + 's</span>');
     UI.el.buffs.innerHTML = buffs.join('');
     UI.atualizarEspera();
   },
@@ -701,7 +719,7 @@ const Toque = {
     tiro.addEventListener('lostpointercapture', soltarTiro);
 
     // botões de habilidade viram um pulso de tecla
-    const mapa = { dash: 'Space', escudo: 'KeyQ', ult: 'KeyE' };
+    const mapa = { dash: 'Space', escudo: 'KeyQ', possessao: 'KeyE', ult: 'ShiftLeft' };
     document.querySelectorAll('.hab-toque').forEach((b) => {
       b.addEventListener('pointerdown', (e) => {
         Som.destravar();

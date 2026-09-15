@@ -118,17 +118,17 @@ const CLASSES = [
     cor: '#7cf2a0',
     cor2: '#1d6b45',
     icone: 'I',
-    descricao: 'A classe mais completa do jogo: três drones que caçam sozinhos, tiro teleguiado e 4 corações. Forte de saída e monstruosa com melhorias.',
-    forcas: ['3 drones que caçam e atiram sozinhos', '4 corações', 'Tiro teleguiado que atravessa', 'Melhoria própria: até +3 drones'],
+    descricao: 'Dois drones caçam sozinhos enquanto o INVOCADOR sustenta a linha com tiro teleguiado.',
+    forcas: ['2 drones que caçam e atiram sozinhos', '3 corações', 'Tiro teleguiado que atravessa', 'Melhoria própria: até +2 drones'],
     fraquezas: ['Cadência pessoal média', 'Drone leva um tempo para virar a mira'],
     somTiro: 'arcano',
-    ult: { nome: 'LEGIÃO', descricao: 'Chama quatro drones extras por 12 s e acelera a tropa inteira.' },
+    ult: { nome: 'LEGIÃO', descricao: 'Chama três drones extras por 10 s e acelera a tropa inteira.' },
     atributos: {
-      vidaMax: 4, velocidade: 330, cadencia: 0.34, dano: 18, projeteis: 1,
+      vidaMax: 3, velocidade: 315, cadencia: 0.38, dano: 14, projeteis: 1,
       espalhamento: 0.04, balaVel: 980, balaRaio: 6, perfuracao: 1, ricochete: 0,
       homing: 0.5, critChance: 0.18, critMult: 2.1,
-      dashRecarga: 1.3, escudoRecarga: 9, escudoDuracao: 3, ultRecarga: 20,
-      ima: 220, regen: 0.02, orbes: 0, lacaios: 3
+      dashRecarga: 1.5, escudoRecarga: 10, escudoDuracao: 2.8, ultRecarga: 24,
+      ima: 200, regen: 0, orbes: 0, lacaios: 2
     }
   }
 ];
@@ -256,7 +256,7 @@ const MELHORIAS = [
     aplicar: (p) => { p.multXP += 0.25; }
   },
   {
-    id: 'lacaio', nome: 'MAIS UM NA TROPA', icone: '⌬', raridade: 'epico', max: 3,
+    id: 'lacaio', nome: 'MAIS UM NA TROPA', icone: '⌬', raridade: 'epico', max: 2,
     texto: '+1 drone (só para o INVOCADOR)',
     exige: (p) => p.classe.id === 'invocador',
     aplicar: (p) => { p.attr.lacaios = (p.attr.lacaios || 0) + 1; p.sincronizarLacaios(); }

@@ -48,6 +48,9 @@ class Jogador {
     this.rastro = [];
     this.recuo = 0;
     this.nome = '';            // apelido mostrado no cooperativo
+    this.corpoPossuido = null;
+    this.possessaoMax = 12.5;
+    this.possessaoAnimacao = 0;
   }
 
   sincronizarOrbes() {
@@ -107,7 +110,7 @@ class Jogador {
       l.recarga = this.attr.cadencia * (this.ultAtiva > 0 ? 0.8 : 1.05);
       Jogo.projeteis.push(new Projetil({
         x: l.x, y: l.y, angulo: l.mira, velocidade: this.attr.balaVel * 0.9,
-        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.85,
+        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.65,
         dono: 'jogador', cor: CORES_TIRO.jogador, perfuracao: this.attr.perfuracao,
         ricochete: this.attr.ricochete, homing: 0.6, critico: false
       }));
@@ -117,8 +120,119 @@ class Jogador {
 
   get intangivel() { return this.invulneravel > 0 || this.dashRestante > 0 || this.ultAtiva > 0 && this.classe.id === 'espectro'; }
 
+  alvoPossessao() {
+    let alvo = null, menor = 100;
+    for (const e of Jogo.inimigos) {
+      if (!e.vivo || e.vida <= 0 || e.vida / e.vidaMax >= 0.35) continue;
+      const d = Mat.distancia(this.x, this.y, e.x, e.y);
+      if (d <= menor) { alvo = e; menor = d; }
+    }
+    return alvo;
+  }
+
+  alternarPossessao() {
+    if (this.corpoPossuido) { this.expulsarAlma(false); return true; }
+    const alvo = this.alvoPossessao();
+    if (!alvo) return false;
+
+    const origemX = this.x, origemY = this.y;
+    this.corpoPossuido = {
+      tipo: alvo.tipo, elite: alvo.elite, vidaMax: alvo.vidaMax,
+      almaVida: this.vida, tempo: this.possessaoMax, especial: 0,
+      velocidade: alvo.velocidade
+    };
+    this.x = alvo.x; this.y = alvo.y;
+    this.vx = alvo.vx; this.vy = alvo.vy;
+    this.vida = Math.max(0.1, alvo.vida);
+    this.raio = alvo.raio;
+    alvo.vivo = false; // consumido sem pontuação, XP, drop ou contagem de abate
+    this.possessaoAnimacao = 0.38;
+    this.invulneravel = Math.max(this.invulneravel, 0.35);
+    Particulas.anel(this.x, this.y, '#b06dff', this.raio + 30, 30);
+    // Alma cruza o espaço entre os dois corpos. Emissão única: nada é criado
+    // dentro do loop quente de desenho.
+    for (let i = 0; i <= 12; i++) {
+      const p = i / 12;
+      Particulas.emitir({ x: Mat.misturar(origemX, this.x, p), y: Mat.misturar(origemY, this.y, p),
+        vida: 0.22 + p * 0.2, tam: 4 + p * 4, cor: '#b06dff', brilho: 24, atrito: 0.9 });
+    }
+    Jogo.aviso('CORPO POSSUÍDO — E PARA SAIR');
+    return true;
+  }
+
+  expulsarAlma(destruido) {
+    const corpo = this.corpoPossuido;
+    if (!corpo) return;
+    this.corpoPossuido = null;
+    this.vida = Math.max(0.1, corpo.almaVida);
+    this.raio = 16;
+    this.vx *= 0.25; this.vy *= 0.25;
+    this.invulneravel = Math.max(this.invulneravel, destruido ? 1.4 : 0.65);
+    this.possessaoAnimacao = 0.38;
+    Particulas.explosao(this.x, this.y, '#b06dff', 24, 330, 0.55, 5);
+    Particulas.anel(this.x, this.y, '#ffffff', 45, 18);
+    Jogo.aviso(destruido ? 'CORPO DESTRUÍDO — ALMA EXPULSA' : 'CORPO ABANDONADO');
+  }
+
+  atualizarPossessao(dt) {
+    if (!this.corpoPossuido) return;
+    const corpo = this.corpoPossuido;
+    corpo.tempo -= dt;
+    corpo.especial = Math.max(0, corpo.especial - dt);
+    this.possessaoAnimacao = Math.max(0, this.possessaoAnimacao - dt);
+    if (corpo.tempo <= 0) this.expulsarAlma(false);
+  }
+
+  atirarPossuido() {
+    const corpo = this.corpoPossuido;
+    if (!corpo) return;
+    const t = TIPOS_INIMIGO[corpo.tipo];
+    const comportamento = t.comportamento;
+    const rajada = comportamento === 'orbitar' || comportamento === 'rajada' ? 3 : comportamento === 'espiral' ? 2 : 1;
+    this.recargaTiro = Math.max(0.16, (t.recarga || 0.62) * (rajada > 1 ? 0.38 : 0.55));
+    for (let i = 0; i < rajada; i++) {
+      const desvio = rajada === 1 ? 0 : (i - (rajada - 1) / 2) * 0.24;
+      Jogo.projeteis.push(new Projetil({
+        x: this.x + Math.cos(this.angulo) * (this.raio + 8), y: this.y + Math.sin(this.angulo) * (this.raio + 8),
+        angulo: this.angulo + desvio, velocidade: t.projetilVel || 760,
+        raio: Math.max(4, this.raio * 0.16), dano: Math.max(12, this.attr.dano * 0.72),
+        dono: 'jogador', cor: t.cor, perfuracao: comportamento === 'perseguir' ? 1 : 0,
+        ricochete: comportamento === 'zigue' ? 1 : 0, homing: comportamento === 'piscar' ? 0.45 : 0
+      }));
+    }
+    Particulas.faisca(this.x, this.y, this.angulo, t.cor);
+    Som.tiro(this.classe.somTiro);
+  }
+
+  usarEspecialPossuido(controles) {
+    const corpo = this.corpoPossuido;
+    if (!corpo || corpo.especial > 0) return;
+    const t = TIPOS_INIMIGO[corpo.tipo];
+    const c = t.comportamento;
+    corpo.especial = 3.2;
+    if (c === 'investir' || c === 'kamikaze' || c === 'perseguir') {
+      const ex = controles.eixoX(), ey = controles.eixoY();
+      const a = ex || ey ? Math.atan2(ey, ex) : this.angulo;
+      this.dashRestante = 0.24; this.dashVX = Math.cos(a) * 1250; this.dashVY = Math.sin(a) * 1250;
+      this.invulneravel = Math.max(this.invulneravel, 0.3);
+    } else if (c === 'piscar') {
+      this.x = Mat.limitar(this.x + Math.cos(this.angulo) * 210, this.raio, Jogo.LARGURA - this.raio);
+      this.y = Mat.limitar(this.y + Math.sin(this.angulo) * 210, this.raio, Jogo.ALTURA - this.raio);
+      Particulas.anel(this.x, this.y, t.cor, 38, 16);
+    } else {
+      const n = c === 'espiral' ? 12 : c === 'rajada' || c === 'orbitar' ? 8 : 6;
+      for (let i = 0; i < n; i++) {
+        Jogo.projeteis.push(new Projetil({ x: this.x, y: this.y, angulo: this.angulo + Mat.TAU * i / n,
+          velocidade: t.projetilVel || 640, raio: 5, dano: Math.max(9, this.attr.dano * 0.5),
+          dono: 'jogador', cor: t.cor, perfuracao: 0, ricochete: 0, homing: 0 }));
+      }
+    }
+    Particulas.anel(this.x, this.y, t.cor, this.raio + 36, 20);
+  }
+
   /* --------------------------- Atualização --------------------------- */
   atualizar(dt, controles = Input) {
+    this.atualizarPossessao(dt);
     // mira: joystick de mira > mira automática (toque) > mouse
     const forcaMira = Math.hypot(controles.mira.x, controles.mira.y);
     let alvo;
@@ -135,8 +249,11 @@ class Jogador {
     // movimento
     const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey) || 1;
-    const alvoVX = (ex / mag) * this.attr.velocidade * (Math.hypot(ex, ey) > 0 ? 1 : 0);
-    const alvoVY = (ey / mag) * this.attr.velocidade * (Math.hypot(ex, ey) > 0 ? 1 : 0);
+    const velocidadeAtual = this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade;
+    const zigue = this.corpoPossuido && TIPOS_INIMIGO[this.corpoPossuido.tipo].comportamento === 'zigue'
+      ? Math.sin(Jogo.tempo * 8) * 0.28 : 0;
+    const alvoVX = ((ex / mag) - (ey / mag) * zigue) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
+    const alvoVY = ((ey / mag) + (ex / mag) * zigue) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
 
     if (this.dashRestante > 0) {
       this.dashRestante -= dt;
@@ -186,11 +303,11 @@ class Jogador {
     }
 
     // regeneração
-    if (this.attr.regen > 0 && this.vida < this.attr.vidaMax) {
+    if (!this.corpoPossuido && this.attr.regen > 0 && this.vida < this.attr.vidaMax) {
       this.vida = Math.min(this.attr.vidaMax, this.vida + this.attr.regen * dt);
     }
 
-    this.atualizarLacaios(dt);
+    if (!this.corpoPossuido) this.atualizarLacaios(dt);
 
     // orbes orbitais
     for (const o of this.orbes) {
@@ -214,10 +331,15 @@ class Jogador {
     }
 
     // ações
-    if (controles.atirando() && this.recargaTiro <= 0) this.atirar();
+    if (controles.atirando() && this.recargaTiro <= 0) {
+      if (this.corpoPossuido) this.atirarPossuido(); else this.atirar();
+    }
     if (controles.apertou('Space')) this.dash(controles);
-    if (controles.apertou('KeyQ') || controles.apertou('CapsLock')) this.ativarEscudo();
-    if (controles.apertou('KeyE') || controles.apertou('ShiftLeft') || controles.botaoDireito) this.ativarUlt();
+    if (controles.apertou('KeyQ') || controles.apertou('CapsLock')) {
+      if (this.corpoPossuido) this.usarEspecialPossuido(controles); else this.ativarEscudo();
+    }
+    if (controles.apertou('KeyE')) this.alternarPossessao();
+    if (controles.apertou('ShiftLeft') || controles.botaoDireito) this.ativarUlt();
   }
 
   /* ------------------- Previsão local (cooperativo) ------------------ */
@@ -240,8 +362,9 @@ class Jogador {
 
     const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey);
-    this.vx = Mat.suave(this.vx, mag > 0 ? (ex / mag) * this.attr.velocidade : 0, 12, dt);
-    this.vy = Mat.suave(this.vy, mag > 0 ? (ey / mag) * this.attr.velocidade : 0, 12, dt);
+    const velocidade = this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade;
+    this.vx = Mat.suave(this.vx, mag > 0 ? (ex / mag) * velocidade : 0, 12, dt);
+    this.vy = Mat.suave(this.vy, mag > 0 ? (ey / mag) * velocidade : 0, 12, dt);
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
@@ -349,9 +472,9 @@ class Jogador {
       this.invulneravel = Math.max(this.invulneravel, 2.2);
     } else if (this.classe.id === 'invocador') {
       // LEGIÃO: tropa temporária, sem invencibilidade nem dano instantâneo
-      const total = this.lacaios.length + 4;
-      for (let i = 0; i < 4; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 12));
-      this.ultAtiva = 12;   // enquanto dura, a tropa inteira atira mais rápido
+      const total = this.lacaios.length + 3;
+      for (let i = 0; i < 3; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 10));
+      this.ultAtiva = 10;   // enquanto dura, a tropa inteira atira mais rápido
       this.reposicionarLacaios();
       Particulas.anel(this.x, this.y, this.classe.cor, 70, 20);
     } else {
@@ -371,6 +494,18 @@ class Jogador {
 
   /* ------------------------------ Dano ------------------------------- */
   receberDano(quantidade, fonteX, fonteY) {
+    if (this.corpoPossuido) {
+      const t = TIPOS_INIMIGO[this.corpoPossuido.tipo];
+      // COURAÇA conserva o escudo frontal. BRUTO/TORRETA conservam resistência.
+      if (t.escudoFrontal && fonteX !== undefined) {
+        const frente = Math.abs(Mat.normalizarAngulo(Mat.anguloEntre(this.x, this.y, fonteX, fonteY) - this.angulo));
+        if (frente < 0.9) {
+          Particulas.anel(this.x, this.y, '#dfe9f5', this.raio + 10, 10);
+          return false;
+        }
+      }
+      if (t.resiste) quantidade *= t.resiste;
+    }
     if (this.escudoAtivo) {
       Particulas.anel(this.x, this.y, '#ffd34d', 30, 12);
       return false;
@@ -388,7 +523,8 @@ class Jogador {
       this.vx += Math.cos(a) * 320;
       this.vy += Math.sin(a) * 320;
     }
-    if (this.vida <= 0 && Jogo.jogadores().length === 0) Jogo.derrota();
+    if (this.vida <= 0 && this.corpoPossuido) this.expulsarAlma(true);
+    else if (this.vida <= 0 && Jogo.jogadores().length === 0) Jogo.derrota();
     return true;
   }
 
@@ -424,6 +560,10 @@ class Jogador {
   desenhar(ctx) {
     const cor = this.skin.cor;
     const cor2 = this.skin.cor2;
+    if (this.corpoPossuido) {
+      this.desenharPossuido(ctx);
+      return;
+    }
     // rastro
     for (const r of this.rastro) {
       const a = Mat.limitar(r.vida / 0.22, 0, 1) * 0.25;
@@ -534,6 +674,42 @@ class Jogador {
       ctx.restore();
     }
     ctx.globalAlpha = 1;
+  }
+
+  desenharPossuido(ctx) {
+    const corpo = this.corpoPossuido;
+    const t = TIPOS_INIMIGO[corpo.tipo];
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angulo);
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 28; ctx.shadowColor = '#b06dff';
+    ctx.beginPath();
+    for (let i = 0; i < t.lados; i++) {
+      const a = Mat.TAU * i / t.lados;
+      ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * this.raio, Math.sin(a) * this.raio);
+    }
+    ctx.closePath();
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, this.raio);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, t.cor); g.addColorStop(1, t.cor2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = '#b06dff'; ctx.stroke();
+    ctx.rotate(-this.angulo + Jogo.tempo * 2.4);
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = '#e0b4ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, this.raio + 9 + Math.sin(Jogo.tempo * 7) * 3, 0, Mat.TAU); ctx.stroke();
+    ctx.restore();
+
+    const p = Mat.limitar(corpo.tempo / this.possessaoMax, 0, 1);
+    const largura = Math.max(56, this.raio * 2.4);
+    ctx.fillStyle = 'rgba(8,0,18,.78)';
+    ctx.fillRect(this.x - largura / 2, this.y - this.raio - 20, largura, 7);
+    ctx.fillStyle = '#b06dff';
+    ctx.fillRect(this.x - largura / 2, this.y - this.raio - 20, largura * p, 7);
+    const vida = Mat.limitar(this.vida / corpo.vidaMax, 0, 1);
+    ctx.fillStyle = 'rgba(8,0,18,.78)';
+    ctx.fillRect(this.x - largura / 2, this.y + this.raio + 13, largura, 6);
+    ctx.fillStyle = vida > 0.5 ? '#5cff9d' : vida > 0.25 ? '#ffd34d' : '#ff4d6d';
+    ctx.fillRect(this.x - largura / 2, this.y + this.raio + 13, largura * vida, 6);
   }
 }
 
@@ -780,6 +956,13 @@ class Inimigo {
     this.flash = Math.max(0, this.flash - dt * 4);
     this.angulo += this.giro * dt;
     const j = Jogo.alvoJogador(this.x, this.y);
+    if (!j) {
+      this.vx *= Math.pow(0.08, dt);
+      this.vy *= Math.pow(0.08, dt);
+      this.x = Mat.limitar(this.x + this.vx * dt, this.raio, Jogo.LARGURA - this.raio);
+      this.y = Mat.limitar(this.y + this.vy * dt, this.raio, Jogo.ALTURA - this.raio);
+      return;
+    }
     const dist = Mat.distancia(this.x, this.y, j.x, j.y);
     const angJog = Mat.anguloEntre(this.x, this.y, j.x, j.y);
 
@@ -977,6 +1160,7 @@ class Inimigo {
     Camera.bater(9);
     Som.morteInimigo();
     for (const j of Jogo.jogadores()) {
+      if (j.corpoPossuido) continue;
       if (Mat.distancia(this.x, this.y, j.x, j.y) < this.def.raioExplosao + j.raio) {
         j.receberDano(this.def.dano, this.x, this.y);
       }
@@ -1092,6 +1276,20 @@ class Inimigo {
       ctx.fillRect(this.x - largura / 2, this.y - this.raio - 12, largura, 5);
       ctx.fillStyle = p > 0.5 ? '#5cff9d' : p > 0.25 ? '#ffd34d' : '#ff4d6d';
       ctx.fillRect(this.x - largura / 2, this.y - this.raio - 12, largura * p, 5);
+    }
+
+    // Convite contextual. Só o jogador local vê; em cooperativo cada tela
+    // calcula o próprio alcance, sem criar estado de jogo no convidado.
+    const j = Jogo.jogador;
+    if (j && !j.corpoPossuido && this.vivo && this.vida > 0 && this.vida / this.vidaMax < 0.35
+      && Mat.distancia(j.x, j.y, this.x, this.y) <= 100) {
+      ctx.save();
+      ctx.strokeStyle = '#b06dff'; ctx.lineWidth = 4;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 28; ctx.shadowColor = '#b06dff';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.raio + 12 + Math.sin(Jogo.tempo * 8) * 3, 0, Mat.TAU); ctx.stroke();
+      ctx.fillStyle = '#f0d7ff'; ctx.font = 'bold 18px Orbitron, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('E', this.x, this.y - this.raio - 24);
+      ctx.restore();
     }
   }
 }
@@ -1209,7 +1407,11 @@ class Boss {
     this.y = 150;
     this.direcao = 1;
     this.raio = def.raio;
-    const escala = 1 + (onda - 5) * 0.05;
+    const encontro = Math.max(1, Math.floor(onda / 5));
+    this.ascensao = Math.floor((encontro - 1) / BOSSES.length);
+    this.ritmoAscensao = Math.max(0.72, 1 - this.ascensao * 0.035);
+    this.impetoAscensao = Math.min(1.18, 1 + this.ascensao * 0.025);
+    const escala = 1 + Math.min(encontro - 1, 7) * 0.13 + Math.pow(Math.max(0, encontro - 8), 0.78) * 0.09;
     this.vidaMax = def.vida * escala * Boss.VIDA_EXTRA;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
@@ -1265,12 +1467,17 @@ class Boss {
     if (this.telegrafo > 0) { this.telegrafo -= dt; return; }
 
     const j = Jogo.alvoJogador(this.x, this.y);
+    if (!j) {
+      this.recarga = Math.max(this.recarga, 0.35);
+      this.laser = null;
+      return;
+    }
     const f = this.fase;
     // Fim de barra é a parte difícil: o boss anda e atira mais rápido.
     this.furioso = this.porcentagem <= Boss.FURIA_VIDA;
     this.desesperado = this.porcentagem <= Boss.DESESPERO_VIDA;
     const passoFase = Boss.IMPETO_FASE[Math.min(this.faseIndice, Boss.IMPETO_FASE.length - 1)];
-    const impeto = passoFase * (this.desesperado ? 1.35 : this.furioso ? 1.15 : 1);
+    const impeto = passoFase * this.impetoAscensao * (this.desesperado ? 1.35 : this.furioso ? 1.15 : 1);
 
     // movimento
     switch (f.movimento) {
@@ -1386,7 +1593,7 @@ class Boss {
       this.executarAtaque(ataque);
       const ritmo = this.desesperado ? Boss.DESESPERO_RITMO : this.furioso ? Boss.FURIA_RITMO : 1;
       const daFase = Boss.RITMO_FASE[Math.min(this.faseIndice, Boss.RITMO_FASE.length - 1)];
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * ritmo * Mat.aleatorio(0.85, 1.15);
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * ritmo * this.ritmoAscensao * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura

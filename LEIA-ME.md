@@ -3,10 +3,10 @@
 Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependência:
 é só abrir o `index.html` no navegador. O placar mundial requer site publicado com API e banco.
 
-## Versão de 40 ondas
+## Modo infinito
 
-- 40 ondas, boss a cada 5: 8 bosses no total. Os novos são Ferreiro Solar,
-  Oráculo de Jade, Eclipse Fantasma e Núcleo Infinito, cada um com 3–4 fases.
+- Ondas infinitas, com boss a cada 5. Depois do oitavo, a rotação recomeça em
+  versões ascendidas, mais resistentes, sem encerrar a partida.
 - 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
 - Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
@@ -18,9 +18,8 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   `COOPERATIVO.md`.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
-- Migração `banco/migracoes/001_placar_40_ondas.sql` aplicada em 14/09/2026 no
-  Neon `sobrecarga-placar`: a tabela aceita ondas até 40. Em outra instalação,
-  execute a migração com o proprietário da tabela antes de publicar a API.
+- Instalação que já usa o placar de 40 ondas precisa executar
+  `banco/migracoes/002_placar_ondas_infinitas.sql` antes de publicar esta API.
   O placar online também exige `DATABASE_URL` no servidor da Vercel.
 
 ### Leitura dos tiros e desempenho no celular
@@ -71,8 +70,9 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 | Mirar | mouse |
 | Atirar | clique esquerdo (segurar) |
 | Dash (invencível por instantes) | `ESPAÇO` |
-| Escudo | `Q` (ou `CAPS LOCK`) |
-| Ultimate | `E`, `SHIFT` ou clique direito |
+| Escudo / especial do corpo | `Q` (ou `CAPS LOCK`) |
+| Possuir / abandonar corpo | `E` |
+| Ultimate | `SHIFT` ou clique direito |
 | Pausar | `P` ou `ESC` |
 | Escolher melhoria | `1` `2` `3` |
 
@@ -86,7 +86,7 @@ Automático / Sempre visíveis / Nunca — dá pra forçar no PC pra testar).
 | Joystick esquerdo (**MOVER**) | anda em 360° |
 | Joystick direito (**MIRAR**) | mira na direção do dedo e **atira sozinho** enquanto arrasta |
 | Botão **ATIRAR** | dispara com **mira automática** no inimigo mais próximo |
-| Botões `»` `⛨` `★` | dash, escudo e ultimate — cada um mostra a própria recarga enchendo |
+| Botões `»` `⛨` `Ψ` `★` | dash, escudo/especial, possessão e ultimate — cada um mostra estado/recarga |
 | `❚❚` no centro de baixo | pausa |
 
 Sem joystick de mira e sem dedo no ATIRAR, a mira automática já segue o inimigo mais próximo —
@@ -102,16 +102,28 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 | **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
 | **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro que suga e explode |
-| **INVOCADOR** | a mais forte: 4 corações, tiro teleguiado e 3 drones que caçam sozinhos | **LEGIÃO** — 4 drones extras por 12 s, tropa inteira mais rápida |
+| **INVOCADOR** | 3 corações, tiro teleguiado e 2 drones que caçam sozinhos | **LEGIÃO** — 3 drones extras por 10 s, tropa inteira mais rápida |
 
-O INVOCADOR é, de propósito, a classe mais forte do jogo. Cada drone orbita a
-78 px, procura alvo num raio de 760 px e atira com **85% do dano do dono**, quase
+O INVOCADOR continua forte, mas deixou de dominar todas as classes. Cada drone orbita a
+78 px, procura alvo num raio de 760 px e atira com **65% do dano do dono**, quase
 na mesma cadência dele, com tiro teleguiado. Durante a LEGIÃO a tropa atira 20%
-mais rápido. A melhoria **MAIS UM NA TROPA** (+1 drone, até 3 vezes) só aparece
+mais rápido. A melhoria **MAIS UM NA TROPA** (+1 drone, até 2 vezes) só aparece
 para ele — melhoria com `exige` não polui o sorteio das outras classes.
 
-Medido: matando o boss da onda 20 no nível 12, o INVOCADOR leva **35,7 s**, o
-GUARDIÃO 55,1 s e o SNIPER 66,2 s.
+## Possessão
+
+- Inimigo precisa estar vivo, abaixo de **35% da vida** e a até **100 px**.
+- Contorno roxo e `E` aparecem quando o alvo está disponível.
+- `E` consome o corpo sem contar abate, XP ou drop. Alma mantém pontuação, nível,
+  melhorias, onda, multiplicador e identidade cooperativa.
+- Durante **12,5 s**, jogador usa vida restante, velocidade, tamanho, colisão,
+  aparência e tiro do inimigo. `Q` usa especial derivado do comportamento: investida,
+  teleporte ou descarga radial. Melhorias permanentes ainda escalam o dano.
+- Barra roxa sobre o corpo mostra tempo; barra inferior mostra vida do corpo.
+- `E`, tempo esgotado ou destruição expulsam a alma no mesmo local. Vida original
+  volta; destruição concede **1,4 s** de invulnerabilidade para escapar.
+- Durante a possessão, inimigos e boss consideram o corpo um aliado e não o atacam.
+  No cooperativo, passam a mirar outro jogador que não esteja possuído.
 
 ## Inimigos
 
@@ -150,10 +162,10 @@ o que mais solta item. A chance começa em 2% na onda 8 e satura em 30%.
 
 | O quê | Como cresce |
 |---|---|
-| Vida do inimigo | +10,5% por onda — onda 40 vale 5,1× a onda 1 |
-| Velocidade | +1,1% por onda, teto de +40% |
-| Recarga de tiro | −1,1% por onda, piso de 60% do tempo original |
-| Vida do boss | +5% por onda em cima da base, e ainda ×1,35 |
+| Vida do inimigo | cresce forte até a 40 e depois em curva sublinear contínua |
+| Velocidade | crescimento logarítmico, teto de +48% |
+| Recarga de tiro | aceleração logarítmica, piso de 52% do tempo original |
+| Vida do boss | cresce por encontro; depois da primeira rotação, ascende lentamente |
 
 ### Menos folga
 
@@ -183,7 +195,7 @@ não tiro de sorte.
   **3 projéteis extras** por tiro, 4 cópias de dano ou cadência, 2 de regeneração — que
   agora cura 0,025 coração/s em vez de 0,06.
 
-## Bosses (ondas 5, 10, 15, 20, 25, 30, 35, 40)
+## Bosses (a cada 5 ondas, para sempre)
 
 Três movimentos e quatro ataques novos entraram para o boss deixar de ser alvo
 parado que cospe bala:
@@ -216,6 +228,8 @@ E três camadas de pressão:
   talo — ele chega lá.
 - **Fúria** abaixo de 25% de vida e **desespero** abaixo de 10%: mais rápido,
   mais ataques, aviso de laser mais curto e brecha da parede menor.
+- Cada rotação completa aumenta devagar o ímpeto e a frequência dos ataques. A
+  dificuldade alta demora para chegar, mas a ascensão nunca para.
 - Encostar no boss tira 1 nas duas primeiras fases e 2 da terceira em diante.
 
 Os guardas blindados saíram: fase que travava o dano no boss enquanto uma escolta
@@ -372,7 +386,7 @@ deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
 | Vida e padrões de boss | `src/entidades.js` → `BOSSES` |
 | Densidade das ondas | `src/jogo.js` → `prepararOnda()` (`orcamento`) e `tetoSimultaneo` |
 | Escala de vida por onda | `src/jogo.js` → `multiplicadorVida()` |
-| Total de ondas | `src/jogo.js` → `TOTAL_ONDAS` |
+| Progressão infinita | `src/jogo.js` → curvas de onda e `spawnarBoss()` |
 | Curva de XP (frequência das melhorias) | `src/entidades.js` → `xpProximo` (`50` e `1.38`) |
 
 Medido no pior caso (onda 19, 34 inimigos, 300 projéteis): **0,14 ms de lógica e 0,27 ms de
@@ -382,7 +396,7 @@ render por quadro** — sobra folga de 60× no orçamento de 16,6 ms.
 
 ## Próximos passos possíveis
 
-1. Modo infinito (sobrevivência) com placar separado.
+1. Placares sazonais separados para comparar runs infinitas.
 2. Sinergias entre melhorias (ex.: ricochete + perfuração = tiro que varre a sala).
 3. Elite/campeão: versão dourada de inimigo comum com vida e recompensa dobradas.
 4. Gamepad via Gamepad API.

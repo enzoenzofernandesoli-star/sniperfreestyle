@@ -8,7 +8,7 @@ const Jogo = {
   // enquadramento e sobra espaço para fugir de boss.
   LARGURA: 1760,
   ALTURA: 990,
-  TOTAL_ONDAS: 40,
+  TOTAL_ONDAS: Infinity,
   modoLeve: false,
   escalaRender: 1,
   intervaloHUD: 0,
@@ -32,9 +32,10 @@ const Jogo = {
   seq: 0,
   proximoId() { return ++Jogo.seq; },   // identidade estável para o cooperativo
   jogadores() { return [Jogo.jogador, ...Jogo.outros.values()].filter((j) => j && j.vida > 0); },
+  jogadoresHostis() { return Jogo.jogadores().filter((j) => !j.corpoPossuido); },
   alvoJogador(x, y) {
-    let alvo = Jogo.jogador, distancia = Infinity;
-    for (const j of Jogo.jogadores()) {
+    let alvo = null, distancia = Infinity;
+    for (const j of Jogo.jogadoresHostis()) {
       const d = Mat.distanciaQ(x, y, j.x, j.y);
       if (d < distancia) { alvo = j; distancia = d; }
     }
@@ -123,17 +124,20 @@ const Jogo = {
   /* ------------------------------ Ondas ------------------------------ */
   ehOndaDeBoss(onda) { return onda % 5 === 0; },
 
-  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.105; },
+  multiplicadorVida() {
+    const depoisDe40 = Math.max(0, Jogo.onda - 40);
+    return 1 + Math.min(Jogo.onda - 1, 39) * 0.085 + Math.pow(depoisDe40, 0.82) * 0.032;
+  },
 
   // Inimigo também fica mais rápido e atira mais miúdo conforme a onda sobe:
   // a mesma jogada que salvava na onda 5 não salva na 30.
-  aceleracaoOnda() { return 1 + Math.min(0.4, (Jogo.onda - 1) * 0.011); },
-  ritmoInimigo() { return Math.max(0.6, 1 - (Jogo.onda - 1) * 0.011); },
+  aceleracaoOnda() { return 1 + Math.min(0.48, Math.log2(1 + (Jogo.onda - 1) / 10) * 0.12); },
+  ritmoInimigo() { return Math.max(0.52, 1 - Math.log2(1 + (Jogo.onda - 1) / 12) * 0.11); },
 
   // Chance de um inimigo nascer elite. Começa na onda 8 e satura em 30%.
   sorteiaElite() {
     if (Jogo.onda < 10) return false;
-    return Mat.chance(Math.min(0.3, (Jogo.onda - 9) * 0.016));
+    return Mat.chance(Math.min(0.42, (Jogo.onda - 9) * 0.009));
   },
 
   prepararOnda() {
@@ -151,7 +155,9 @@ const Jogo = {
     } else {
       // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
       // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
-      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 1.9 + Math.max(0, Jogo.onda - 20) * 1.3);
+      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 1.65
+        + Math.min(35, Math.max(0, Jogo.onda - 20) * 0.7)
+        + Math.log2(1 + Math.max(0, Jogo.onda - 70)) * 3);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
@@ -196,12 +202,15 @@ const Jogo = {
   },
 
   spawnarBoss() {
-    const indice = Math.floor(Jogo.onda / 5) - 1;
-    Jogo.boss = new Boss(BOSSES[indice], Jogo.onda);
-    Jogo.flashTela(0.5, BOSSES[indice].cor);
+    const encontro = Math.floor(Jogo.onda / 5) - 1;
+    const indice = encontro % BOSSES.length;
+    const def = BOSSES[indice];
+    Jogo.boss = new Boss(def, Jogo.onda);
+    Jogo.flashTela(0.5, def.cor);
     Camera.bater(20);
     Som.bossEntra();
-    Jogo.aviso(BOSSES[indice].nome);
+    const ciclo = Math.floor(encontro / BOSSES.length) + 1;
+    Jogo.aviso(def.nome + (ciclo > 1 ? ' · ASCENSÃO ' + ciclo : ''));
     UI.mostrarBarraBoss(Jogo.boss);
   },
 
@@ -222,7 +231,6 @@ const Jogo = {
   terminarOnda() {
     if (Jogo.ondaLimpa) return;
     Jogo.ondaLimpa = true;
-    if (Jogo.onda >= Jogo.TOTAL_ONDAS) { Jogo.vitoria(); return; }
     Jogo.pontos += 300 * Jogo.onda;
     Jogo.aviso('ONDA ' + Jogo.onda + ' LIMPA');
     Jogo.intervaloOnda = 1.6;
@@ -346,6 +354,7 @@ const Jogo = {
   aplicarRaioBoss(x, y, angulo, cor) {
     const dx = Math.cos(angulo), dy = Math.sin(angulo);
     for (const j of Jogo.jogadores()) {
+      if (j.corpoPossuido) continue;
       const t = (j.x - x) * dx + (j.y - y) * dy;
       if (t < 0) continue;
       const px = x + dx * t, py = y + dy * t;
@@ -493,6 +502,7 @@ const Jogo = {
       } else {
         let consumido = false;
         for (const j of Jogo.jogadores()) {
+        if (j.corpoPossuido) continue;
         const d = Mat.distancia(b.x, b.y, j.x, j.y);
         // escudo do guardião reflete
         if (j.escudoAtivo && d < j.raio * 2.1 + b.raio) {

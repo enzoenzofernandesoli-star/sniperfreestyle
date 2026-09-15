@@ -52,7 +52,7 @@ servidor não sabe quem está na sala além das conexões que precisa encaminhar
 | `pronto {classe, skin}` | convidado → anfitrião | escolheu classe |
 | `lobby {lista}` | anfitrião → convidados | painel da sala |
 | `comecou` | anfitrião → convidados | largada |
-| `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s |
+| `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s; inclui possessão |
 
 ## Onde as salas moram
 
@@ -91,6 +91,11 @@ saídas:
 - Salas privadas por código de convite escolhido pelo anfitrião, 2 a 4 pessoas.
 - Cada um escolhe classe e skin; todos veem as mesmas ondas, inimigos, bosses,
   projéteis e coletáveis, com os mesmos números.
+- Possessão continua autoritativa no anfitrião. Convidado envia `possessao`/`especial`;
+  snapshot devolve tipo, vida, raio, velocidade e tempo do corpo. Previsão local só
+  move a aparência recebida — nunca decide entrada, saída, dano ou ataque.
+- Corpo possuído sai da lista de alvos hostis. Inimigos e boss miram outro jogador
+  não possuído; se todos estiverem disfarçados, seguram movimento e ataque.
 - Comando do convidado (movimento, mira, tiro, dash, escudo, ult) sobe a 30/s; o
   anfitrião valida faixa e frequência antes de usar (`Coop.validarControle`).
 - Snapshot a 20/s, ~1,9 KB numa partida de 4 inimigos. Não trafega o que o convidado
@@ -122,8 +127,8 @@ saídas:
 
 ## Estado do ranking solo
 
-`api/placar.js` consulta e grava no Neon; a migração para 40 ondas já foi aplicada em
-produção. Para valer mundialmente o site precisa ser publicado com `DATABASE_URL`
+`api/placar.js` consulta e grava no Neon. Modo infinito exige aplicar
+`banco/migracoes/002_placar_ondas_infinitas.sql`. Para valer mundialmente o site precisa ser publicado com `DATABASE_URL`
 configurada no servidor — a API nunca expõe essa credencial ao navegador. O ranking
 solo ainda aceita resultado enviado pelo cliente e, portanto, não resiste a pontuação
 fabricada; isso é anterior ao cooperativo e continua aberto.

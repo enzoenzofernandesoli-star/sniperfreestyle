@@ -10,12 +10,13 @@ for (const arquivo of ['src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
   vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), contexto, { filename: arquivo });
 }
 
-test('40 ondas terminam após o oitavo boss', () => {
-  assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 40);
+test('ondas são infinitas e bosses continuam depois do oitavo', () => {
+  assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), Infinity);
   assert.equal(vm.runInContext('BOSSES.length', contexto), 8);
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(40)', contexto), true);
-  assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(39)', contexto), false);
+  assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(45)', contexto), true);
   assert.equal(vm.runInContext('BOSSES[Math.floor(40 / 5) - 1].id', contexto), 'nucleo');
+  assert.equal(vm.runInContext('BOSSES[(Math.floor(45 / 5) - 1) % BOSSES.length].id', contexto), 'sentinela');
 });
 
 test('arena cabe em uma tela e a câmera fica no centro', () => {
@@ -43,23 +44,26 @@ test('arena cabe em uma tela e a câmera fica no centro', () => {
 
 test('as cinco classes têm três skins cosméticas cada', () => {
   const dados = vm.runInContext('CLASSES.map(c => ({ id: c.id, vida: c.atributos.vidaMax, skins: SKINS[c.id].length }))', contexto);
-  assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3], [4, 3]]);
+  assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3], [3, 3]]);
   assert.equal(vm.runInContext("skinDaClasse('sniper', 'inexistente').id", contexto), 'original');
 });
 
-test('inimigo da onda 40 tem cinco vezes a vida, e o elite bem mais', () => {
+test('dificuldade infinita cresce devagar e sem parar', () => {
   const dados = vm.runInContext(`(() => {
     Jogo.onda = 1;
     const inicio = { vida: Jogo.multiplicadorVida(), veloc: Jogo.aceleracaoOnda(), elite: Jogo.sorteiaElite() };
     Jogo.onda = 40;
     const fim = { vida: Jogo.multiplicadorVida(), veloc: Jogo.aceleracaoOnda(), ritmo: Jogo.ritmoInimigo() };
-    return { inicio, fim };
+    Jogo.onda = 140;
+    const infinito = { vida: Jogo.multiplicadorVida(), veloc: Jogo.aceleracaoOnda(), ritmo: Jogo.ritmoInimigo() };
+    return { inicio, fim, infinito };
   })()`, contexto);
   assert.equal(dados.inicio.vida, 1);
   assert.equal(dados.inicio.elite, false, 'elite não aparece na onda 1');
-  assert.ok(dados.fim.vida > 5 && dados.fim.vida < 6, 'onda 40 entre 5x e 6x de vida');
-  assert.ok(dados.fim.veloc > 1.3, 'inimigo da onda 40 anda bem mais rápido');
-  assert.ok(dados.fim.ritmo < 0.7, 'e atira bem mais miúdo');
+  assert.ok(dados.fim.vida > 4 && dados.fim.vida < 5, 'onda 40 fica dura sem virar parede cedo');
+  assert.ok(dados.infinito.vida > dados.fim.vida, 'vida continua crescendo depois da antiga onda final');
+  assert.ok(dados.infinito.veloc >= dados.fim.veloc, 'velocidade não regride');
+  assert.ok(dados.infinito.ritmo <= dados.fim.ritmo, 'cadência não regride');
 });
 
 test('elite é bem mais duro que o comum do mesmo tipo', () => {
@@ -109,7 +113,7 @@ test('melhoria repetida perde peso e o teto de cópias é no máximo 4', () => {
   assert.equal(dados.tiros, 3, 'no máximo três projéteis extras por tiro');
 });
 
-test('INVOCADOR nasce com três drones e só ele recebe a melhoria de drone', () => {
+test('INVOCADOR enfraquecido nasce com dois drones e só ele recebe a melhoria de drone', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -126,11 +130,111 @@ test('INVOCADOR nasce com três drones e só ele recebe a melhoria de drone', ()
       temDilatacao: pool.includes('tempo'), temEstilhaco: pool.includes('explode') };
   })()`, mundo);
   assert.equal(dados.dronesSniper, 0, 'classe sem drone não ganha drone');
-  assert.equal(dados.drones, 4, 'três de base mais um da melhoria');
+  assert.equal(dados.drones, 3, 'dois de base mais um da melhoria');
   assert.equal(dados.sniperVeDrone, false, 'melhoria de drone não polui o sorteio das outras classes');
   assert.equal(dados.invVeDrone, true);
   assert.equal(dados.temDilatacao, false, 'dilatação de tempo saiu do jogo');
   assert.equal(dados.temEstilhaco, false, 'estilhaço ao matar saiu do jogo');
+});
+
+test('possessão exige 35% de vida e 100 px, preserva progresso e expulsa a alma no fim', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Particulas.iniciar();
+    Jogo.onda = 12; Jogo.pontos = 777; Jogo.multiplicador = 4;
+    const j = Jogo.jogador = new Jogador('sniper', 'original');
+    j.x = 500; j.y = 500; j.vida = 1.5; j.nivel = 6; j.melhorias.dano = 2;
+    const longe = new Inimigo('bruto', 601, 500, 1, false);
+    longe.vida = longe.vidaMax * 0.34;
+    const cheio = new Inimigo('atirador', 580, 500, 1, false);
+    cheio.vida = cheio.vidaMax * 0.36;
+    Jogo.inimigos = [longe, cheio];
+    const bloqueado = j.alternarPossessao();
+    longe.x = 600;
+    const entrou = j.alternarPossessao();
+    const durante = { tipo: j.corpoPossuido.tipo, vida: j.vida, raio: j.raio,
+      pontos: Jogo.pontos, nivel: j.nivel, melhoria: j.melhorias.dano, alvoConsumido: !longe.vivo };
+    j.atualizarPossessao(12.6);
+    return { bloqueado, entrou, durante, depois: { possuido: !!j.corpoPossuido, vida: j.vida,
+      raio: j.raio, pontos: Jogo.pontos, onda: Jogo.onda, multi: Jogo.multiplicador } };
+  })()`, mundo);
+  assert.equal(dados.bloqueado, false, '101 px não alcança e inimigo com 36% não serve');
+  assert.equal(dados.entrou, true);
+  assert.equal(dados.durante.tipo, 'bruto');
+  assert.equal(dados.durante.alvoConsumido, true, 'corpo sai da lista sem virar abate');
+  assert.ok(dados.durante.raio > 16);
+  assert.deepEqual([dados.durante.pontos, dados.durante.nivel, dados.durante.melhoria], [777, 6, 2]);
+  assert.deepEqual([dados.depois.possuido, dados.depois.vida, dados.depois.raio], [false, 1.5, 16]);
+  assert.deepEqual([dados.depois.pontos, dados.depois.onda, dados.depois.multi], [777, 12, 4]);
+});
+
+test('inimigos tratam corpo possuído como aliado e miram outro jogador no cooperativo', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    const disfarcado = Jogo.jogador = new Jogador('sniper', 'original');
+    disfarcado.x = 100; disfarcado.y = 100;
+    disfarcado.corpoPossuido = { tipo: 'corredor', tempo: 10, vidaMax: 10, velocidade: 100 };
+    const sozinho = Jogo.alvoJogador(110, 100);
+    const colega = new Jogador('guardiao', 'original');
+    colega.x = 900; colega.y = 500;
+    Jogo.outros.set('colega', colega);
+    const emEquipe = Jogo.alvoJogador(110, 100);
+    return { sozinho: sozinho === null, mirouColega: emEquipe === colega,
+      hostis: Jogo.jogadoresHostis().length };
+  })()`, mundo);
+  assert.equal(dados.sozinho, true, 'sozinho possuído não recebe alvo');
+  assert.equal(dados.mirouColega, true, 'inimigo troca a mira para jogador não possuído');
+  assert.equal(dados.hostis, 1);
+});
+
+test('corpo destruído absorve a morte e devolve a alma viva no mesmo lugar', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Particulas.iniciar(); Jogo.onda = 8;
+    const j = Jogo.jogador = new Jogador('guardiao', 'original');
+    j.x = 400; j.y = 300; j.vida = 2.5;
+    const e = new Inimigo('corredor', 450, 300, 1, false); e.vida = 0.2; Jogo.inimigos = [e];
+    j.alternarPossessao(); const x = j.x, y = j.y;
+    j.invulneravel = 0; j.receberDano(2, 0, 0);
+    return { possuido: !!j.corpoPossuido, vida: j.vida, x: j.x, y: j.y, origem: [x, y], inv: j.invulneravel };
+  })()`, mundo);
+  assert.equal(dados.possuido, false);
+  assert.equal(dados.vida, 2.5);
+  assert.deepEqual([dados.x, dados.y], Array.from(dados.origem));
+  assert.ok(dados.inv >= 1.4, 'alma volta com janela curta para escapar');
+});
+
+test('corpo possuído usa ataque, especial e atravessa snapshot do cooperativo', () => {
+  const ctx = mundoCoop();
+  const dados = vm.runInContext(`(() => {
+    Particulas.iniciar(); Jogo.onda = 12;
+    const j = Jogo.jogador = new Jogador('arcano', 'original');
+    const e = new Inimigo('torreta', j.x + 60, j.y, 1, false);
+    e.vida = e.vidaMax * 0.2; Jogo.inimigos = [e];
+    j.alternarPossessao();
+    const antes = Jogo.projeteis.length;
+    j.atirarPossuido();
+    j.usarEspecialPossuido({ eixoX: () => 0, eixoY: () => 0 });
+    const pacote = Coop.empacotarJogador('eu', j);
+    const copia = new Jogador('arcano', 'original');
+    Coop.absorverJogador(copia, pacote);
+    return { tiros: Jogo.projeteis.length - antes, tipo: copia.corpoPossuido.tipo,
+      tempo: copia.corpoPossuido.tempo, raio: copia.raio, especial: copia.corpoPossuido.especial };
+  })()`, ctx);
+  assert.ok(dados.tiros >= 6, 'torreta herda rajada básica e especial radial');
+  assert.equal(dados.tipo, 'torreta');
+  assert.ok(dados.tempo > 12 && dados.tempo <= 12.5);
+  assert.ok(dados.raio > 16);
+  assert.ok(dados.especial > 3);
 });
 
 test('pool de partículas devolve o índice e não varre tudo quando enche', () => {
@@ -217,7 +321,7 @@ test('ricochete vertical também libera novo acerto', () => {
   assert.equal(resultado, true);
 });
 
-test('API grava onda 40 e rejeita onda 41', async () => {
+test('API aceita progresso infinito', async () => {
   const Module = require('node:module');
   const carregar = Module._load;
   const consultas = [];
@@ -243,13 +347,13 @@ test('API grava onda 40 e rejeita onda 41', async () => {
     };
     await api({ method: 'POST', body: {
       nome: 'TESTE', pontos: 1000, classe: 'SNIPER', onda,
-      nivel: 1, tempo: 60, abates: 5, venceu: onda === 40
+      nivel: 1, tempo: 60, abates: 5, venceu: false
     } }, resposta);
     return resposta;
   };
 
   assert.equal((await responder(40)).codigo, 201);
-  assert.equal((await responder(41)).codigo, 400);
+  assert.equal((await responder(141)).codigo, 201);
   assert.ok(consultas.some((consulta) => consulta.texto.includes('insert into public.placar_sobrecarga')));
 });
 
@@ -274,7 +378,7 @@ function mundoCoop() {
       botaoDireito: false, eixoX: () => 0, eixoY: () => 0,
       atirando: () => false, apertou: () => false
     },
-    UI: { mostrarTela() {}, atualizarHUD() {}, montarEquipe() {}, mostrarFinal() {}, atualizarEspera() {} }
+    UI: { mostrarTela() {}, atualizarHUD() {}, montarEquipe() {}, mostrarFinal() {}, atualizarEspera() {}, aviso() {} }
   });
   for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js', 'src/coop.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), ctx, { filename: arquivo });
@@ -286,9 +390,10 @@ test('controle recebido do convidado é limitado à faixa válida', () => {
   const ctx = mundoCoop();
   const r = vm.runInContext(`(() => {
     const c = Coop.validarControle({ x: 9, y: -9, miraX: 5, miraY: 5, miraAtiva: true,
-      mouseX: 999999, mouseY: -999999, tiro: true, dash: true, escudo: false, ult: true });
+      mouseX: 999999, mouseY: -999999, tiro: true, dash: true, especial: false, possessao: true, ult: true });
     return { x: c.eixoX(), y: c.eixoY(), miraX: c.mira.x, mouseX: c.mouseX, mouseY: c.mouseY,
-      tiro: c.atirando(), dash: c.apertou('Space'), escudo: c.apertou('KeyQ'), ult: c.apertou('KeyE') };
+      tiro: c.atirando(), dash: c.apertou('Space'), especial: c.apertou('KeyQ'),
+      possessao: c.apertou('KeyE'), ult: c.apertou('ShiftLeft') };
   })()`, ctx);
   assert.equal(r.x, 1);
   assert.equal(r.y, -1);
@@ -297,7 +402,8 @@ test('controle recebido do convidado é limitado à faixa válida', () => {
   assert.ok(r.mouseY >= -1440, 'mira não pode apontar para fora da arena');
   assert.equal(r.tiro, true);
   assert.equal(r.dash, true);
-  assert.equal(r.escudo, false);
+  assert.equal(r.especial, false);
+  assert.equal(r.possessao, true);
   assert.equal(r.ult, true);
 });
 test('lixo no lugar do controle não derruba o anfitrião', () => {

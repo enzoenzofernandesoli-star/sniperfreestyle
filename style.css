@@ -307,6 +307,13 @@ body.em-jogo #hud { display: flex; }
 .hab.pronto { border-color: var(--cor-classe); box-shadow: 0 0 22px rgba(49, 224, 255, .28) inset, 0 0 18px rgba(49, 224, 255, .18); }
 .hab.pronto .tecla, .hab.pronto .nome { color: #fff; }
 .hab.ativo { transform: translateY(-3px) scale(1.04); border-color: #fff; box-shadow: 0 0 26px rgba(255, 255, 255, .35); }
+.hab.possessao.pronto,
+.bt-toque.possessao.pronto {
+  border-color: #b06dff;
+  box-shadow: 0 0 22px rgba(176, 109, 255, .34) inset, 0 0 18px rgba(176, 109, 255, .26);
+}
+.hab.possessao.pronto .tecla,
+.hab.possessao.pronto .nome { color: #f0d7ff; }
 
 .rodape-info { text-align: right; font-size: clamp(9px, .78vw, 12px); letter-spacing: .12em; color: var(--tinta-fraca); }
 .rodape-info b { color: var(--tinta); }

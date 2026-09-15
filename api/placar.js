@@ -99,8 +99,8 @@ module.exports = async function (req, res) {
       return;
     }
 
-    const pontos = inteiro(corpo.pontos, 0, 5000000);
-    const onda = inteiro(corpo.onda, 1, 40);
+    const pontos = inteiro(corpo.pontos, 0, 2000000000);
+    const onda = inteiro(corpo.onda, 1, 9999);
     const nivel = inteiro(corpo.nivel, 1, 99) || 1;
     const tempo = inteiro(corpo.tempo, 0, 86400);
     const abates = inteiro(corpo.abates, 0, 100000);
@@ -113,7 +113,7 @@ module.exports = async function (req, res) {
     }
 
     // teto de plausibilidade: pontuação impossível pra onda alcançada não entra
-    if (pontos > 30000 * onda + 60000 || (venceu && onda !== 40)) {
+    if (pontos > 30000 * onda + 60000 || venceu) {
       res.status(400).json({ erro: 'pontuação implausível para a onda' });
       return;
     }
