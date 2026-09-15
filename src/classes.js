@@ -118,17 +118,17 @@ const CLASSES = [
     cor: '#7cf2a0',
     cor2: '#1d6b45',
     icone: 'I',
-    descricao: 'Tiro fraco, mas dois drones atiram junto e nunca param. O dano vem da tropa, não de você.',
-    forcas: ['2 drones que atiram sozinhos', '3 corações', 'Melhoria própria: +1 drone'],
-    fraquezas: ['Tiro pessoal fraco', 'Drones erram alvo que corre'],
+    descricao: 'A classe mais completa do jogo: três drones que caçam sozinhos, tiro teleguiado e 4 corações. Forte de saída e monstruosa com melhorias.',
+    forcas: ['3 drones que caçam e atiram sozinhos', '4 corações', 'Tiro teleguiado que atravessa', 'Melhoria própria: até +3 drones'],
+    fraquezas: ['Cadência pessoal média', 'Drone leva um tempo para virar a mira'],
     somTiro: 'arcano',
-    ult: { nome: 'LEGIÃO', descricao: 'Chama três drones extras por 9 segundos.' },
+    ult: { nome: 'LEGIÃO', descricao: 'Chama quatro drones extras por 12 s e acelera a tropa inteira.' },
     atributos: {
-      vidaMax: 3, velocidade: 295, cadencia: 0.5, dano: 9, projeteis: 1,
-      espalhamento: 0.06, balaVel: 820, balaRaio: 5, perfuracao: 0, ricochete: 0,
-      homing: 0.25, critChance: 0.1, critMult: 1.9,
-      dashRecarga: 1.7, escudoRecarga: 11, escudoDuracao: 2.6, ultRecarga: 26,
-      ima: 180, regen: 0, orbes: 0, lacaios: 2
+      vidaMax: 4, velocidade: 330, cadencia: 0.34, dano: 18, projeteis: 1,
+      espalhamento: 0.04, balaVel: 980, balaRaio: 6, perfuracao: 1, ricochete: 0,
+      homing: 0.5, critChance: 0.18, critMult: 2.1,
+      dashRecarga: 1.3, escudoRecarga: 9, escudoDuracao: 3, ultRecarga: 20,
+      ima: 220, regen: 0.02, orbes: 0, lacaios: 3
     }
   }
 ];
@@ -256,7 +256,7 @@ const MELHORIAS = [
     aplicar: (p) => { p.multXP += 0.25; }
   },
   {
-    id: 'lacaio', nome: 'MAIS UM NA TROPA', icone: '⌬', raridade: 'epico', max: 2,
+    id: 'lacaio', nome: 'MAIS UM NA TROPA', icone: '⌬', raridade: 'epico', max: 3,
     texto: '+1 drone (só para o INVOCADOR)',
     exige: (p) => p.classe.id === 'invocador',
     aplicar: (p) => { p.attr.lacaios = (p.attr.lacaios || 0) + 1; p.sincronizarLacaios(); }

@@ -102,13 +102,16 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 | **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
 | **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro que suga e explode |
-| **INVOCADOR** | 3 corações, tiro pessoal fraco, 2 drones que miram e atiram sozinhos | **LEGIÃO** — 3 drones extras por 9 s |
+| **INVOCADOR** | a mais forte: 4 corações, tiro teleguiado e 3 drones que caçam sozinhos | **LEGIÃO** — 4 drones extras por 12 s, tropa inteira mais rápida |
 
-O drone do INVOCADOR orbita a 78 px, procura alvo num raio de 560 px e atira com
-55% do dano do dono, numa cadência 45% mais lenta. Não tem vida: o preço da classe
-é o tiro pessoal fraco, não um bichinho para proteger. A melhoria **MAIS UM NA
-TROPA** (+1 drone, no máximo 2 vezes) só aparece para ele — melhoria com `exige`
-não polui o sorteio das outras classes.
+O INVOCADOR é, de propósito, a classe mais forte do jogo. Cada drone orbita a
+78 px, procura alvo num raio de 760 px e atira com **85% do dano do dono**, quase
+na mesma cadência dele, com tiro teleguiado. Durante a LEGIÃO a tropa atira 20%
+mais rápido. A melhoria **MAIS UM NA TROPA** (+1 drone, até 3 vezes) só aparece
+para ele — melhoria com `exige` não polui o sorteio das outras classes.
+
+Medido: matando o boss da onda 20 no nível 12, o INVOCADOR leva **35,7 s**, o
+GUARDIÃO 55,1 s e o SNIPER 66,2 s.
 
 ## Inimigos
 
@@ -154,8 +157,7 @@ o que mais solta item. A chance começa em 2% na onda 8 e satura em 30%.
 
 ### Menos folga
 
-- Intervalo entre ondas caiu de 2,2 s para 1,4 s; o fôlego invulnerável do começo
-  da onda, de 1,4 s para 0,9 s.
+- Intervalo entre ondas de 1,8 s, com 1,2 s de fôlego invulnerável no começo.
 - Item raro caiu de 6% para 3,5% por morte (10% no elite), e **cura é só um quarto
   dos sorteios** — vida perdida dói até o fim.
 - Cada nível custa mais XP: base 60 em vez de 50, e fator 1,45 em vez de 1,38. Dá
@@ -168,9 +170,10 @@ Medido com bot de teste e vida infinita, atirando sem parar: o primeiro boss cai
 não tiro de sorte.
 
 
-- Orçamento da onda cresce até 5 + 2,1 por onda, e o teto de inimigos vivos ao
-  mesmo tempo é de **30** (20 no celular) — a arena de 1760×990 aguenta a multidão
-  e o perfil de custo também.
+- Orçamento da onda cresce até 4 + 1,9 por onda, e o teto de inimigos vivos sobe
+  junto: 9 na onda 5, 22 na onda 20, **30** na onda 30 (20 no celular). A arena de
+  1760×990 aguenta a multidão e o perfil de custo também.
+- Elite só a partir da onda 10 — antes disso a onda ainda é escola.
 - Vida base subiu 35–50% em todos os tipos e a escala por onda passou de +5,5% para +8%
   (onda 40 vale ~4,1× a vida da onda 1).
 - `BRUTO`, `COURAÇA` e `LANCEIRO` tiram 2 corações no contato — a investida do lanceiro, 3.
@@ -207,15 +210,17 @@ Dois ataques a mais, para o boss negar espaço em vez de só cuspir bala:
 
 E três camadas de pressão:
 
-- **Guardas blindados**: em toda troca de fase a partir da segunda, o boss chama
-  2 a 4 guardas (couraça, torreta ou orbitador, sempre elites). Enquanto um deles
-  estiver vivo o boss leva **25% do dano** — primeiro limpa a guarda, depois volta
-  para ele. Guarda de leva antiga vira inimigo comum, então a blindagem nunca é
-  eterna.
-- **Fúria** abaixo de 40% de vida: 25% mais rápido, quase o dobro de ataques,
-  aviso de laser mais curto, brecha da parede menor e mina com pavio mais curto.
-- **Desespero** abaixo de 15%: 50% mais rápido e ritmo de ataque em 42% do
-  original. O fim de cada boss é a parte pior, não a mais fácil.
+- **A luta cresce por fase.** A primeira fase é de leitura: ritmo de ataque em
+  145% do valor da tabela e passo em 80%. Depois vem 110%/95%, 85%/110% e, na
+  quarta fase, **70% de intervalo e 125% de velocidade**. O boss não começa no
+  talo — ele chega lá.
+- **Fúria** abaixo de 25% de vida e **desespero** abaixo de 10%: mais rápido,
+  mais ataques, aviso de laser mais curto e brecha da parede menor.
+- Encostar no boss tira 1 nas duas primeiras fases e 2 da terceira em diante.
+
+Os guardas blindados saíram: fase que travava o dano no boss enquanto uma escolta
+elite vivia transformava toda luta em muro. A dificuldade agora vem do padrão e do
+ritmo, não de um escudo.
 
 
 1. **SENTINELA CARMESIM** — movimento horizontal → tiro único, leque de 3, anel

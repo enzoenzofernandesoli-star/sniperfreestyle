@@ -101,15 +101,15 @@ class Jogador {
 
       l.recarga -= dt;
       if (l.recarga > 0) continue;
-      const alvo = Jogo.inimigoMaisProximo(l.x, l.y, 560) || (Jogo.boss && Jogo.boss.vivo ? Jogo.boss : null);
+      const alvo = Jogo.inimigoMaisProximo(l.x, l.y, 760) || (Jogo.boss && Jogo.boss.vivo ? Jogo.boss : null);
       if (!alvo) continue;
       l.mira = Mat.anguloEntre(l.x, l.y, alvo.x, alvo.y);
-      l.recarga = this.attr.cadencia * 1.45;
+      l.recarga = this.attr.cadencia * (this.ultAtiva > 0 ? 0.8 : 1.05);
       Jogo.projeteis.push(new Projetil({
         x: l.x, y: l.y, angulo: l.mira, velocidade: this.attr.balaVel * 0.9,
-        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.55,
+        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.85,
         dono: 'jogador', cor: CORES_TIRO.jogador, perfuracao: this.attr.perfuracao,
-        ricochete: 0, homing: 0.35, critico: false
+        ricochete: this.attr.ricochete, homing: 0.6, critico: false
       }));
       Som.tiro(this.classe.somTiro);
     }
@@ -349,8 +349,9 @@ class Jogador {
       this.invulneravel = Math.max(this.invulneravel, 2.2);
     } else if (this.classe.id === 'invocador') {
       // LEGIÃO: tropa temporária, sem invencibilidade nem dano instantâneo
-      const total = this.lacaios.length + 3;
-      for (let i = 0; i < 3; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 9));
+      const total = this.lacaios.length + 4;
+      for (let i = 0; i < 4; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 12));
+      this.ultAtiva = 12;   // enquanto dura, a tropa inteira atira mais rápido
       this.reposicionarLacaios();
       Particulas.anel(this.x, this.y, this.classe.cor, 70, 20);
     } else {
@@ -1190,11 +1191,16 @@ class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
   static VIDA_EXTRA = 1.35;
-  static RITMO_ATAQUE = 0.7;    // < 1 = ataca mais vezes
-  static FURIA_VIDA = 0.4;      // abaixo disso o boss acelera
-  static DESESPERO_VIDA = 0.15; // e abaixo disso ele perde o freio de vez
-  static DESESPERO_RITMO = 0.42;
-  static FURIA_RITMO = 0.55;    // e ataca quase o dobro de vezes
+  static RITMO_ATAQUE = 0.9;    // < 1 = ataca mais vezes
+  static FURIA_VIDA = 0.25;     // abaixo disso o boss acelera
+  static FURIA_RITMO = 0.75;
+  static DESESPERO_VIDA = 0.1;  // e no fim da barra ele perde o freio
+  static DESESPERO_RITMO = 0.6;
+
+  // A luta tem que crescer, não começar no talo: a primeira fase é de leitura
+  // e cada fase seguinte aperta o ritmo e o passo do boss.
+  static RITMO_FASE = [1.45, 1.1, 0.85, 0.7];
+  static IMPETO_FASE = [0.8, 0.95, 1.1, 1.25];
 
   constructor(def, onda) {
     this.id = Jogo.proximoId();
@@ -1219,8 +1225,6 @@ class Boss {
     this.baseY = 150;
     this.orbita = 0;
     this.telegrafo = 0;
-    this.guardas = 0;
-    this.blindado = false;
     this.desesperado = false;
     this.laser = null;
     this.enraivecido = false;
@@ -1242,7 +1246,6 @@ class Boss {
       Som.bossEntra();
       // Trocar de fase não é descanso: sai um anel junto com o telegrafo.
       this.executarAtaque('anel');
-      if (idx > 0) this.chamarGuardas();
     }
   }
 
@@ -1266,10 +1269,8 @@ class Boss {
     // Fim de barra é a parte difícil: o boss anda e atira mais rápido.
     this.furioso = this.porcentagem <= Boss.FURIA_VIDA;
     this.desesperado = this.porcentagem <= Boss.DESESPERO_VIDA;
-    const impeto = this.desesperado ? 1.5 : this.furioso ? 1.25 : 1;
-    // Blindagem: enquanto os guardas da fase estiverem vivos, o boss come 75%
-    // menos dano. Ignorar os guardas e furar o boss deixou de funcionar.
-    this.blindado = this.guardas > 0 && Jogo.inimigos.some((e) => e.guardaBoss && e.vivo);
+    const passoFase = Boss.IMPETO_FASE[Math.min(this.faseIndice, Boss.IMPETO_FASE.length - 1)];
+    const impeto = passoFase * (this.desesperado ? 1.35 : this.furioso ? 1.15 : 1);
 
     // movimento
     switch (f.movimento) {
@@ -1384,7 +1385,8 @@ class Boss {
       const ataque = Mat.escolher(f.ataques);
       this.executarAtaque(ataque);
       const ritmo = this.desesperado ? Boss.DESESPERO_RITMO : this.furioso ? Boss.FURIA_RITMO : 1;
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * ritmo * Mat.aleatorio(0.85, 1.15);
+      const daFase = Boss.RITMO_FASE[Math.min(this.faseIndice, Boss.RITMO_FASE.length - 1)];
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * ritmo * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1402,7 +1404,8 @@ class Boss {
 
     // corpo do boss machuca
     if (Mat.distancia(this.x, this.y, j.x, j.y) < this.raio + j.raio) {
-      j.receberDano(2, this.x, this.y);   // encostar no boss custa caro
+      // encostar no boss dói mais conforme ele troca de fase
+      j.receberDano(this.faseIndice >= 2 ? 2 : 1, this.x, this.y);
     }
 
     // partículas de aura
@@ -1416,33 +1419,10 @@ class Boss {
     }
   }
 
-  // Guardas da fase: nascem blindando o boss. Enquanto um deles respirar, o
-  // boss leva 25% do dano — primeiro limpa a guarda, depois volta para ele.
-  chamarGuardas() {
-    // Guarda de fase anterior que sobreviveu vira inimigo comum: a blindagem
-    // vale só para a leva atual, senão o boss ficaria protegido para sempre.
-    for (const e of Jogo.inimigos) e.guardaBoss = false;
-    const quantos = 2 + this.faseIndice;
-    this.guardas = quantos;
-    for (let i = 0; i < quantos; i++) {
-      const a = (Mat.TAU / quantos) * i + Math.random();
-      const g = new Inimigo(
-        Mat.escolher(['couraca', 'torreta', 'orbitador']),
-        Mat.limitar(this.x + Math.cos(a) * 170, 40, Jogo.LARGURA - 40),
-        Mat.limitar(this.y + Math.sin(a) * 170, 40, Jogo.ALTURA - 40),
-        1, true
-      );
-      g.guardaBoss = true;
-      Jogo.inimigos.push(g);
-    }
-    Jogo.aviso('GUARDAS BLINDAM O BOSS');
-    Particulas.anel(this.x, this.y, '#ffd34d', 140, 40);
-  }
-
   // Boss sozinho vira duelo de decorar padrão. A escolta obriga a dividir a
   // atenção — e cresce com a onda.
   chamarEscolta() {
-    const quantos = Math.min(5, 1 + Math.floor(Jogo.onda / 10));
+    const quantos = Math.min(3, Math.floor(Jogo.onda / 15));
     for (let i = 0; i < quantos; i++) {
       const a = (Mat.TAU / quantos) * i;
       Jogo.inimigos.push(new Inimigo(
@@ -1575,7 +1555,6 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
-    if (this.blindado) q *= 0.25;
     this.vida -= q;
     this.flash = 0.25;
     Camera.bater(crit ? 5 : 2);

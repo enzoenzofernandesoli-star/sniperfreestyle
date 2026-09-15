@@ -132,15 +132,15 @@ const Jogo = {
 
   // Chance de um inimigo nascer elite. Começa na onda 8 e satura em 30%.
   sorteiaElite() {
-    if (Jogo.onda < 8) return false;
-    return Mat.chance(Math.min(0.3, (Jogo.onda - 7) * 0.018));
+    if (Jogo.onda < 10) return false;
+    return Mat.chance(Math.min(0.3, (Jogo.onda - 9) * 0.016));
   },
 
   prepararOnda() {
     Jogo.ondaLimpa = false;
-    Jogo.intervaloOnda = 1.4;
+    Jogo.intervaloOnda = 1.8;
     // fôlego no início da onda: ninguém morre no primeiro segundo
-    if (Jogo.jogador) Jogo.jogador.invulneravel = Math.max(Jogo.jogador.invulneravel, 0.9);
+    if (Jogo.jogador) Jogo.jogador.invulneravel = Math.max(Jogo.jogador.invulneravel, 1.2);
     Jogo.composicao = [];
     Jogo.timerSpawn = 0.8;
 
@@ -151,7 +151,7 @@ const Jogo = {
     } else {
       // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
       // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
-      const orcamento = Math.round(5 + Math.min(Jogo.onda, 20) * 2.1 + Math.max(0, Jogo.onda - 20) * 1.2);
+      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 1.9 + Math.max(0, Jogo.onda - 20) * 1.3);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
@@ -430,7 +430,8 @@ const Jogo = {
         Jogo.timerSpawn -= dtReal;
         const ritmo = Math.max(0.2, 0.95 - Jogo.onda * 0.026);
         // teto alto de novo: a arena cresceu e o perfil de custo aguenta
-        const tetoSimultaneo = Math.min(Jogo.modoLeve ? 20 : 30, Math.round(6 + Jogo.onda * 0.9));
+        // sobe devagar no começo e fecha alto no fim: onda 5 tem 9, onda 30 tem 30
+        const tetoSimultaneo = Math.min(Jogo.modoLeve ? 20 : 30, Math.round(5 + Jogo.onda * 0.85));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;

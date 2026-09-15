@@ -43,7 +43,7 @@ test('arena cabe em uma tela e a câmera fica no centro', () => {
 
 test('as cinco classes têm três skins cosméticas cada', () => {
   const dados = vm.runInContext('CLASSES.map(c => ({ id: c.id, vida: c.atributos.vidaMax, skins: SKINS[c.id].length }))', contexto);
-  assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3], [3, 3]]);
+  assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3], [4, 3]]);
   assert.equal(vm.runInContext("skinDaClasse('sniper', 'inexistente').id", contexto), 'original');
 });
 
@@ -109,7 +109,7 @@ test('melhoria repetida perde peso e o teto de cópias é no máximo 4', () => {
   assert.equal(dados.tiros, 3, 'no máximo três projéteis extras por tiro');
 });
 
-test('INVOCADOR nasce com dois drones e só ele recebe a melhoria de drone', () => {
+test('INVOCADOR nasce com três drones e só ele recebe a melhoria de drone', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -126,7 +126,7 @@ test('INVOCADOR nasce com dois drones e só ele recebe a melhoria de drone', () 
       temDilatacao: pool.includes('tempo'), temEstilhaco: pool.includes('explode') };
   })()`, mundo);
   assert.equal(dados.dronesSniper, 0, 'classe sem drone não ganha drone');
-  assert.equal(dados.drones, 3, 'dois de base mais um da melhoria');
+  assert.equal(dados.drones, 4, 'três de base mais um da melhoria');
   assert.equal(dados.sniperVeDrone, false, 'melhoria de drone não polui o sorteio das outras classes');
   assert.equal(dados.invVeDrone, true);
   assert.equal(dados.temDilatacao, false, 'dilatação de tempo saiu do jogo');
