@@ -230,7 +230,11 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   `2 + índice da fase × 0,8` segundos — 2,8 s na segunda fase, 3,6 s na terceira,
   4,4 s na quarta. O contador roda em tempo de relógio, então hitstop não
   encurta. Enquanto durar, nada entra: nem ultimate, nem crítico.
-- **67.** Boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
+- **ENCAIXA!** O segundo boss da corrida — o da onda 10 — não dá 67: enche a
+  tela com **ENCAIXA!** por 3,4 s e toca uma das três falas gravadas em
+  `assets/encaixa-*.m4a`, sorteada na hora. São os únicos arquivos de som do
+  projeto; todo o resto do áudio continua sintetizado no WebAudio.
+- **67.** Qualquer outro boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
   o estilo muda de boss para boss — cor, fonte, sombra e faixa de leitura vêm de
   `Jogo.ESTILOS_67`, escolhidos pela posição do boss na tabela. O CEIFADOR tem o
   branco reservado só para ele.

@@ -404,13 +404,25 @@ const Jogo = {
     { id: 'final',   cor: '#ffffff', cor2: '#7a0010', fonte: '900 360px Impact, Arial Black, sans-serif' }
   ],
 
+  // A queda do segundo boss (onda 10) tem festa própria: texto no lugar do 67 e
+  // uma das falas gravadas.
+  ESTILO_ENCAIXA: { id: 'encaixa', cor: '#7cff9b', cor2: '#0b4d22', fonte: '900 220px Impact, Arial Black, sans-serif' },
+
   comemorar67(def) {
     // O final tem o 67 branco reservado; os outros seguem a posição na tabela.
     const indice = def && def.final
       ? Jogo.ESTILOS_67.length - 1
       : Math.max(0, BOSSES.indexOf(def)) % (Jogo.ESTILOS_67.length - 1);
-    Jogo.festa67 = { estilo: Jogo.ESTILOS_67[indice], vida: 2.6, vidaMax: 2.6, semente: Math.random() * 10 };
-    Jogo.flashTela(0.55, Jogo.ESTILOS_67[indice].cor);
+    // Segundo encontro da corrida — o boss da onda 10 — troca o 67 por ENCAIXA!
+    const encaixa = !def.final && Jogo.encontroDeBoss(Jogo.onda) === 2;
+    const estilo = encaixa ? Jogo.ESTILO_ENCAIXA : Jogo.ESTILOS_67[indice];
+    Jogo.festa67 = {
+      estilo, texto: encaixa ? 'ENCAIXA!' : '67',
+      vida: encaixa ? 3.4 : 2.6, vidaMax: encaixa ? 3.4 : 2.6,
+      semente: Math.random() * 10
+    };
+    Jogo.flashTela(0.55, estilo.cor);
+    if (encaixa) Som.tocarClipe('encaixa');
   },
 
   desenhar67(ctx) {
@@ -430,6 +442,15 @@ const Jogo = {
     ctx.textBaseline = 'middle';
     ctx.font = e.fonte;
 
+    // Texto comprido não pode vazar da arena: encolhe a fonte até caber.
+    const texto = f.texto || '67';
+    const largura = ctx.measureText(texto).width;
+    const limite = Jogo.LARGURA * 0.8;
+    if (largura > limite) {
+      const tamanho = parseInt(e.fonte, 10) || 300;
+      ctx.font = e.fonte.replace(/\d+px/, Math.round(tamanho * (limite / largura)) + 'px');
+    }
+
     // tremor curto na entrada, para o número "bater" na tela
     if (p < 0.2) {
       const t = (0.2 - p) * 26;
@@ -439,24 +460,25 @@ const Jogo = {
 
     // sombra chapada atrás
     ctx.fillStyle = e.cor2;
-    ctx.fillText('67', 14, 16);
+    ctx.fillText(texto, 14, 16);
 
     // corpo com brilho
     ctx.shadowBlur = Jogo.modoLeve ? 0 : 60;
     ctx.shadowColor = e.cor;
     ctx.fillStyle = e.cor;
-    ctx.fillText('67', 0, 0);
+    ctx.fillText(texto, 0, 0);
 
     // contorno e faixa de leitura, cada estilo com o seu acabamento
     ctx.shadowBlur = 0;
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = (1 - saida) * 0.85;
-    ctx.strokeText('67', 0, 0);
+    ctx.strokeText(texto, 0, 0);
 
     ctx.globalAlpha = (1 - saida) * 0.28;
     ctx.fillStyle = '#000000';
-    for (let y = -170; y < 170; y += 12) ctx.fillRect(-320, y, 640, 4);
+    const meia = Math.max(320, ctx.measureText(texto).width / 2 + 30);
+    for (let y = -170; y < 170; y += 12) ctx.fillRect(-meia, y, meia * 2, 4);
     ctx.restore();
   },
 

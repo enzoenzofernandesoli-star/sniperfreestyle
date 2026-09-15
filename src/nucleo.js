@@ -342,6 +342,30 @@ const Som = {
   // trilha: baixo + arpejo em escala menor; acelera e abre o filtro no boss
   // Cada boss derrubado troca a trilha: raiz, escala e timbre mudam juntos, e
   // a faixa 0 é a de sempre. É a mesma música procedural — o que muda é o modo.
+  /* Clipes gravados. O resto do áudio do jogo é sintetizado no WebAudio; estes
+     três são a exceção: são falas curtas que tocam quando o boss da onda 10
+     cai. Ficam em `assets/`, carregam sob demanda e respeitam o volume de
+     efeitos como qualquer outro som. */
+  CLIPES: {
+    encaixa: ['assets/encaixa-1.m4a', 'assets/encaixa-2.m4a', 'assets/encaixa-3.m4a']
+  },
+  _clipes: {},
+
+  tocarClipe(nome) {
+    if (Config.volumeSom <= 0) return;
+    const lista = Som.CLIPES[nome];
+    if (!lista || !lista.length) return;
+    const caminho = lista[Math.floor(Math.random() * lista.length)];
+    try {
+      let audio = Som._clipes[caminho];
+      if (!audio) { audio = new Audio(caminho); Som._clipes[caminho] = audio; }
+      audio.currentTime = 0;
+      audio.volume = Mat.limitar(Config.volumeSom, 0, 1);
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => { /* navegador ainda sem gesto do usuário */ });
+    } catch (e) { /* sem áudio: o jogo segue igual */ }
+  },
+
   TRILHAS: [
     { raiz: 55, escala: [0, 3, 5, 7, 10, 12, 15], baixo: 'sawtooth', lead: 'triangle', bpm: 0 },
     { raiz: 49, escala: [0, 2, 3, 7, 8, 12, 14], baixo: 'square', lead: 'triangle', bpm: 6 },

@@ -24,7 +24,7 @@ const placar = require('../api/placar.js');
 
 const raiz = path.resolve(__dirname, '..');
 const salas = new Map();
-const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4' };
 const porta = Number(process.env.PORT) || Number(process.argv[2]) || 8123;
 
 const MAX_CONVIDADOS = 3;          // + anfitrião = 4 na arena
@@ -66,7 +66,10 @@ const servidor = http.createServer((req, res) => {
   const arquivo = path.resolve(raiz, '.' + (nome === '/' ? '/index.html' : nome));
   fs.stat(arquivo, (erro, stat) => {
     if (erro || !stat.isFile()) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'Content-Type': (tipos[path.extname(arquivo)] || 'application/octet-stream') + '; charset=utf-8', 'Cache-Control': 'no-store' });
+    // charset só faz sentido em texto; áudio leva o tipo puro
+    const tipo = tipos[path.extname(arquivo)] || 'application/octet-stream';
+    const cabecalho = /^(text\/|application\/(javascript|json|manifest))/.test(tipo) ? tipo + '; charset=utf-8' : tipo;
+    res.writeHead(200, { 'Content-Type': cabecalho, 'Cache-Control': 'no-store' });
     fs.createReadStream(arquivo).pipe(res);
   });
 });

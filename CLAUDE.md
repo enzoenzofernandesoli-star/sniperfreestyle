@@ -35,7 +35,9 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
 - Remoção de entidade por flag `.vivo`, nunca `splice` em dois lugares.
 - Pool fixo de partículas: nada de alocação por quadro.
 - Delta-time com teto de 50 ms.
-- Áudio é sintetizado no WebAudio. Nenhum arquivo de som entra no projeto.
+- Áudio é sintetizado no WebAudio. A única exceção são as falas de
+  `assets/encaixa-*.m4a`, que tocam na queda do boss da onda 10; fora delas,
+  nenhum arquivo de som entra no projeto.
 - Arte é vetorial, desenhada em código. Imagem só nos ícones da loja.
 - Migration de banco sempre versionada em `banco/migracoes/`, nunca SQL solto.
 
