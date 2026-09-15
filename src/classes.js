@@ -38,7 +38,7 @@ const CLASSES = [
     forcas: ['Dano por tiro altíssimo', 'Perfura 2 inimigos', '25% de crítico'],
     fraquezas: ['Cadência lenta', 'Vida baixa'],
     somTiro: 'sniper',
-    ult: { nome: 'TRAÇANTE', descricao: 'Raio que atravessa a arena inteira e marca todo alvo tocado.' },
+    ult: { nome: 'TRAÇANTE', descricao: 'Feixe largo que varre a arena inteira e destroça a linha toda.' },
     atributos: {
       vidaMax: 2, velocidade: 300, cadencia: 0.42, dano: 34, projeteis: 1,
       espalhamento: 0, balaVel: 1500, balaRaio: 5, perfuracao: 2, ricochete: 0,
@@ -58,7 +58,7 @@ const CLASSES = [
     forcas: ['4 corações', 'Escudo reflete tiros', 'Recarrega escudo rápido'],
     fraquezas: ['Movimento lento', 'Dano médio'],
     somTiro: 'pesado',
-    ult: { nome: 'IMPACTO', descricao: 'Onda de choque que empurra e destroça tudo em volta.' },
+    ult: { nome: 'IMPACTO', descricao: 'Onda de 820 px que arremessa os inimigos e apaga os tiros no caminho.' },
     atributos: {
       vidaMax: 4, velocidade: 225, cadencia: 0.3, dano: 16, projeteis: 1,
       espalhamento: 0.05, balaVel: 950, balaRaio: 8, perfuracao: 1, ricochete: 0,
@@ -79,7 +79,7 @@ const CLASSES = [
     forcas: ['5 projéteis por tiro', 'Dash causa dano', 'Cura 1% ao matar'],
     fraquezas: ['Só 2 corações', 'Alcance curto'],
     somTiro: 'shotgun',
-    ult: { nome: 'CARNIFICINA', descricao: 'Fica intangível e corta tudo que tocar por 3 segundos.' },
+    ult: { nome: 'CARNIFICINA', descricao: 'Intangível por 3,5 s cortando num raio largo, com estouro na ativação.' },
     atributos: {
       vidaMax: 2, velocidade: 400, cadencia: 0.36, dano: 9, projeteis: 5,
       espalhamento: 0.5, balaVel: 1050, balaRaio: 4, perfuracao: 0, ricochete: 0,

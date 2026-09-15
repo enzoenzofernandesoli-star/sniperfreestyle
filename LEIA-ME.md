@@ -98,10 +98,10 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 
 | Classe | Identidade | Ultimate |
 |---|---|---|
-| **SNIPER** | tiro perfurante, dano altíssimo, 25% de crítico, 2 corações | **TRAÇANTE** — raio que atravessa a arena |
+| **SNIPER** | tiro perfurante, dano altíssimo, 25% de crítico, 2 corações | **TRAÇANTE** — feixe largo que varre a arena |
 | **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
 | **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
-| **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro que suga e explode |
+| **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro de 480 px que explode numa onda de 700 |
 | **INVOCADOR** | 3 corações, tiro teleguiado e 2 drones que caçam sozinhos | **LEGIÃO** — 3 drones extras por 10 s, tropa inteira mais rápida |
 
 O INVOCADOR continua forte, mas deixou de dominar todas as classes. Cada drone orbita a
@@ -361,9 +361,24 @@ Três coisas saíram ou encolheram nesta passada:
   explodia em estilhaços) saíram do jogo. Eram as duas que decidiam a run sozinhas,
   e a segunda enchia a tela de projétil que ninguém pediu. No lugar entraram SOBRA
   DE CARGA (+0,4 s de escudo) e MAIS UM NA TROPA.
-- Ultimates apararam: TRAÇANTE de 6× para 4,5× de dano, IMPACTO de 3,2× para 2,6×,
-  SINGULARIDADE de 7× para 5×, CARNIFICINA de 3 s para 2,2 s. Cura ao matar do
-  ESPECTRO caiu de 2% para 1%.
+- Cura ao matar do ESPECTRO caiu de 2% para 1%.
+
+### Ultimates (valores atuais)
+
+Depois de uma rodada aparando e outra devolvendo, as ults hoje são as jogadas
+mais fortes da partida — área grande e dano que vale o tempo de recarga:
+
+| Ult | Área | Dano |
+|---|---|---|
+| TRAÇANTE | feixe de 52 px de largura, faixa de acerto de 46 px, arena inteira | 9× o dano do tiro |
+| IMPACTO | onda de 820 px, empurrão de 1300, apaga tiro inimigo no caminho | 5× |
+| CARNIFICINA | 3,5 s intangível, corte com 90 px de alcance, estouro de 340 px ao ativar | 3,4× por corte |
+| SINGULARIDADE | sucção de 480 px e explosão final de 700 px que limpa tiros | 9× |
+| LEGIÃO | estouro de 520 px + 5 drones extras por 14 s, tropa 20% mais rápida | 3× no estouro |
+
+Medido com 60 alvos espalhados de 80 a 800 px: IMPACTO e SINGULARIDADE pegam os
+60, a LEGIÃO pega 50 e o TRAÇANTE pega 12 na linha — 3.672, 4.800, 6.665 e 2.883
+de dano total, respectivamente.
 - Partícula: morte de inimigo saiu de ~20+raio para ~8, o baque no jogador de 22
   para 10, a morte de boss de 8 explosões de 40 para 4 de 18, e rastros e auras
   emitem cerca de metade.

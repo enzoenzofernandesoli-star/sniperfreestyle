@@ -437,11 +437,14 @@ class Jogador {
   }
 
   cortarNoDash() {
+    // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão.
+    const extra = this.ultAtiva > 0 ? 90 : 12;
+    const forca = this.ultAtiva > 0 ? 3.4 : 2.2;
     for (const e of Jogo.inimigos) {
       if (e._cortado) continue;
-      if (Mat.distancia(this.x, this.y, e.x, e.y) < this.raio + e.raio + 12) {
+      if (Mat.distancia(this.x, this.y, e.x, e.y) < this.raio + e.raio + extra) {
         e._cortado = true;
-        Jogo.danificarInimigo(e, this.attr.dano * 2.2, true, this.x, this.y);
+        Jogo.danificarInimigo(e, this.attr.dano * forca, true, this.x, this.y);
         setTimeout(() => { e._cortado = false; }, 260);
       }
     }
@@ -465,26 +468,41 @@ class Jogador {
     Som.ultimate();
     Jogo.flashTela(0.5, this.classe.cor);
 
+    Camera.bater(26);
+    Camera.pulsar(1.1);
+
     if (this.classe.id === 'sniper') {
-      // raio perfurante gigante
-      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 4.5, cor: this.classe.cor });
-      Jogo.aplicarRaio(this.x, this.y, this.angulo, this.attr.dano * 4.5);
+      // TRAÇANTE: feixe largo que varre a arena inteira e arrasta um rastro
+      // de faíscas. A faixa de acerto acompanha a largura desenhada.
+      const dano = this.attr.dano * 9;
+      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.6, vidaMax: 0.6, largura: 52, dano: dano, cor: this.classe.cor });
+      Jogo.aplicarRaio(this.x, this.y, this.angulo, dano, 46);
+      for (let i = 1; i <= 16; i++) {
+        Particulas.emitir({
+          x: this.x + Math.cos(this.angulo) * i * 110, y: this.y + Math.sin(this.angulo) * i * 110,
+          vida: 0.35, tam: 7, cor: this.classe.cor, brilho: 20, atrito: 0.85
+        });
+      }
     } else if (this.classe.id === 'guardiao') {
-      // onda de choque expansiva
-      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 400, dano: this.attr.dano * 2.6, cor: this.classe.cor, atingidos: new Set(), empurrao: 780 });
+      // IMPACTO: onda que cruza meia arena, empurra forte e apaga o tiro
+      // inimigo que estiver no caminho.
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 820, dano: this.attr.dano * 5, cor: this.classe.cor, atingidos: new Set(), empurrao: 1300, limpaTiros: true });
     } else if (this.classe.id === 'espectro') {
-      this.ultAtiva = 2.2;
-      this.invulneravel = Math.max(this.invulneravel, 2.2);
+      // CARNIFICINA: mais tempo intangível e corte com alcance maior
+      this.ultAtiva = 3.5;
+      this.invulneravel = Math.max(this.invulneravel, 3.5);
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 340, dano: this.attr.dano * 2, cor: this.classe.cor, atingidos: new Set(), empurrao: 520 });
     } else if (this.classe.id === 'invocador') {
-      // LEGIÃO: tropa temporária, sem invencibilidade nem dano instantâneo
-      const total = this.lacaios.length + 3;
-      for (let i = 0; i < 3; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 10));
-      this.ultAtiva = 10;   // enquanto dura, a tropa inteira atira mais rápido
+      // LEGIÃO: tropa maior, mais longa, e um estouro na chamada
+      const total = this.lacaios.length + 5;
+      for (let i = 0; i < 5; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 14));
+      this.ultAtiva = 14;   // enquanto dura, a tropa inteira atira mais rápido
       this.reposicionarLacaios();
-      Particulas.anel(this.x, this.y, this.classe.cor, 70, 20);
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 520, dano: this.attr.dano * 3, cor: this.classe.cor, atingidos: new Set(), empurrao: 760 });
+      Particulas.anel(this.x, this.y, this.classe.cor, 110, 30);
     } else {
-      // singularidade: suga e explode
-      Jogo.singularidades.push({ x: this.x, y: this.y, vida: 2.2, vidaMax: 2.2, raio: 280, dano: this.attr.dano * 5, cor: this.classe.cor, explodiu: false });
+      // SINGULARIDADE: buraco negro que pega quase metade da arena
+      Jogo.singularidades.push({ x: this.x, y: this.y, vida: 2.8, vidaMax: 2.8, raio: 480, dano: this.attr.dano * 9, cor: this.classe.cor, explodiu: false });
     }
   }
 

@@ -336,7 +336,7 @@ const Jogo = {
     }
   },
 
-  aplicarRaio(x, y, angulo, dano) {
+  aplicarRaio(x, y, angulo, dano, largura) {
     // dano em tudo que estiver na linha do raio
     const dx = Math.cos(angulo), dy = Math.sin(angulo);
     const alvos = Jogo.inimigos.slice();
@@ -345,7 +345,7 @@ const Jogo = {
       const t = (e.x - x) * dx + (e.y - y) * dy;
       if (t < 0) continue;
       const px = x + dx * t, py = y + dy * t;
-      if (Mat.distancia(px, py, e.x, e.y) < e.raio + 22) {
+      if (Mat.distancia(px, py, e.x, e.y) < e.raio + (largura || 22)) {
         if (e === Jogo.boss) e.receberDano(dano, true, px, py);
         else Jogo.danificarInimigo(e, dano, true, px, py);
       }
@@ -566,6 +566,16 @@ const Jogo = {
           }
         }
       }
+      if (o.limpaTiros) {
+        for (let k = Jogo.projeteis.length - 1; k >= 0; k--) {
+          const b = Jogo.projeteis[k];
+          if (b.dono === 'jogador') continue;
+          if (Mat.distancia(o.x, o.y, b.x, b.y) < o.raio) {
+            Particulas.explosao(b.x, b.y, o.cor, 4, 120, 0.25, 2);
+            Jogo.projeteis.splice(k, 1);
+          }
+        }
+      }
       if (o.raio >= o.raioMax) Jogo.ondasChoque.splice(i, 1);
     }
 
@@ -592,7 +602,7 @@ const Jogo = {
       }
       if (s.vida <= 0 && !s.explodiu) {
         s.explodiu = true;
-        Jogo.ondasChoque.push({ x: s.x, y: s.y, raio: 10, raioMax: 380, dano: s.dano, cor: s.cor, atingidos: new Set(), empurrao: 700 });
+        Jogo.ondasChoque.push({ x: s.x, y: s.y, raio: 10, raioMax: 700, dano: s.dano, cor: s.cor, atingidos: new Set(), empurrao: 1000, limpaTiros: true });
         Camera.bater(22);
         Jogo.flashTela(0.5, s.cor);
         Jogo.singularidades.splice(i, 1);
