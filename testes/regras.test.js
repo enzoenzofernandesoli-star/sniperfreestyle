@@ -47,11 +47,34 @@ test('cada classe tem três skins cosméticas e menos vida inicial', () => {
   assert.equal(vm.runInContext("skinDaClasse('sniper', 'inexistente').id", contexto), 'original');
 });
 
-test('vida do inimigo mais que quadruplica da primeira à última onda', () => {
-  const inicio = vm.runInContext('Jogo.onda = 1; Jogo.multiplicadorVida()', contexto);
-  const fim = vm.runInContext('Jogo.onda = 40; Jogo.multiplicadorVida()', contexto);
-  assert.equal(inicio, 1);
-  assert.ok(fim > 4 && fim < 5, 'onda 40 entre 4x e 5x, não numa escalada sem fim');
+test('inimigo da onda 40 tem cinco vezes a vida, e o elite bem mais', () => {
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 1;
+    const inicio = { vida: Jogo.multiplicadorVida(), veloc: Jogo.aceleracaoOnda(), elite: Jogo.sorteiaElite() };
+    Jogo.onda = 40;
+    const fim = { vida: Jogo.multiplicadorVida(), veloc: Jogo.aceleracaoOnda(), ritmo: Jogo.ritmoInimigo() };
+    return { inicio, fim };
+  })()`, contexto);
+  assert.equal(dados.inicio.vida, 1);
+  assert.equal(dados.inicio.elite, false, 'elite não aparece na onda 1');
+  assert.ok(dados.fim.vida > 5 && dados.fim.vida < 6, 'onda 40 entre 5x e 6x de vida');
+  assert.ok(dados.fim.veloc > 1.3, 'inimigo da onda 40 anda bem mais rápido');
+  assert.ok(dados.fim.ritmo < 0.7, 'e atira bem mais miúdo');
+});
+
+test('elite é bem mais duro que o comum do mesmo tipo', () => {
+  const mundo = vm.createContext({ console, Math });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 20;
+    const comum = new Inimigo('corredor', 100, 100, 1, false);
+    const elite = new Inimigo('corredor', 100, 100, 1, true);
+    return { comum: comum.vidaMax, elite: elite.vidaMax, raioComum: comum.raio, raioElite: elite.raio };
+  })()`, mundo);
+  assert.ok(dados.elite > dados.comum * 3, 'elite passa de três vezes a vida do comum');
+  assert.ok(dados.raioElite > dados.raioComum, 'e é visivelmente maior');
 });
 
 test('a onda traz menos inimigos, e cada onda até a 12 estreia um tipo', () => {

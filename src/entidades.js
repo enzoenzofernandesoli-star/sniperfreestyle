@@ -35,7 +35,7 @@ class Jogador {
     // progressão
     this.nivel = 1;
     this.xp = 0;
-    this.xpProximo = 50;
+    this.xpProximo = 60;
     this.melhorias = {};
     this.multXP = 1;
     this.explodeAoMatar = 0;
@@ -340,7 +340,7 @@ class Jogador {
     while (this.xp >= this.xpProximo) {
       this.xp -= this.xpProximo;
       this.nivel++;
-      this.xpProximo = Math.round(50 * Math.pow(1.38, this.nivel - 1));
+      this.xpProximo = Math.round(60 * Math.pow(1.45, this.nivel - 1));
       if (this !== Jogo.jogador && Coop.papel === 'anfitriao') {
         const opcoes = sortearMelhorias(this, 3);
         if (opcoes.length) this.aplicarMelhoria(opcoes[0]);
@@ -634,7 +634,7 @@ const TIPOS_INIMIGO = {
 
 
 class Inimigo {
-  constructor(tipo, x, y, escala) {
+  constructor(tipo, x, y, escala, elite) {
     const t = TIPOS_INIMIGO[tipo];
     this.id = Jogo.proximoId();
     this.tipo = tipo;
@@ -642,10 +642,14 @@ class Inimigo {
     this.x = x; this.y = y;
     this.vx = 0; this.vy = 0;
     this.escala = escala || 1;
+    // Elite: mesmo bicho, versão dourada e bem mais dura. Entra a partir da
+    // onda 8 e é a principal fonte de perigo no fim do jogo.
+    this.elite = elite === undefined ? Jogo.sorteiaElite() : !!elite;
+    if (this.elite) this.escala *= 1.22;
     this.raio = t.raio * this.escala;
-    this.vidaMax = t.vida * this.escala * Jogo.multiplicadorVida();
+    this.vidaMax = t.vida * this.escala * Jogo.multiplicadorVida() * (this.elite ? 2.6 : 1);
     this.vida = this.vidaMax;
-    this.velocidade = t.velocidade * Mat.aleatorio(0.9, 1.1);
+    this.velocidade = t.velocidade * Mat.aleatorio(0.9, 1.1) * Jogo.aceleracaoOnda() * (this.elite ? 1.12 : 1);
     this.angulo = Math.random() * Mat.TAU;
     this.giro = Mat.aleatorio(-1.6, 1.6);
     this.recarga = Mat.aleatorio(0.4, 1.4);
@@ -686,7 +690,7 @@ class Inimigo {
         this.vy = Mat.suave(this.vy, ay * this.velocidade, 5, dt);
         this.recarga -= dt;
         if (this.recarga <= 0 && dist < 620) {
-          this.recarga = this.def.recarga * Mat.aleatorio(0.85, 1.15);
+          this.recarga = this.def.recarga * Jogo.ritmoInimigo() * Mat.aleatorio(0.85, 1.15);
           Jogo.tiroInimigo(this.x, this.y, angJog, this.def.projetilVel, this.def.dano, this.def.cor);
         }
         break;
@@ -700,7 +704,7 @@ class Inimigo {
         this.vy = Mat.suave(this.vy, ay * this.velocidade, 6, dt);
         this.recarga -= dt;
         if (this.recarga <= 0) {
-          this.recarga = this.def.recarga;
+          this.recarga = this.def.recarga * Jogo.ritmoInimigo();
           for (let i = -1; i <= 1; i++) {
             Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.28, this.def.projetilVel, this.def.dano, this.def.cor);
           }
@@ -847,7 +851,9 @@ class Inimigo {
           this.flash = 0.15;
           if (this.vida <= 0) this.morrer(false);
         }
-      } else if (j.receberDano(this.def.dano + (this.estado === 'investindo' ? 1 : 0), this.x, this.y)) {
+        // Elite reforça quem tirava 1, mas nada de encostão de 3: só a
+        // investida do lanceiro chega lá, e ela é telegrafada.
+      } else if (j.receberDano(Math.min(2, this.def.dano + (this.elite ? 1 : 0)) + (this.estado === 'investindo' ? 1 : 0), this.x, this.y)) {
         if (j.espinhos > 0) Jogo.danificarInimigo(this, j.espinhos, false, j.x, j.y);
         if (this.def.comportamento === 'kamikaze') this.explodir();
       }
@@ -881,7 +887,7 @@ class Inimigo {
     if (this.def.divideEm && this.escala > 0.6) {
       for (let i = 0; i < this.def.divideEm; i++) {
         const a = (Mat.TAU / this.def.divideEm) * i;
-        const f = new Inimigo('divisor', this.x + Math.cos(a) * 26, this.y + Math.sin(a) * 26, this.escala * 0.55);
+        const f = new Inimigo('divisor', this.x + Math.cos(a) * 26, this.y + Math.sin(a) * 26, this.escala * 0.55, this.elite);
         f.vidaMax = f.vida = Math.max(12, this.vidaMax * 0.28);
         Jogo.inimigos.push(f);
       }
@@ -904,6 +910,17 @@ class Inimigo {
       ctx.beginPath();
       ctx.arc(0, 0, this.raio * (2.4 - p * 1.4), 0, Mat.TAU);
       ctx.stroke();
+    }
+
+    if (this.elite) {
+      ctx.save();
+      ctx.strokeStyle = '#ffd34d';
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 18; ctx.shadowColor = '#ffd34d';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.raio + 7 + Math.sin(Jogo.tempo * 4 + this.fase) * 2, 0, Mat.TAU);
+      ctx.stroke();
+      ctx.restore();
     }
 
     ctx.rotate(this.angulo);
@@ -1066,8 +1083,8 @@ class Boss {
   // aqui é mais seguro que reescrever as fases de oito tabelas.
   static VIDA_EXTRA = 1.35;
   static RITMO_ATAQUE = 0.7;    // < 1 = ataca mais vezes
-  static FURIA_VIDA = 0.3;      // abaixo disso o boss acelera
-  static FURIA_RITMO = 0.62;    // e ataca quase o dobro de vezes
+  static FURIA_VIDA = 0.4;      // abaixo disso o boss acelera
+  static FURIA_RITMO = 0.55;    // e ataca quase o dobro de vezes
 
   constructor(def, onda) {
     this.id = Jogo.proximoId();
@@ -1076,7 +1093,7 @@ class Boss {
     this.y = 150;
     this.direcao = 1;
     this.raio = def.raio;
-    const escala = 1 + (onda - 5) * 0.035;
+    const escala = 1 + (onda - 5) * 0.05;
     this.vidaMax = def.vida * escala * Boss.VIDA_EXTRA;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
@@ -1123,6 +1140,7 @@ class Boss {
     if (this.entrando > 0) {
       this.entrando -= dt;
       this.y = Mat.misturar(-120, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
+      if (this.entrando <= 0) this.chamarEscolta();
       return;
     }
 
@@ -1265,7 +1283,7 @@ class Boss {
 
     // corpo do boss machuca
     if (Mat.distancia(this.x, this.y, j.x, j.y) < this.raio + j.raio) {
-      j.receberDano(1, this.x, this.y);
+      j.receberDano(2, this.x, this.y);   // encostar no boss custa caro
     }
 
     // partículas de aura
@@ -1277,6 +1295,21 @@ class Boss {
         cor: this.def.cor, brilho: 14, atrito: 0.9
       });
     }
+  }
+
+  // Boss sozinho vira duelo de decorar padrão. A escolta obriga a dividir a
+  // atenção — e cresce com a onda.
+  chamarEscolta() {
+    const quantos = Math.min(5, 1 + Math.floor(Jogo.onda / 10));
+    for (let i = 0; i < quantos; i++) {
+      const a = (Mat.TAU / quantos) * i;
+      Jogo.inimigos.push(new Inimigo(
+        Mat.escolher(['corredor', 'atirador', 'orbitador', 'lanceiro']),
+        Mat.limitar(this.x + Math.cos(a) * 260, 40, Jogo.LARGURA - 40),
+        Mat.limitar(this.y + Math.sin(a) * 260, 40, Jogo.ALTURA - 40)
+      ));
+    }
+    Particulas.anel(this.x, this.y, this.def.cor, 120, 40);
   }
 
   executarAtaque(tipo) {

@@ -123,13 +123,24 @@ const Jogo = {
   /* ------------------------------ Ondas ------------------------------ */
   ehOndaDeBoss(onda) { return onda % 5 === 0; },
 
-  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.08; },
+  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.105; },
+
+  // Inimigo também fica mais rápido e atira mais miúdo conforme a onda sobe:
+  // a mesma jogada que salvava na onda 5 não salva na 30.
+  aceleracaoOnda() { return 1 + Math.min(0.4, (Jogo.onda - 1) * 0.011); },
+  ritmoInimigo() { return Math.max(0.6, 1 - (Jogo.onda - 1) * 0.011); },
+
+  // Chance de um inimigo nascer elite. Começa na onda 8 e satura em 30%.
+  sorteiaElite() {
+    if (Jogo.onda < 8) return false;
+    return Mat.chance(Math.min(0.3, (Jogo.onda - 7) * 0.018));
+  },
 
   prepararOnda() {
     Jogo.ondaLimpa = false;
-    Jogo.intervaloOnda = 2.2;
+    Jogo.intervaloOnda = 1.4;
     // fôlego no início da onda: ninguém morre no primeiro segundo
-    if (Jogo.jogador) Jogo.jogador.invulneravel = Math.max(Jogo.jogador.invulneravel, 1.4);
+    if (Jogo.jogador) Jogo.jogador.invulneravel = Math.max(Jogo.jogador.invulneravel, 0.9);
     Jogo.composicao = [];
     Jogo.timerSpawn = 0.8;
 
@@ -140,7 +151,7 @@ const Jogo = {
     } else {
       // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
       // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
-      const orcamento = Math.round(3 + Math.min(Jogo.onda, 20) * 1.15 + Math.max(0, Jogo.onda - 20) * 0.45);
+      const orcamento = Math.round(3 + Math.min(Jogo.onda, 20) * 1.3 + Math.max(0, Jogo.onda - 20) * 0.7);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
@@ -214,7 +225,7 @@ const Jogo = {
     if (Jogo.onda >= Jogo.TOTAL_ONDAS) { Jogo.vitoria(); return; }
     Jogo.pontos += 300 * Jogo.onda;
     Jogo.aviso('ONDA ' + Jogo.onda + ' LIMPA');
-    Jogo.intervaloOnda = 2.4;
+    Jogo.intervaloOnda = 1.6;
   },
 
   /* --------------------------- Efeitos de tela ------------------------ */
@@ -270,16 +281,19 @@ const Jogo = {
     Jogo.comboTimer = 3;
     Jogo.multiplicador = Mat.limitar(1 + Math.floor(Jogo.combo / 5), 1, 8);
     Jogo.estat.melhorMulti = Math.max(Jogo.estat.melhorMulti, Jogo.multiplicador);
-    Jogo.pontos += e.def.pontos * Jogo.multiplicador;
+    const bonusElite = e.elite ? 2.5 : 1;
+    Jogo.pontos += e.def.pontos * Jogo.multiplicador * bonusElite;
 
     // XP
     const pedacos = Mat.inteiro(2, 4);
     for (let i = 0; i < pedacos; i++) {
-      Jogo.coletaveis.push(new Coletavel('xp', e.x + Mat.aleatorio(-14, 14), e.y + Mat.aleatorio(-14, 14), e.def.xp / pedacos));
+      Jogo.coletaveis.push(new Coletavel('xp', e.x + Mat.aleatorio(-14, 14), e.y + Mat.aleatorio(-14, 14), (e.def.xp * bonusElite) / pedacos));
     }
-    // item raro
-    if (Mat.chance(0.06)) {
-      Jogo.coletaveis.push(new Coletavel(Mat.escolher(['vida', 'bomba', 'ima', 'frenesi']), e.x, e.y));
+    // Item raro ficou mais raro, e cura é o mais difícil de cair: vida perdida
+    // tem que doer até o fim da partida.
+    if (Mat.chance(e.elite ? 0.1 : 0.035)) {
+      const sorteio = Mat.chance(0.25) ? 'vida' : Mat.escolher(['bomba', 'ima', 'frenesi']);
+      Jogo.coletaveis.push(new Coletavel(sorteio, e.x, e.y));
     }
     // fragmentos da melhoria lendária
     if (j.explodeAoMatar > 0) {
@@ -423,8 +437,8 @@ const Jogo = {
     } else if (!Jogo.ondaLimpa) {
       if (Jogo.spawnRestante > 0) {
         Jogo.timerSpawn -= dtReal;
-        const ritmo = Math.max(0.42, 1.15 - Jogo.onda * 0.022);
-        const tetoSimultaneo = Math.min(14, Math.round(4 + Jogo.onda * 0.45));
+        const ritmo = Math.max(0.32, 1.05 - Jogo.onda * 0.024);
+        const tetoSimultaneo = Math.min(16, Math.round(4 + Jogo.onda * 0.5));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;

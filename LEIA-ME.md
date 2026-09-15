@@ -126,7 +126,40 @@ entre todos.
 
 ## Dificuldade
 
-O jogo foi reapertado: **menos inimigos na tela, cada um pesando mais**.
+O jogo foi reapertado duas vezes: **menos inimigos na tela, cada um pesando muito
+mais** — e, do meio do jogo em diante, elites.
+
+### Elites
+
+A partir da onda 8, cada inimigo tem chance de nascer **elite**: anel dourado, 22%
+maior, **2,6× de vida**, 12% mais rápido e +1 de dano no contato (o encostão nunca
+passa de 2 — só a investida do lanceiro chega a 3). Vale 2,5× em XP e pontos, e é
+o que mais solta item. A chance começa em 2% na onda 8 e satura em 30%.
+
+### Escalada
+
+| O quê | Como cresce |
+|---|---|
+| Vida do inimigo | +10,5% por onda — onda 40 vale 5,1× a onda 1 |
+| Velocidade | +1,1% por onda, teto de +40% |
+| Recarga de tiro | −1,1% por onda, piso de 60% do tempo original |
+| Vida do boss | +5% por onda em cima da base, e ainda ×1,35 |
+
+### Menos folga
+
+- Intervalo entre ondas caiu de 2,2 s para 1,4 s; o fôlego invulnerável do começo
+  da onda, de 1,4 s para 0,9 s.
+- Item raro caiu de 6% para 3,5% por morte (10% no elite), e **cura é só um quarto
+  dos sorteios** — vida perdida dói até o fim.
+- Cada nível custa mais XP: base 60 em vez de 50, e fator 1,45 em vez de 1,38. Dá
+  menos melhorias por partida, então cada carta importa.
+- Boss: encostar nele tira 2, ele chama escolta assim que aterrissa (até 5 no fim
+  do jogo) e entra em fúria já com 40% de vida.
+
+Medido com bot de teste e vida infinita, atirando sem parar: o primeiro boss cai em
+~14 s, o da onda 20 em ~43 s e o NÚCLEO INFINITO da onda 40 em ~103 s. É maratona,
+não tiro de sorte.
+
 
 - Orçamento da onda caiu para cerca da metade e o teto de inimigos vivos foi de 30 para 14.
 - Vida base subiu 35–50% em todos os tipos e a escala por onda passou de +5,5% para +8%
