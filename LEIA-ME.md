@@ -9,9 +9,10 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Oráculo de Jade, Eclipse Fantasma e Núcleo Infinito, cada um com 3–4 fases.
 - 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
-- Arena de 1280×720 unidades, toda visível de uma vez: a câmera fica no centro
-  e só treme e dá zoom, nunca acompanha o jogador. No celular a renderização
-  interna cai para 960×540 para preservar desempenho.
+- Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
+  e só treme e dá zoom, nunca acompanha o jogador. O CSS encolhe o canvas para
+  caber na tela, então o espaço de fuga cresceu sem ninguém sair do quadro. No
+  celular a renderização interna cai para 75% para preservar desempenho.
 - Cooperativo: CRIAR SALA abre a tela da sala com código editável e lista de quem
   está dentro; ENTRAR NA SALA pede o código do anfitrião. Detalhes e limites em
   `COOPERATIVO.md`.
@@ -29,8 +30,8 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Lasers, fragmentos e projéteis refletidos mantêm suas cores originais.
 - Projétil que atravessa inimigo ou boss pode acertar o mesmo alvo novamente após
   ricochetear na parede. O limite de perfuração continua valendo em cada acerto.
-- Em aparelhos de toque, o canvas usa 75% da resolução da janela (960×540 em vez
-  de 1280×720), preservando coordenadas e tamanho visual. Partículas simultâneas
+- Em aparelhos de toque, o canvas usa 75% da resolução da arena (1320×742 em vez
+  de 1760×990), preservando coordenadas e tamanho visual. Partículas simultâneas
   caem de 1500 para 600, rastros emitem menos partículas e efeitos de brilho
   caros saem dos projéteis, partículas e moldura.
 - HUD atualiza a cada 100 ms no celular; durante menus, arena redesenha a até
@@ -138,6 +139,28 @@ O jogo foi reapertado: **menos inimigos na tela, cada um pesando mais**.
   agora cura 0,025 coração/s em vez de 0,06.
 
 ## Bosses (ondas 5, 10, 15, 20, 25, 30, 35, 40)
+
+Três movimentos e quatro ataques novos entraram para o boss deixar de ser alvo
+parado que cospe bala:
+
+| Movimento | O que faz |
+|---|---|
+| `investida` | encara, trava a mira, atravessa a arena na sua linha e solta um anel ao bater na parede |
+| `teleporte` | pisca para 300 px de você e cospe um leque ao chegar |
+| `cerco` | orbita colado, entre 210 e 390 px — não dá para resolver de longe |
+
+| Ataque | O que faz |
+|---|---|
+| `parede` | anel fechado com **uma** brecha: ache o buraco e passe (a brecha encolhe na fúria) |
+| `cruz` | quatro braços giratórios varrendo a arena |
+| `precisao` | mira onde você **vai** estar, não onde está |
+| `chuva` | cortina caindo do topo, com colunas vazias por onde correr |
+
+Além disso: trocar de fase dispara um anel junto com o telegrafo (nada de
+descanso), e abaixo de 30% de vida o boss entra em **fúria** — anda 25% mais
+rápido, ataca quase o dobro de vezes, o aviso do laser encurta e a brecha da
+parede fecha.
+
 
 1. **SENTINELA CARMESIM** — movimento horizontal → tiro único, leque de 3, anel
 2. **SERPENTE DE VÍDEO** — movimento senoidal → leque de 9, invocação

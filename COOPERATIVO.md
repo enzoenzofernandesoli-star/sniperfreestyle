@@ -1,7 +1,7 @@
 # Cooperativo online — estado e decisões
 
-Jogável desde 14/09/2026, rodando local. Arena de 1280×720 unidades, a mesma do
-modo solo: os dois jogadores dividem uma única tela fixa, sem câmera que rola.
+Jogável desde 14/09/2026, rodando local e no Render. Arena de 1760×990 unidades, a
+mesma do modo solo: todo mundo divide uma única tela fixa, sem câmera que rola.
 
 ## A escolha que define tudo: quem é a autoridade
 

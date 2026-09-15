@@ -24,21 +24,21 @@ test('arena cabe em uma tela e a câmera fica no centro', () => {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
-    Jogo.jogador = { x: 1000, y: 600 };
+    Jogo.jogador = { x: 1400, y: 800 };
     Camera.zoom = 1;
     Camera.zoomAlvo = 1;
     Camera.atualizar(0);
-    const centro = Camera.telaParaMundo(640, 360);
+    const centro = Camera.telaParaMundo(Jogo.LARGURA / 2, Jogo.ALTURA / 2);
     const canto = Camera.telaParaMundo(0, 0);
     const boss = new Boss(BOSSES[0], 5);
     return { arena: [Jogo.LARGURA, Jogo.ALTURA], camera: [Camera.centroX, Camera.centroY],
       centro: [centro.x, centro.y], canto: [canto.x, canto.y], boss: [boss.x, boss.baseY] };
   })()`, mundo);
-  assert.deepEqual(Array.from(dados.arena), [1280, 720]);
-  assert.deepEqual(Array.from(dados.camera), [640, 360]);
-  assert.deepEqual(Array.from(dados.centro), [640, 360]);
+  assert.deepEqual(Array.from(dados.arena), [1760, 990]);
+  assert.deepEqual(Array.from(dados.camera), [880, 495]);
+  assert.deepEqual(Array.from(dados.centro), [880, 495]);
   assert.deepEqual(Array.from(dados.canto), [0, 0]);
-  assert.deepEqual(Array.from(dados.boss), [640, 150]);
+  assert.deepEqual(Array.from(dados.boss), [880, 150]);
 });
 
 test('cada classe tem três skins cosméticas e menos vida inicial', () => {

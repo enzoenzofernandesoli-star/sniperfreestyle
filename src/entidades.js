@@ -979,9 +979,9 @@ const BOSSES = [
     cor: '#ff2e5b', cor2: '#5c0018',
     raio: 62, vida: 950, lados: 6,
     fases: [
-      { movimento: 'horizontal', velocidade: 190, ataques: ['unico'], recarga: 1.1 },
-      { movimento: 'horizontal', velocidade: 260, ataques: ['unico', 'leque3'], recarga: 0.85 },
-      { movimento: 'perseguir', velocidade: 190, ataques: ['leque3', 'anel'], recarga: 0.7 }
+      { movimento: 'horizontal', velocidade: 210, ataques: ['unico', 'leque3'], recarga: 1.0 },
+      { movimento: 'investida', velocidade: 250, ataques: ['leque3', 'precisao'], recarga: 0.8 },
+      { movimento: 'cerco', velocidade: 1.2, ataques: ['leque3', 'anel', 'precisao'], recarga: 0.62 }
     ]
   },
   {
@@ -991,9 +991,9 @@ const BOSSES = [
     cor: '#00e5ff', cor2: '#00485c',
     raio: 58, vida: 1800, lados: 5,
     fases: [
-      { movimento: 'senoidal', velocidade: 240, ataques: ['leque'], recarga: 1.5 },
-      { movimento: 'senoidal', velocidade: 320, ataques: ['leque', 'unico'], recarga: 1.0 },
-      { movimento: 'senoidal', velocidade: 400, ataques: ['leque', 'anel', 'invocar'], recarga: 0.8 }
+      { movimento: 'senoidal', velocidade: 260, ataques: ['leque', 'chuva'], recarga: 1.3 },
+      { movimento: 'senoidal', velocidade: 350, ataques: ['leque', 'precisao', 'parede'], recarga: 0.9 },
+      { movimento: 'cerco', velocidade: 1.5, ataques: ['leque', 'anel', 'invocar', 'chuva'], recarga: 0.66 }
     ]
   },
   {
@@ -1004,8 +1004,8 @@ const BOSSES = [
     raio: 66, vida: 3000, lados: 8,
     fases: [
       { movimento: 'circular', velocidade: 1.0, ataques: ['espiral'], recarga: 0.14 },
-      { movimento: 'circular', velocidade: 1.5, ataques: ['espiral', 'leque'], recarga: 0.12 },
-      { movimento: 'circular', velocidade: 2.0, ataques: ['espiral', 'anel', 'invocar'], recarga: 0.1 }
+      { movimento: 'teleporte', velocidade: 200, ataques: ['espiral', 'cruz'], recarga: 0.4 },
+      { movimento: 'circular', velocidade: 2.1, ataques: ['espiral', 'parede', 'invocar'], recarga: 0.28 }
     ]
   },
   {
@@ -1015,56 +1015,59 @@ const BOSSES = [
     cor: '#ffd34d', cor2: '#6b4a00',
     raio: 74, vida: 4900, lados: 3,
     fases: [
-      { movimento: 'perseguir', velocidade: 175, ataques: ['leque', 'laser'], recarga: 1.2 },
-      { movimento: 'senoidal', velocidade: 340, ataques: ['espiral', 'anel'], recarga: 0.4 },
-      { movimento: 'circular', velocidade: 2.0, ataques: ['laser', 'invocar', 'leque'], recarga: 0.6 },
-      { movimento: 'caotico', velocidade: 420, ataques: ['espiral', 'anel', 'laser', 'invocar'], recarga: 0.35 }
+      { movimento: 'perseguir', velocidade: 185, ataques: ['leque', 'laser', 'precisao'], recarga: 1.05 },
+      { movimento: 'investida', velocidade: 300, ataques: ['parede', 'anel'], recarga: 0.7 },
+      { movimento: 'teleporte', velocidade: 230, ataques: ['laser', 'invocar', 'cruz'], recarga: 0.5 },
+      { movimento: 'caotico', velocidade: 430, ataques: ['espiral', 'parede', 'laser', 'chuva'], recarga: 0.34 }
     ]
   },
   {
     id: 'ferreiro', nome: 'FERREIRO SOLAR', titulo: 'Forja em Colapso',
     cor: '#ff8e45', cor2: '#7a2909', raio: 65, vida: 5100, lados: 6,
     fases: [
-      { movimento: 'horizontal', velocidade: 250, ataques: ['leque3', 'anel'], recarga: 0.9 },
-      { movimento: 'perseguir', velocidade: 215, ataques: ['leque', 'invocar'], recarga: 0.8 },
-      { movimento: 'caotico', velocidade: 330, ataques: ['laser', 'anel'], recarga: 0.7 }
+      { movimento: 'investida', velocidade: 270, ataques: ['leque3', 'anel'], recarga: 0.85 },
+      { movimento: 'cerco', velocidade: 1.3, ataques: ['chuva', 'invocar', 'precisao'], recarga: 0.7 },
+      { movimento: 'caotico', velocidade: 350, ataques: ['laser', 'parede', 'cruz'], recarga: 0.55 }
     ]
   },
   {
     id: 'oraculo', nome: 'ORÁCULO DE JADE', titulo: 'Geometria Viva',
     cor: '#56f0b0', cor2: '#176451', raio: 61, vida: 5600, lados: 8,
     fases: [
-      { movimento: 'circular', velocidade: 1.1, ataques: ['espiral', 'unico'], recarga: 0.26 },
-      { movimento: 'senoidal', velocidade: 280, ataques: ['leque', 'anel'], recarga: 0.85 },
-      { movimento: 'circular', velocidade: 1.8, ataques: ['espiral', 'invocar', 'laser'], recarga: 0.45 }
+      { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'precisao'], recarga: 0.24 },
+      { movimento: 'teleporte', velocidade: 240, ataques: ['cruz', 'parede'], recarga: 0.55 },
+      { movimento: 'cerco', velocidade: 1.7, ataques: ['espiral', 'invocar', 'laser', 'chuva'], recarga: 0.4 }
     ]
   },
   {
     id: 'eclipse', nome: 'ECLIPSE FANTASMA', titulo: 'Luz Devorada',
     cor: '#8d83ff', cor2: '#33226e', raio: 70, vida: 6200, lados: 5,
     fases: [
-      { movimento: 'senoidal', velocidade: 300, ataques: ['leque3', 'laser'], recarga: 0.95 },
-      { movimento: 'caotico', velocidade: 350, ataques: ['anel', 'invocar'], recarga: 0.65 },
-      { movimento: 'perseguir', velocidade: 250, ataques: ['espiral', 'leque', 'laser'], recarga: 0.5 }
+      { movimento: 'teleporte', velocidade: 240, ataques: ['leque3', 'laser'], recarga: 0.85 },
+      { movimento: 'caotico', velocidade: 370, ataques: ['parede', 'invocar', 'precisao'], recarga: 0.58 },
+      { movimento: 'cerco', velocidade: 1.9, ataques: ['espiral', 'cruz', 'laser', 'chuva'], recarga: 0.44 }
     ]
   },
   {
     id: 'nucleo', nome: 'NÚCLEO INFINITO', titulo: 'Último Pulso',
     cor: '#ff5cae', cor2: '#791c55', raio: 78, vida: 7600, lados: 7,
     fases: [
-      { movimento: 'circular', velocidade: 1.15, ataques: ['espiral', 'leque3'], recarga: 0.42 },
-      { movimento: 'horizontal', velocidade: 310, ataques: ['anel', 'invocar'], recarga: 0.68 },
-      { movimento: 'senoidal', velocidade: 350, ataques: ['laser', 'leque'], recarga: 0.6 },
-      { movimento: 'caotico', velocidade: 410, ataques: ['espiral', 'anel', 'laser'], recarga: 0.42 }
+      { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'leque3', 'precisao'], recarga: 0.38 },
+      { movimento: 'investida', velocidade: 330, ataques: ['parede', 'invocar'], recarga: 0.6 },
+      { movimento: 'teleporte', velocidade: 280, ataques: ['laser', 'cruz', 'chuva'], recarga: 0.5 },
+      { movimento: 'cerco', velocidade: 2.1, ataques: ['espiral', 'parede', 'laser', 'cruz', 'chuva'], recarga: 0.34 }
     ]
   }
 ];
+
 
 class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
   static VIDA_EXTRA = 1.35;
-  static RITMO_ATAQUE = 0.82;   // < 1 = ataca mais vezes
+  static RITMO_ATAQUE = 0.7;    // < 1 = ataca mais vezes
+  static FURIA_VIDA = 0.3;      // abaixo disso o boss acelera
+  static FURIA_RITMO = 0.62;    // e ataca quase o dobro de vezes
 
   constructor(def, onda) {
     this.id = Jogo.proximoId();
@@ -1107,6 +1110,8 @@ class Boss {
       Particulas.anel(this.x, this.y, this.def.cor, 120, 44);
       Jogo.aviso('FASE ' + (idx + 1) + ' — ' + this.def.nome);
       Som.bossEntra();
+      // Trocar de fase não é descanso: sai um anel junto com o telegrafo.
+      this.executarAtaque('anel');
     }
   }
 
@@ -1126,11 +1131,14 @@ class Boss {
 
     const j = Jogo.alvoJogador(this.x, this.y);
     const f = this.fase;
+    // Fim de barra é a parte difícil: o boss anda e atira mais rápido.
+    this.furioso = this.porcentagem <= Boss.FURIA_VIDA;
+    const impeto = this.furioso ? 1.25 : 1;
 
     // movimento
     switch (f.movimento) {
       case 'horizontal':
-        this.x += this.direcao * f.velocidade * dt;
+        this.x += this.direcao * f.velocidade * impeto * dt;
         if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
@@ -1138,7 +1146,7 @@ class Boss {
         this.y = Mat.suave(this.y, this.baseY + Math.sin(this.tempoVivo * 1.4) * 30, 4, dt);
         break;
       case 'senoidal':
-        this.x += this.direcao * f.velocidade * dt;
+        this.x += this.direcao * f.velocidade * impeto * dt;
         if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
@@ -1146,7 +1154,7 @@ class Boss {
         this.y = Jogo.ALTURA / 2 + Math.sin(this.tempoVivo * 1.9) * (Jogo.ALTURA / 2 - this.raio - 30);
         break;
       case 'circular': {
-        this.orbita += f.velocidade * dt;
+        this.orbita += f.velocidade * impeto * dt;
         const rx = Jogo.LARGURA / 2, ry = Jogo.ALTURA / 2;
         this.x = rx + Math.cos(this.orbita) * (Jogo.LARGURA / 2 - this.raio - 60);
         this.y = ry + Math.sin(this.orbita) * (Jogo.ALTURA / 2 - this.raio - 50);
@@ -1156,8 +1164,8 @@ class Boss {
         const a = Mat.anguloEntre(this.x, this.y, j.x, j.y);
         const d = Mat.distancia(this.x, this.y, j.x, j.y);
         const alvo = d > 260 ? 1 : -0.4;
-        this.x += Math.cos(a) * f.velocidade * alvo * dt;
-        this.y += Math.sin(a) * f.velocidade * alvo * dt;
+        this.x += Math.cos(a) * f.velocidade * alvo * impeto * dt;
+        this.y += Math.sin(a) * f.velocidade * alvo * impeto * dt;
         break;
       }
       case 'caotico': {
@@ -1165,8 +1173,69 @@ class Boss {
           this.destino = { x: Mat.aleatorio(this.raio + 20, Jogo.LARGURA - this.raio - 20), y: Mat.aleatorio(this.raio + 20, Jogo.ALTURA - this.raio - 20) };
         }
         const a = Mat.anguloEntre(this.x, this.y, this.destino.x, this.destino.y);
-        this.x += Math.cos(a) * f.velocidade * dt;
-        this.y += Math.sin(a) * f.velocidade * dt;
+        this.x += Math.cos(a) * f.velocidade * impeto * dt;
+        this.y += Math.sin(a) * f.velocidade * impeto * dt;
+        break;
+      }
+      // Investida: encara, para, e atravessa a arena pela linha do jogador.
+      // O tempo de leitura encolhe na fúria.
+      case 'investida': {
+        this.faseMov = this.faseMov || 'encarando';
+        this.tempoMov = (this.tempoMov || 0) - dt;
+        if (this.faseMov === 'encarando') {
+          const a = Mat.anguloEntre(this.x, this.y, j.x, j.y);
+          this.x += Math.cos(a) * f.velocidade * 0.35 * dt;
+          this.y += Math.sin(a) * f.velocidade * 0.35 * dt;
+          if (this.tempoMov <= 0) {
+            this.faseMov = 'mirando';
+            this.tempoMov = this.furioso ? 0.45 : 0.7;
+            this.anguloInvestida = Mat.anguloEntre(this.x, this.y, j.x, j.y);
+          }
+        } else if (this.faseMov === 'mirando') {
+          this.anguloInvestida = Mat.misturar(this.anguloInvestida, Mat.anguloEntre(this.x, this.y, j.x, j.y), 0.04);
+          this.flash = Math.max(this.flash, 0.25);
+          if (this.tempoMov <= 0) { this.faseMov = 'investindo'; this.tempoMov = 0.9; }
+        } else {
+          this.x += Math.cos(this.anguloInvestida) * f.velocidade * 2.6 * impeto * dt;
+          this.y += Math.sin(this.anguloInvestida) * f.velocidade * 2.6 * impeto * dt;
+          Particulas.emitir({ x: this.x, y: this.y, vida: 0.3, tam: 9, cor: this.def.cor, brilho: 18, atrito: 0.88 });
+          const bateu = this.x <= this.raio || this.x >= Jogo.LARGURA - this.raio
+            || this.y <= this.raio || this.y >= Jogo.ALTURA - this.raio;
+          if (bateu) { Camera.bater(20); this.executarAtaque('anel'); }
+          if (this.tempoMov <= 0 || bateu) {
+            this.faseMov = 'encarando';
+            this.tempoMov = this.furioso ? 0.5 : 0.9;
+          }
+        }
+        break;
+      }
+      // Teleporte: pisca para o lado do jogador e cospe um leque ao chegar.
+      // Tira a saída fácil de ficar longe girando em volta da arena.
+      case 'teleporte': {
+        this.tempoMov = (this.tempoMov || 0) - dt;
+        const a = Mat.anguloEntre(this.x, this.y, j.x, j.y);
+        this.x += Math.cos(a) * f.velocidade * 0.5 * impeto * dt;
+        this.y += Math.sin(a) * f.velocidade * 0.5 * impeto * dt;
+        if (this.tempoMov <= 0) {
+          this.tempoMov = (this.furioso ? 1.5 : 2.4) * Mat.aleatorio(0.85, 1.15);
+          Particulas.anel(this.x, this.y, this.def.cor, 80, 34);
+          const volta = Math.random() * Mat.TAU;
+          this.x = Mat.limitar(j.x + Math.cos(volta) * 300, this.raio, Jogo.LARGURA - this.raio);
+          this.y = Mat.limitar(j.y + Math.sin(volta) * 300, this.raio, Jogo.ALTURA - this.raio);
+          Particulas.anel(this.x, this.y, this.def.cor, 80, 34);
+          Camera.bater(10);
+          this.executarAtaque('leque');
+        }
+        break;
+      }
+      // Órbita colada no jogador: ele não sai do seu pé.
+      case 'cerco': {
+        this.orbita += f.velocidade * 0.9 * impeto * dt;
+        const raioCerco = 300 + Math.sin(this.tempoVivo * 0.8) * 90;
+        const alvoX = j.x + Math.cos(this.orbita) * raioCerco;
+        const alvoY = j.y + Math.sin(this.orbita) * raioCerco;
+        this.x = Mat.suave(this.x, Mat.limitar(alvoX, this.raio, Jogo.LARGURA - this.raio), 3.2, dt);
+        this.y = Mat.suave(this.y, Mat.limitar(alvoY, this.raio, Jogo.ALTURA - this.raio), 3.2, dt);
         break;
       }
     }
@@ -1178,7 +1247,7 @@ class Boss {
     if (this.recarga <= 0) {
       const ataque = Mat.escolher(f.ataques);
       this.executarAtaque(ataque);
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * Mat.aleatorio(0.85, 1.15);
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * (this.furioso ? Boss.FURIA_RITMO : 1) * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1246,15 +1315,56 @@ class Boss {
         break;
       }
       case 'laser':
-        this.laser = { tempo: 0, aviso: 0.9, duracao: 1.7, angulo: angJog - 0.6, giro: 1.3 * (Mat.chance(0.5) ? 1 : -1) };
+        this.laser = { tempo: 0, aviso: this.furioso ? 0.55 : 0.75, duracao: 2.1,
+          angulo: angJog - 0.6, giro: 1.5 * (Mat.chance(0.5) ? 1 : -1) };
         Som.bossEntra();
         break;
+      // Parede de tiros com uma única brecha: obriga a achar o buraco e passar.
+      case 'parede': {
+        const n = 30;
+        const brecha = Math.random() * Mat.TAU;
+        const largura = this.furioso ? 0.5 : 0.75;
+        for (let i = 0; i < n; i++) {
+          const a = (Mat.TAU / n) * i;
+          if (Math.abs(Mat.normalizarAngulo(a - brecha)) < largura) continue;
+          Jogo.tiroInimigo(this.x, this.y, a, 300, 1, this.def.cor, 9);
+        }
+        Camera.bater(8);
+        break;
+      }
+      // Cruz giratória: quatro braços que varrem a arena inteira.
+      case 'cruz': {
+        this.anguloEspiral += 0.3;
+        for (let b = 0; b < 4; b++) {
+          const a = this.anguloEspiral + (Mat.TAU / 4) * b;
+          for (let k = 1; k <= 3; k++) Jogo.tiroInimigo(this.x, this.y, a, 260 + k * 70, 1, this.def.cor, 8);
+        }
+        break;
+      }
+      // Tiro de precisão: mira onde o jogador VAI estar, não onde está.
+      case 'precisao': {
+        const prev = 0.42;
+        const alvoX = j.x + j.vx * prev, alvoY = j.y + j.vy * prev;
+        const a = Mat.anguloEntre(this.x, this.y, alvoX, alvoY);
+        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, a + i * 0.1, 620, 1, this.def.cor, 7);
+        break;
+      }
+      // Chuva: cai uma cortina do topo da arena, some o lugar seguro parado.
+      case 'chuva': {
+        const colunas = 12;
+        for (let i = 0; i < colunas; i++) {
+          if (Mat.chance(0.22)) continue;   // buracos por onde dá para correr
+          const x = (Jogo.LARGURA / colunas) * (i + 0.5);
+          Jogo.tiroInimigo(x, -20, Math.PI / 2, 340, 1, this.def.cor, 8);
+        }
+        break;
+      }
       case 'invocar': {
         const quantos = 2 + this.faseIndice;
         for (let i = 0; i < quantos; i++) {
           const a = Math.random() * Mat.TAU;
           Jogo.inimigos.push(new Inimigo(
-            Mat.escolher(['corredor', 'atirador', 'kamikaze']),
+            Mat.escolher(['corredor', 'atirador', 'kamikaze', 'lanceiro', 'enxame']),
             this.x + Math.cos(a) * (this.raio + 40),
             this.y + Math.sin(a) * (this.raio + 40)
           ));

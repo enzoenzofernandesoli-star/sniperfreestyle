@@ -3,8 +3,11 @@
    =========================================================================== */
 
 const Jogo = {
-  LARGURA: 1280,
-  ALTURA: 720,
+  // Arena maior que a tela de origem, mas ainda inteira visível: o canvas é
+  // desenhado em 1760x990 e o CSS encolhe para caber. Ninguém fica fora do
+  // enquadramento e sobra espaço para fugir de boss.
+  LARGURA: 1760,
+  ALTURA: 990,
   TOTAL_ONDAS: 40,
   modoLeve: false,
   escalaRender: 1,
