@@ -418,7 +418,9 @@ const Jogo = {
     const encontro = def.final ? 0 : Jogo.encontroDeBoss(Jogo.onda);
     const estilo = encontro === 2 ? Jogo.ESTILO_ENCAIXA : Jogo.ESTILOS_67[indice];
     const texto = encontro === 1 ? 'SIX SEVEN' : encontro === 2 ? 'ENCAIXA!' : '67';
-    const duracao = encontro === 1 || encontro === 2 ? 3.4 : 2.6;
+    // Tempo de tela casado com a fala: a do 67 tem 1,9 s, as da onda 10 têm
+    // 3,6 s. O letreiro fica no ar até o áudio terminar, com folga.
+    const duracao = encontro === 1 ? 4.2 : encontro === 2 ? 5.4 : 3.0;
     Jogo.festa67 = { estilo, texto, vida: duracao, vidaMax: duracao, semente: Math.random() * 10 };
     Jogo.flashTela(0.55, estilo.cor);
     if (encontro === 1) Som.tocarClipe('sixseven');
@@ -543,8 +545,10 @@ const Jogo = {
     // pausa
     if (Input.apertou('KeyP') || Input.apertou('Escape')) { Jogo.pausar(); return; }
 
-    // fila de melhorias tem prioridade
-    if (Jogo.filaDeMelhorias > 0) { Jogo.abrirMelhoria(); return; }
+    // A festa do boss manda na tela: enquanto o letreiro estiver no ar, nada
+    // aparece por cima dele. A carta de melhoria espera na fila e abre assim
+    // que o SIX SEVEN, o ENCAIXA! ou o 67 terminarem — junto com a fala.
+    if (Jogo.filaDeMelhorias > 0 && !Jogo.festa67) { Jogo.abrirMelhoria(); return; }
 
     if (Jogo.jogador.vida > 0) Jogo.jogador.atualizar(dt);
     for (const [id, outro] of Jogo.outros) {
@@ -563,6 +567,7 @@ const Jogo = {
     // spawn / ritmo da onda
     if (Jogo.intervaloOnda > 0) {
       Jogo.intervaloOnda -= dtReal;
+      if (Jogo.festa67) Jogo.intervaloOnda = Math.max(Jogo.intervaloOnda, 0.4);
       if (Jogo.intervaloOnda <= 0 && Jogo.ondaLimpa) {
         if (Jogo.onda >= Jogo.TOTAL_ONDAS) { Jogo.vitoria(); return; }
         Jogo.onda++;
@@ -761,7 +766,11 @@ const Jogo = {
     Jogo.flash.alpha = Math.max(0, Jogo.flash.alpha - dtReal * 2.6);
     if (Jogo.festa67) {
       Jogo.festa67.vida -= dtReal;
-      if (Jogo.festa67.vida <= 0) Jogo.festa67 = null;
+      if (Jogo.festa67.vida <= 0) {
+        Jogo.festa67 = null;
+        // acabou o letreiro: a carta que estava esperando entra agora
+        if (Jogo.filaDeMelhorias > 0 && Jogo.estado === 'jogando') Jogo.abrirMelhoria();
+      }
     }
     Jogo.intervaloHUD -= dtReal;
     if (Jogo.intervaloHUD <= 0) {
@@ -950,8 +959,6 @@ const Jogo = {
     ctx.fillStyle = vin;
     ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
 
-    Jogo.desenhar67(ctx);
-
     // aviso central
     if (Jogo.avisoTimer > 0 && Jogo.estado === 'jogando') {
       const p = Jogo.avisoTimer / 2.2;
@@ -967,6 +974,9 @@ const Jogo = {
       ctx.fillText(Jogo.avisoTexto, Jogo.LARGURA / 2, 130);
       ctx.restore();
     }
+
+    // Por último, por cima de tudo: o letreiro do boss derrubado.
+    Jogo.desenhar67(ctx);
   },
 
   desenharFundo(ctx) {

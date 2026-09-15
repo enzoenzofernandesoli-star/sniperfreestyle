@@ -924,3 +924,46 @@ test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => 
   assert.equal(dados.doFinal, 'final', 'o boss final tem o 67 reservado dele');
   assert.ok(dados.trilhas >= 5, 'há trilha suficiente para rodar a cada boss');
 });
+
+test('a carta de melhoria espera o letreiro do boss terminar', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  vm.runInContext(`var UI = { el: { classeNome: {}, onda: {}, buffs: {} }, aviso() {}, mostrarBarraBoss() {},
+    atualizarBarraBoss() {}, montarEquipe() {}, mostrarTela() {}, atualizarHUD() {}, montarMelhorias() {},
+    esconderBarraBoss() {}, mostrarMelhorias() {} };
+    var Coop = { ativo: () => false, convidado: () => false, anfitriao: () => false };
+    var document = { documentElement: { style: { setProperty() {} } } };
+    var window = {};`, mundo);
+
+  const dados = vm.runInContext(`(() => {
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.estado = 'jogando';
+    Jogo.onda = 5;
+    Jogo.inimigos.length = 0;
+    Jogo.projeteis.length = 0;
+    Jogo.ondaLimpa = true;
+    Jogo.intervaloOnda = 99;
+    Jogo.comemorar67(BOSSES[0]);          // letreiro do primeiro boss
+    Jogo.filaDeMelhorias = 1;             // uma carta esperando
+
+    const duracao = Jogo.festa67.vidaMax;
+    // metade do letreiro: a carta não pode ter aberto
+    for (let i = 0; i < Math.round((duracao / 2) / 0.016); i++) Jogo.atualizar(0.016);
+    const noMeio = { festa: !!Jogo.festa67, estado: Jogo.estado, fila: Jogo.filaDeMelhorias };
+
+    // passa do fim
+    for (let i = 0; i < Math.round((duracao / 2 + 0.4) / 0.016); i++) Jogo.atualizar(0.016);
+    const depois = { festa: !!Jogo.festa67, estado: Jogo.estado, fila: Jogo.filaDeMelhorias };
+
+    return { duracao, texto: 'SIX SEVEN', noMeio, depois };
+  })()`, mundo);
+
+  assert.ok(dados.duracao >= 4, 'o letreiro do primeiro boss dura o tempo da fala');
+  assert.equal(dados.noMeio.festa, true, 'no meio do letreiro ele ainda está no ar');
+  assert.equal(dados.noMeio.estado, 'jogando', 'e a carta de melhoria não abriu por cima');
+  assert.equal(dados.noMeio.fila, 1, 'a carta continua esperando na fila');
+  assert.equal(dados.depois.festa, false, 'terminado o letreiro');
+  assert.equal(dados.depois.estado, 'melhoria', 'aí sim a carta entra');
+});

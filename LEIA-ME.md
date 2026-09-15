@@ -233,6 +233,11 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   `2 + índice da fase × 0,8` segundos — 2,8 s na segunda fase, 3,6 s na terceira,
   4,4 s na quarta. O contador roda em tempo de relógio, então hitstop não
   encurta. Enquanto durar, nada entra: nem ultimate, nem crítico.
+- **O letreiro manda na tela.** Enquanto ele estiver no ar nada aparece por
+  cima: a carta de melhoria fica esperando na fila e só abre quando o letreiro
+  acaba, a virada de onda segura, e o desenho dele é o último da lista — passa
+  por cima até do aviso central. O tempo de tela é casado com a fala: 4,2 s no
+  SIX SEVEN (fala de 1,9 s), 5,4 s no ENCAIXA! (falas de 3,6 s) e 3,0 s no 67.
 - **SIX SEVEN** e **ENCAIXA!** Os dois primeiros bosses têm letreiro e som
   próprios: o da onda 5 grita **SIX SEVEN** com `assets/sixseven.mp3`, e o da
   onda 10 grita **ENCAIXA!** com uma das três falas de `assets/encaixa-*.m4a`,
