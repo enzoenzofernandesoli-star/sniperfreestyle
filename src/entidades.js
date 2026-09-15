@@ -47,6 +47,7 @@ class Jogador {
     this.sincronizarOrbes();
     this.rastro = [];
     this.recuo = 0;
+    this.nome = '';            // apelido mostrado no cooperativo
   }
 
   sincronizarOrbes() {
@@ -60,22 +61,22 @@ class Jogador {
   get intangivel() { return this.invulneravel > 0 || this.dashRestante > 0 || this.ultAtiva > 0 && this.classe.id === 'espectro'; }
 
   /* --------------------------- Atualização --------------------------- */
-  atualizar(dt) {
+  atualizar(dt, controles = Input) {
     // mira: joystick de mira > mira automática (toque) > mouse
-    const forcaMira = Math.hypot(Input.mira.x, Input.mira.y);
+    const forcaMira = Math.hypot(controles.mira.x, controles.mira.y);
     let alvo;
-    if (Input.mira.ativo && forcaMira > 0.22) {
-      alvo = Math.atan2(Input.mira.y, Input.mira.x);
-    } else if (Input.modoToque) {
+    if (controles.mira.ativo && forcaMira > 0.22) {
+      alvo = Math.atan2(controles.mira.y, controles.mira.x);
+    } else if (controles.modoToque) {
       const inimigo = Jogo.inimigoMaisProximo(this.x, this.y, 1400);
       alvo = inimigo ? Mat.anguloEntre(this.x, this.y, inimigo.x, inimigo.y) : this.angulo;
     } else {
-      alvo = Mat.anguloEntre(this.x, this.y, Input.mouseX, Input.mouseY);
+      alvo = Mat.anguloEntre(this.x, this.y, controles.mouseX, controles.mouseY);
     }
     this.angulo = this.angulo + Mat.normalizarAngulo(alvo - this.angulo) * Math.min(1, 18 * dt);
 
     // movimento
-    const ex = Input.eixoX(), ey = Input.eixoY();
+    const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey) || 1;
     const alvoVX = (ex / mag) * this.attr.velocidade * (Math.hypot(ex, ey) > 0 ? 1 : 0);
     const alvoVY = (ey / mag) * this.attr.velocidade * (Math.hypot(ex, ey) > 0 ? 1 : 0);
@@ -154,10 +155,44 @@ class Jogador {
     }
 
     // ações
-    if (Input.atirando() && this.recargaTiro <= 0) this.atirar();
-    if (Input.apertou('Space')) this.dash();
-    if (Input.apertou('KeyQ') || Input.apertou('CapsLock')) this.ativarEscudo();
-    if (Input.apertou('KeyE') || Input.apertou('ShiftLeft') || Input.botaoDireito) this.ativarUlt();
+    if (controles.atirando() && this.recargaTiro <= 0) this.atirar();
+    if (controles.apertou('Space')) this.dash(controles);
+    if (controles.apertou('KeyQ') || controles.apertou('CapsLock')) this.ativarEscudo();
+    if (controles.apertou('KeyE') || controles.apertou('ShiftLeft') || controles.botaoDireito) this.ativarUlt();
+  }
+
+  /* ------------------- Previsão local (cooperativo) ------------------ */
+  /* O convidado só prevê mira e deslocamento entre um snapshot e outro, para a
+     nave responder na hora. Tiro, dash, dano e progressão continuam decididos
+     pelo anfitrião — nada disso é simulado aqui. */
+  moverPrevisto(dt, controles) {
+    const forcaMira = Math.hypot(controles.mira.x, controles.mira.y);
+    let alvo;
+    if (controles.mira.ativo && forcaMira > 0.22) {
+      alvo = Math.atan2(controles.mira.y, controles.mira.x);
+    } else if (controles.modoToque) {
+      const inimigo = Jogo.inimigoMaisProximo(this.x, this.y, 1400);
+      alvo = inimigo ? Mat.anguloEntre(this.x, this.y, inimigo.x, inimigo.y) : this.angulo;
+    } else {
+      alvo = Mat.anguloEntre(this.x, this.y, controles.mouseX, controles.mouseY);
+    }
+    this.angulo = this.angulo + Mat.normalizarAngulo(alvo - this.angulo) * Math.min(1, 18 * dt);
+    if (this.dashRestante > 0) return;
+
+    const ex = controles.eixoX(), ey = controles.eixoY();
+    const mag = Math.hypot(ex, ey);
+    this.vx = Mat.suave(this.vx, mag > 0 ? (ex / mag) * this.attr.velocidade : 0, 12, dt);
+    this.vy = Mat.suave(this.vy, mag > 0 ? (ey / mag) * this.attr.velocidade : 0, 12, dt);
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+
+    const m = this.raio + 4;
+    this.x = Mat.limitar(this.x, m, Jogo.LARGURA - m);
+    this.y = Mat.limitar(this.y, m, Jogo.ALTURA - m);
+    if (this.alvoX !== undefined) {
+      this.alvoX = Mat.limitar(this.alvoX, m, Jogo.LARGURA - m);
+      this.alvoY = Mat.limitar(this.alvoY, m, Jogo.ALTURA - m);
+    }
   }
 
   /* ------------------------------ Tiro ------------------------------- */
@@ -197,11 +232,11 @@ class Jogador {
   }
 
   /* ------------------------------ Dash ------------------------------- */
-  dash() {
+  dash(controles = Input) {
     if (this.dashCarga < this.attr.dashRecarga) return;
     this.dashCarga = 0;
     this.dashRestante = 0.16;
-    const ex = Input.eixoX(), ey = Input.eixoY();
+    const ex = controles.eixoX(), ey = controles.eixoY();
     const ang = (ex || ey) ? Math.atan2(ey, ex) : this.angulo;
     const forca = 1450;
     this.dashVX = Math.cos(ang) * forca;
@@ -288,7 +323,7 @@ class Jogador {
       this.vx += Math.cos(a) * 320;
       this.vy += Math.sin(a) * 320;
     }
-    if (this.vida <= 0) Jogo.derrota();
+    if (this.vida <= 0 && Jogo.jogadores().length === 0) Jogo.derrota();
     return true;
   }
 
@@ -306,7 +341,10 @@ class Jogador {
       this.xp -= this.xpProximo;
       this.nivel++;
       this.xpProximo = Math.round(50 * Math.pow(1.38, this.nivel - 1));
-      Jogo.filaDeMelhorias++;
+      if (this !== Jogo.jogador && Coop.papel === 'anfitriao') {
+        const opcoes = sortearMelhorias(this, 3);
+        if (opcoes.length) this.aplicarMelhoria(opcoes[0]);
+      } else Jogo.filaDeMelhorias++;
     }
   }
 
@@ -421,6 +459,7 @@ class Jogador {
 /* ============================== PROJÉTIL ================================ */
 class Projetil {
   constructor(cfg) {
+    this.id = Jogo.proximoId();
     this.x = cfg.x; this.y = cfg.y;
     this.angulo = cfg.angulo;
     this.velocidade = cfg.velocidade;
@@ -570,6 +609,7 @@ const TIPOS_INIMIGO = {
 class Inimigo {
   constructor(tipo, x, y, escala) {
     const t = TIPOS_INIMIGO[tipo];
+    this.id = Jogo.proximoId();
     this.tipo = tipo;
     this.def = t;
     this.x = x; this.y = y;
@@ -599,7 +639,7 @@ class Inimigo {
     }
     this.flash = Math.max(0, this.flash - dt * 4);
     this.angulo += this.giro * dt;
-    const j = Jogo.jogador;
+    const j = Jogo.alvoJogador(this.x, this.y);
     const dist = Mat.distancia(this.x, this.y, j.x, j.y);
     const angJog = Mat.anguloEntre(this.x, this.y, j.x, j.y);
 
@@ -657,7 +697,7 @@ class Inimigo {
           }
         } else {
           this.timerEstado -= dt;
-          if (this.timerEstado <= 0 || dist < this.raio + Jogo.jogador.raio + 6) this.explodir();
+          if (this.timerEstado <= 0 || dist < this.raio + j.raio + 6) this.explodir();
         }
         break;
       }
@@ -708,9 +748,10 @@ class Inimigo {
     Particulas.anel(this.x, this.y, '#ffe14d', 60, 26);
     Camera.bater(9);
     Som.morteInimigo();
-    const j = Jogo.jogador;
-    if (Mat.distancia(this.x, this.y, j.x, j.y) < this.def.raioExplosao + j.raio) {
-      j.receberDano(this.def.dano, this.x, this.y);
+    for (const j of Jogo.jogadores()) {
+      if (Mat.distancia(this.x, this.y, j.x, j.y) < this.def.raioExplosao + j.raio) {
+        j.receberDano(this.def.dano, this.x, this.y);
+      }
     }
     Jogo.marcarMorte(this, false);
   }
@@ -908,10 +949,10 @@ const BOSSES = [
 
 class Boss {
   constructor(def, onda) {
+    this.id = Jogo.proximoId();
     this.def = def;
-    const jogador = Jogo.jogador;
-    this.x = jogador ? Mat.limitar(jogador.x + 300, 150, Jogo.LARGURA - 150) : Jogo.LARGURA / 2;
-    this.y = jogador ? Mat.limitar(jogador.y - 240, 150, Jogo.ALTURA - 150) : 150;
+    this.x = Jogo.LARGURA / 2;
+    this.y = 150;
     this.direcao = 1;
     this.raio = def.raio;
     const escala = 1 + (onda - 5) * 0.025;
@@ -926,9 +967,7 @@ class Boss {
     this.flash = 0;
     this.vivo = true;
     this.entrando = 1.6;
-    this.baseY = this.y;
-    this.centroX = this.x;
-    this.centroY = this.y;
+    this.baseY = 150;
     this.orbita = 0;
     this.telegrafo = 0;
     this.laser = null;
@@ -959,21 +998,21 @@ class Boss {
 
     if (this.entrando > 0) {
       this.entrando -= dt;
-      this.y = Mat.misturar(this.baseY - 300, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
+      this.y = Mat.misturar(-120, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
       return;
     }
 
     this.atualizarFase();
     if (this.telegrafo > 0) { this.telegrafo -= dt; return; }
 
-    const j = Jogo.jogador;
+    const j = Jogo.alvoJogador(this.x, this.y);
     const f = this.fase;
 
     // movimento
     switch (f.movimento) {
       case 'horizontal':
         this.x += this.direcao * f.velocidade * dt;
-        if (this.x - this.raio < Math.max(0, this.centroX - 500) || this.x + this.raio > Math.min(Jogo.LARGURA, this.centroX + 500)) {
+        if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
         }
@@ -981,16 +1020,17 @@ class Boss {
         break;
       case 'senoidal':
         this.x += this.direcao * f.velocidade * dt;
-        if (this.x - this.raio < Math.max(0, this.centroX - 500) || this.x + this.raio > Math.min(Jogo.LARGURA, this.centroX + 500)) {
+        if (this.x - this.raio < 0 || this.x + this.raio > Jogo.LARGURA) {
           this.direcao *= -1;
           this.x = Mat.limitar(this.x, this.raio, Jogo.LARGURA - this.raio);
         }
-        this.y = Mat.limitar(this.centroY + Math.sin(this.tempoVivo * 1.9) * 230, this.raio, Jogo.ALTURA - this.raio);
+        this.y = Jogo.ALTURA / 2 + Math.sin(this.tempoVivo * 1.9) * (Jogo.ALTURA / 2 - this.raio - 30);
         break;
       case 'circular': {
         this.orbita += f.velocidade * dt;
-        this.x = Mat.limitar(this.centroX + Math.cos(this.orbita) * 400, this.raio, Jogo.LARGURA - this.raio);
-        this.y = Mat.limitar(this.centroY + Math.sin(this.orbita) * 230, this.raio, Jogo.ALTURA - this.raio);
+        const rx = Jogo.LARGURA / 2, ry = Jogo.ALTURA / 2;
+        this.x = rx + Math.cos(this.orbita) * (Jogo.LARGURA / 2 - this.raio - 60);
+        this.y = ry + Math.sin(this.orbita) * (Jogo.ALTURA / 2 - this.raio - 50);
         break;
       }
       case 'perseguir': {
@@ -1003,10 +1043,7 @@ class Boss {
       }
       case 'caotico': {
         if (!this.destino || Mat.distancia(this.x, this.y, this.destino.x, this.destino.y) < 40) {
-          this.destino = {
-            x: Mat.limitar(j.x + Mat.aleatorio(-420, 420), this.raio + 20, Jogo.LARGURA - this.raio - 20),
-            y: Mat.limitar(j.y + Mat.aleatorio(-250, 250), this.raio + 20, Jogo.ALTURA - this.raio - 20)
-          };
+          this.destino = { x: Mat.aleatorio(this.raio + 20, Jogo.LARGURA - this.raio - 20), y: Mat.aleatorio(this.raio + 20, Jogo.ALTURA - this.raio - 20) };
         }
         const a = Mat.anguloEntre(this.x, this.y, this.destino.x, this.destino.y);
         this.x += Math.cos(a) * f.velocidade * dt;
@@ -1055,7 +1092,7 @@ class Boss {
   }
 
   executarAtaque(tipo) {
-    const j = Jogo.jogador;
+    const j = Jogo.alvoJogador(this.x, this.y);
     const angJog = Mat.anguloEntre(this.x, this.y, j.x, j.y);
     switch (tipo) {
       case 'unico':
@@ -1237,6 +1274,7 @@ const TIPOS_COLETAVEL = {
 
 class Coletavel {
   constructor(tipo, x, y, valor) {
+    this.id = Jogo.proximoId();
     this.tipo = tipo;
     this.def = TIPOS_COLETAVEL[tipo];
     this.x = x; this.y = y;
@@ -1251,7 +1289,7 @@ class Coletavel {
   atualizar(dt) {
     this.vida -= dt;
     if (this.vida <= 0) { this.vivo = false; return; }
-    const j = Jogo.jogador;
+    const j = Jogo.alvoJogador(this.x, this.y);
     const d = Mat.distancia(this.x, this.y, j.x, j.y);
     const raioIma = this.tipo === 'xp' ? j.attr.ima : 90;
     if (d < raioIma || Jogo.imaGlobal > 0) {
@@ -1270,14 +1308,13 @@ class Coletavel {
     this.x = Mat.limitar(this.x, 8, Jogo.LARGURA - 8);
     this.y = Mat.limitar(this.y, 8, Jogo.ALTURA - 8);
 
-    if (d < j.raio + this.def.raio + 4) this.coletar();
+    if (d < j.raio + this.def.raio + 4) this.coletar(j);
   }
 
-  coletar() {
+  coletar(j = Jogo.jogador) {
     this.vivo = false;
-    const j = Jogo.jogador;
     if (this.tipo === 'xp') {
-      j.ganharXP(this.valor);
+      for (const jogador of Jogo.jogadores()) jogador.ganharXP(this.valor);
       Som.xp();
       Particulas.emitir({ x: this.x, y: this.y, vida: 0.3, tam: 5, cor: this.def.cor, brilho: 16, atrito: 0.9 });
       return;

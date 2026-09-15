@@ -11,7 +11,7 @@
    Pra publicar uma versão nova basta subir o VERSAO: o cache antigo é apagado.
    =========================================================================== */
 
-const VERSAO = 'sniper-freestyle-v3';
+const VERSAO = 'sniper-freestyle-v4';
 
 const CASCO = [
   './',
@@ -24,6 +24,7 @@ const CASCO = [
   './src/classes.js',
   './src/entidades.js',
   './src/jogo.js',
+  './src/coop.js',
   './src/ui.js',
   './assets/icone-192.png',
   './assets/icone-512.png',

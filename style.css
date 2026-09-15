@@ -60,6 +60,25 @@ body { width: 100%; }
   touch-action: none;
 }
 
+.sala-convite, .sala-status { color: #8fe3ff; font: 600 15px Rajdhani, sans-serif; }
+.sala-codigo { width: 100%; padding: 10px 12px; color: #fff; background: #0c1020; border: 1px solid #45789c; border-radius: 5px; font: 700 18px Rajdhani, sans-serif; text-transform: uppercase; }
+.sala-status { min-height: 22px; overflow-wrap: anywhere; }
+.bt-sair-sala { display: none; pointer-events: auto; padding: 4px 10px; color: #ffb3c0; background: #2a0d16; border: 1px solid #7d2b3f; border-radius: 4px; font: 700 12px Rajdhani, sans-serif; letter-spacing: .06em; cursor: pointer; }
+.bt-sair-sala.ativo { display: inline-block; }
+.sala-espera { margin-top: 8px; color: #ffe14d; font: 700 14px Rajdhani, sans-serif; letter-spacing: .08em; text-align: center; }
+
+.sala-equipe { margin-top: 8px; display: grid; gap: 5px; min-width: 190px; }
+.eq-titulo { color: #8fe3ff; font: 700 11px Rajdhani, sans-serif; letter-spacing: .14em; opacity: .8; }
+.eq-linha { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 6px 8px; font: 600 12px Rajdhani, sans-serif; color: #cfe8f5; }
+.eq-linha.caido { opacity: .4; }
+.eq-linha.eu .eq-nome { color: #dcff46; }
+.eq-cor { width: 10px; height: 10px; border-radius: 50%; }
+.eq-classe { font-size: 10px; opacity: .6; letter-spacing: .06em; }
+.eq-vida { grid-column: 2 / 4; height: 4px; background: #14203a; border-radius: 2px; overflow: hidden; }
+.eq-vida > i { display: block; height: 100%; background: linear-gradient(90deg, #ff4d6d, #ffd34d); }
+
+@media (max-height: 560px) { .sala-equipe { display: none; } }
+
 #scanlines {
   position: absolute;
   inset: 0;

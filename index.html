@@ -33,10 +33,12 @@
         <span class="rotulo" id="classeNome">—</span>
         <div id="coracoes"></div>
         <div id="buffs"></div>
+        <div id="salaEquipe" class="sala-equipe" hidden></div>
       </div>
 
       <div class="bloco central">
         <div class="onda-caixa"><span class="rotulo">ONDA</span><b id="onda">1/40</b></div>
+        <p id="salaEspera" class="sala-espera" hidden></p>
         <div id="bossBarra">
           <div class="boss-cabecalho">
             <span id="bossNome">BOSS</span>
@@ -66,6 +68,8 @@
       </div>
 
       <div class="rodape-info">
+        <span id="salaHud" class="sala-status"></span>
+        <button id="btSairSala" class="bt-sair-sala" title="Sair da sala">SAIR DA SALA</button>
         <button id="btPausar" title="Pausar">❚❚</button>
         <span>FPS <b id="fps">60</b></span>
         <span class="dica">P = pausar</span>
@@ -101,11 +105,16 @@
       <p class="subtitulo">4 classes · 12 skins · 7 tipos de inimigo · 8 bosses com fases · 22 melhorias · 40 ondas</p>
       <div class="menu-botoes">
         <button id="btJogar" class="bt principal">JOGAR</button>
+        <button id="btCriarSala" class="bt">CRIAR SALA COOPERATIVA</button>
+        <label class="sala-convite" for="campoCodigo">CÓDIGO DA SALA</label>
+        <input id="campoCodigo" class="sala-codigo" maxlength="8" placeholder="EX.: A1B2C3D4" autocomplete="off" spellcheck="false" />
+        <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
         <button id="btComoJogar" class="bt">COMO JOGAR</button>
         <button id="btRecordes" class="bt">RECORDES</button>
         <button id="btConfig" class="bt">AJUSTES</button>
       </div>
       <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
+      <p id="salaStatus" class="sala-status" role="status" aria-live="polite"></p>
       <p class="creditos">Feito por <b>LODCH</b></p>
     </div>
   </section>
@@ -261,6 +270,7 @@
 <script src="src/classes.js"></script>
 <script src="src/entidades.js"></script>
 <script src="src/jogo.js"></script>
+<script src="src/coop.js"></script>
 <script src="src/ui.js"></script>
 <script>
   Jogo.iniciar();

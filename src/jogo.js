@@ -3,10 +3,8 @@
    =========================================================================== */
 
 const Jogo = {
-  LARGURA: 2560,
-  ALTURA: 1440,
-  VISAO_LARGURA: 1280,
-  VISAO_ALTURA: 720,
+  LARGURA: 1280,
+  ALTURA: 720,
   TOTAL_ONDAS: 40,
   modoLeve: false,
   escalaRender: 1,
@@ -27,6 +25,18 @@ const Jogo = {
   contFps: 0,
 
   jogador: null,
+  outros: new Map(),
+  seq: 0,
+  proximoId() { return ++Jogo.seq; },   // identidade estável para o cooperativo
+  jogadores() { return [Jogo.jogador, ...Jogo.outros.values()].filter((j) => j && j.vida > 0); },
+  alvoJogador(x, y) {
+    let alvo = Jogo.jogador, distancia = Infinity;
+    for (const j of Jogo.jogadores()) {
+      const d = Mat.distanciaQ(x, y, j.x, j.y);
+      if (d < distancia) { alvo = j; distancia = d; }
+    }
+    return alvo;
+  },
   inimigos: [],
   projeteis: [],
   coletaveis: [],
@@ -61,8 +71,8 @@ const Jogo = {
     Jogo.ctx = Jogo.canvas.getContext('2d');
     Jogo.modoLeve = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0);
     Jogo.escalaRender = Jogo.modoLeve ? 0.75 : 1;
-    Jogo.canvas.width = Math.round(Jogo.VISAO_LARGURA * Jogo.escalaRender);
-    Jogo.canvas.height = Math.round(Jogo.VISAO_ALTURA * Jogo.escalaRender);
+    Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
+    Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
     if (Jogo.modoLeve) Particulas.limite = 600;
 
     Config.carregar();
@@ -77,8 +87,7 @@ const Jogo = {
 
   novoJogo(classeId, skinId) {
     Jogo.jogador = new Jogador(classeId, skinId);
-    Camera.centroX = Jogo.jogador.x;
-    Camera.centroY = Jogo.jogador.y;
+    Jogo.outros.clear();
     Jogo.inimigos.length = 0;
     Jogo.projeteis.length = 0;
     Jogo.coletaveis.length = 0;
@@ -149,9 +158,12 @@ const Jogo = {
     const j = Jogo.jogador;
     let x, y, tent = 0;
     do {
-      const angulo = Mat.aleatorio(0, Mat.TAU);
-      x = Mat.limitar(j.x + Math.cos(angulo) * 780, 60, Jogo.LARGURA - 60);
-      y = Mat.limitar(j.y + Math.sin(angulo) * 480, 60, Jogo.ALTURA - 60);
+      const borda = Mat.inteiro(0, 3);
+      const margem = 60;
+      if (borda === 0) { x = Mat.aleatorio(margem, Jogo.LARGURA - margem); y = margem; }
+      else if (borda === 1) { x = Jogo.LARGURA - margem; y = Mat.aleatorio(margem, Jogo.ALTURA - margem); }
+      else if (borda === 2) { x = Mat.aleatorio(margem, Jogo.LARGURA - margem); y = Jogo.ALTURA - margem; }
+      else { x = margem; y = Mat.aleatorio(margem, Jogo.ALTURA - margem); }
       tent++;
     } while (Mat.distancia(x, y, j.x, j.y) < 220 && tent < 40);
 
@@ -315,12 +327,13 @@ const Jogo = {
   },
 
   aplicarRaioBoss(x, y, angulo, cor) {
-    const j = Jogo.jogador;
     const dx = Math.cos(angulo), dy = Math.sin(angulo);
-    const t = (j.x - x) * dx + (j.y - y) * dy;
-    if (t < 0) return;
-    const px = x + dx * t, py = y + dy * t;
-    if (Mat.distancia(px, py, j.x, j.y) < j.raio + 16) j.receberDano(1, px, py);
+    for (const j of Jogo.jogadores()) {
+      const t = (j.x - x) * dx + (j.y - y) * dy;
+      if (t < 0) continue;
+      const px = x + dx * t, py = y + dy * t;
+      if (Mat.distancia(px, py, j.x, j.y) < j.raio + 16) j.receberDano(1, px, py);
+    }
   },
 
   /* ------------------------------- Loop ------------------------------ */
@@ -338,11 +351,14 @@ const Jogo = {
     }
 
     Som.tocarMusica();
+    if (Coop.convidado()) Coop.entreQuadros(dt);   // prevê e interpola antes de mirar a câmera
     Camera.atualizar(dt);
     Input.atualizarMouse();
 
-    if (Jogo.estado === 'jogando') Jogo.atualizar(dt);
+    if (Jogo.estado === 'jogando' && !Coop.convidado()) Jogo.atualizar(dt);
     else { Particulas.atualizar(dt); Jogo.tempo += dt; }
+    if (Coop.convidado()) Coop.enviarControle();
+    else if (Coop.anfitriao()) Coop.enviarEstado(agora);
 
     if (!Jogo.modoLeve || Jogo.estado === 'jogando' || agora - Jogo.ultimoDesenho >= 1000 / 15) {
       Jogo.desenhar();
@@ -369,7 +385,13 @@ const Jogo = {
     // fila de melhorias tem prioridade
     if (Jogo.filaDeMelhorias > 0) { Jogo.abrirMelhoria(); return; }
 
-    Jogo.jogador.atualizar(dt);
+    if (Jogo.jogador.vida > 0) Jogo.jogador.atualizar(dt);
+    for (const [id, outro] of Jogo.outros) {
+      if (outro.vida <= 0) continue;
+      outro.atualizar(dt, Coop.controlesRemotos.get(id) || Coop.controleParado);
+      const controle = Coop.controlesRemotos.get(id);
+      if (controle) controle.pulsos = {};
+    }
 
     // combo decai
     if (Jogo.comboTimer > 0) {
@@ -450,7 +472,8 @@ const Jogo = {
         }
         if (acabou) { Jogo.projeteis.splice(i, 1); continue; }
       } else {
-        const j = Jogo.jogador;
+        let consumido = false;
+        for (const j of Jogo.jogadores()) {
         const d = Mat.distancia(b.x, b.y, j.x, j.y);
         // escudo do guardião reflete
         if (j.escudoAtivo && d < j.raio * 2.1 + b.raio) {
@@ -466,14 +489,16 @@ const Jogo = {
             Particulas.explosao(b.x, b.y, '#ffd34d', 6, 150, 0.3, 3);
             Jogo.projeteis.splice(i, 1);
           }
-          continue;
+          consumido = true; break;
         }
         if (d < j.raio + b.raio) {
           if (j.receberDano(b.dano, b.x, b.y)) Jogo.estat.danoRecebido += b.dano;
           Particulas.explosao(b.x, b.y, b.cor, 8, 200, 0.35, 3);
           Jogo.projeteis.splice(i, 1);
-          continue;
+          consumido = true; break;
         }
+        }
+        if (consumido) continue;
       }
     }
 
@@ -557,6 +582,7 @@ const Jogo = {
   /* ---------------------------- Transições --------------------------- */
   pausar() {
     if (Jogo.estado !== 'jogando') return;
+    if (Coop.convidado()) { Coop.status('Só o anfitrião pausa a partida cooperativa.'); return; }
     Jogo.estado = 'pausado';
     UI.mostrarTela('pausa');
   },
@@ -582,7 +608,7 @@ const Jogo = {
     Som.gameOver();
     Camera.bater(30);
     Jogo.flashTela(0.8, '#ff2b4d');
-    Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, Jogo.jogador.classe.cor, 60, 620, 1.2, 6);
+    if (Jogo.jogador) Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, Jogo.jogador.classe.cor, 60, 620, 1.2, 6);
     Jogo.registrarPartida(false);
     UI.mostrarFinal(false);
   },
@@ -595,6 +621,7 @@ const Jogo = {
     UI.mostrarFinal(true);
   },
   registrarPartida(venceu) {
+    if (Coop.ativo()) return; // ranking solo não aceita pontuação cooperativa
     const entrada = {
       nome: Perfil.exibir(),
       pontos: Math.round(Jogo.pontos),
@@ -613,9 +640,33 @@ const Jogo = {
 
   /* ------------------------------ Render ----------------------------- */
   visivel(x, y, margem) {
-    const metadeX = Jogo.VISAO_LARGURA / (2 * Camera.zoom) + margem;
-    const metadeY = Jogo.VISAO_ALTURA / (2 * Camera.zoom) + margem;
+    const metadeX = Jogo.LARGURA / (2 * Camera.zoom) + margem;
+    const metadeY = Jogo.ALTURA / (2 * Camera.zoom) + margem;
     return Math.abs(x - Camera.centroX) <= metadeX && Math.abs(y - Camera.centroY) <= metadeY;
+  },
+
+  // Etiqueta de apelido e vida em cima de cada colega — sem ela o cooperativo
+  // vira um monte de naves iguais.
+  desenharEtiquetas(ctx) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    for (const outro of Jogo.outros.values()) {
+      if (!Jogo.visivel(outro.x, outro.y, 120)) continue;
+      const y = outro.y - outro.raio - 26;
+      const vivo = outro.vida > 0;
+      ctx.globalAlpha = vivo ? 0.92 : 0.4;
+      ctx.font = '700 13px Rajdhani, sans-serif';
+      ctx.fillStyle = vivo ? outro.skin.cor : '#7a8ba0';
+      ctx.fillText(outro.nome || 'COLEGA', outro.x, y);
+      if (!vivo) { ctx.fillStyle = '#7a8ba0'; ctx.fillText('CAÍDO', outro.x, y + 14); continue; }
+      const largura = 44, p = Mat.limitar(outro.vida / outro.attr.vidaMax, 0, 1);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#0d1526';
+      ctx.fillRect(outro.x - largura / 2, y + 5, largura, 4);
+      ctx.fillStyle = p > 0.5 ? '#3ce06a' : p > 0.25 ? '#ffd34d' : '#ff4d6d';
+      ctx.fillRect(outro.x - largura / 2, y + 5, largura * p, 4);
+    }
+    ctx.restore();
   },
 
   desenhar() {
@@ -624,7 +675,7 @@ const Jogo = {
     ctx.clearRect(0, 0, Jogo.canvas.width, Jogo.canvas.height);
     ctx.setTransform(Jogo.escalaRender, 0, 0, Jogo.escalaRender, 0, 0);
 
-    Camera.aplicar(ctx, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
+    Camera.aplicar(ctx, Jogo.LARGURA, Jogo.ALTURA);
     Jogo.desenharFundo(ctx);
 
     if (Jogo.jogador) {
@@ -664,7 +715,9 @@ const Jogo = {
       for (const e of Jogo.inimigos) if (Jogo.visivel(e.x, e.y, e.raio + 80)) e.desenhar(ctx);
       if (Jogo.boss) Jogo.boss.desenhar(ctx);
       for (const b of Jogo.projeteis) if (Jogo.visivel(b.x, b.y, b.raio + 40)) b.desenhar(ctx);
-      Jogo.jogador.desenhar(ctx);
+      for (const outro of Jogo.outros.values()) if (outro.vida > 0) outro.desenhar(ctx);
+      if (Coop.ativo()) Jogo.desenharEtiquetas(ctx);
+      if (Jogo.jogador.vida > 0) Jogo.jogador.desenhar(ctx);
 
       // raios da ult
       for (const r of Jogo.raios) {
@@ -694,16 +747,16 @@ const Jogo = {
     if (Jogo.flash.alpha > 0) {
       ctx.globalAlpha = Mat.limitar(Jogo.flash.alpha, 0, 1);
       ctx.fillStyle = Jogo.flash.cor;
-      ctx.fillRect(0, 0, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
+      ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
       ctx.globalAlpha = 1;
     }
 
     // vinheta
-    const vin = ctx.createRadialGradient(Jogo.VISAO_LARGURA / 2, Jogo.VISAO_ALTURA / 2, Jogo.VISAO_ALTURA * 0.35, Jogo.VISAO_LARGURA / 2, Jogo.VISAO_ALTURA / 2, Jogo.VISAO_ALTURA * 0.85);
+    const vin = ctx.createRadialGradient(Jogo.LARGURA / 2, Jogo.ALTURA / 2, Jogo.ALTURA * 0.35, Jogo.LARGURA / 2, Jogo.ALTURA / 2, Jogo.ALTURA * 0.85);
     vin.addColorStop(0, 'rgba(0,0,0,0)');
     vin.addColorStop(1, 'rgba(0,0,0,.72)');
     ctx.fillStyle = vin;
-    ctx.fillRect(0, 0, Jogo.VISAO_LARGURA, Jogo.VISAO_ALTURA);
+    ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
 
     // aviso central
     if (Jogo.avisoTimer > 0 && Jogo.estado === 'jogando') {
@@ -714,10 +767,10 @@ const Jogo = {
       ctx.font = '900 46px Orbitron, Rajdhani, Arial';
       ctx.lineWidth = 6;
       ctx.strokeStyle = 'rgba(0,0,0,.7)';
-      ctx.strokeText(Jogo.avisoTexto, Jogo.VISAO_LARGURA / 2, 130);
+      ctx.strokeText(Jogo.avisoTexto, Jogo.LARGURA / 2, 130);
       ctx.fillStyle = '#ffffff';
       ctx.shadowBlur = 26; ctx.shadowColor = '#7ee8ff';
-      ctx.fillText(Jogo.avisoTexto, Jogo.VISAO_LARGURA / 2, 130);
+      ctx.fillText(Jogo.avisoTexto, Jogo.LARGURA / 2, 130);
       ctx.restore();
     }
   },

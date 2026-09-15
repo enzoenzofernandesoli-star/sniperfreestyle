@@ -79,12 +79,9 @@ const Camera = {
     Camera.x = Mat.aleatorio(-t, t);
     Camera.y = Mat.aleatorio(-t, t);
     Camera.zoom = Mat.suave(Camera.zoom, Camera.zoomAlvo, 8, dt);
-    if (Jogo.jogador) {
-      const meiaLargura = Jogo.VISAO_LARGURA / (2 * Camera.zoom);
-      const meiaAltura = Jogo.VISAO_ALTURA / (2 * Camera.zoom);
-      Camera.centroX = Mat.limitar(Jogo.jogador.x, meiaLargura, Jogo.LARGURA - meiaLargura);
-      Camera.centroY = Mat.limitar(Jogo.jogador.y, meiaAltura, Jogo.ALTURA - meiaAltura);
-    }
+    // Arena cabe inteira na tela: a câmera não persegue ninguém, só treme e dá zoom.
+    Camera.centroX = Jogo.LARGURA / 2;
+    Camera.centroY = Jogo.ALTURA / 2;
   },
   aplicar(ctx, largura, altura) {
     ctx.save();
@@ -94,8 +91,8 @@ const Camera = {
   },
   telaParaMundo(x, y) {
     return {
-      x: Camera.centroX + (x - Jogo.VISAO_LARGURA / 2) / Camera.zoom - Camera.x,
-      y: Camera.centroY + (y - Jogo.VISAO_ALTURA / 2) / Camera.zoom - Camera.y
+      x: Camera.centroX + (x - Jogo.LARGURA / 2) / Camera.zoom - Camera.x,
+      y: Camera.centroY + (y - Jogo.ALTURA / 2) / Camera.zoom - Camera.y
     };
   },
   restaurar(ctx) { ctx.restore(); }
@@ -148,8 +145,8 @@ const Input = {
 
     const posicao = (clienteX, clienteY) => {
       const r = canvas.getBoundingClientRect();
-      const x = (clienteX - r.left) * (Jogo.VISAO_LARGURA / r.width);
-      const y = (clienteY - r.top) * (Jogo.VISAO_ALTURA / r.height);
+      const x = (clienteX - r.left) * (Jogo.LARGURA / r.width);
+      const y = (clienteY - r.top) * (Jogo.ALTURA / r.height);
       Input.mouseTelaX = x;
       Input.mouseTelaY = y;
       Input.atualizarMouse();

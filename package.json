@@ -2,8 +2,13 @@
   "name": "sniperfreestyle",
   "version": "1.0.0",
   "private": true,
-  "description": "SNIPER FREESTYLE — Arena Neon: twin-stick shooter roguelite em canvas 2D. O jogo é estático; o único código de servidor é a função do placar mundial.",
+  "description": "SNIPER FREESTYLE — Arena Neon: twin-stick shooter roguelite em canvas 2D com salas cooperativas.",
+  "scripts": {
+    "salas": "node servidor/salas.js",
+    "test": "node --test testes/*.test.js"
+  },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.0"
+    "@neondatabase/serverless": "^1.0.0",
+    "ws": "^8.21.3"
   }
 }

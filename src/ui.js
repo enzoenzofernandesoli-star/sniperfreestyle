@@ -41,7 +41,9 @@ const UI = {
       toqueDash: g('btToqueDash'),
       toqueEscudo: g('btToqueEscudo'),
       toqueUlt: g('btToqueUlt'),
-      listaMelhoriasAtivas: g('listaMelhoriasAtivas')
+      listaMelhoriasAtivas: g('listaMelhoriasAtivas'),
+      salaEquipe: g('salaEquipe'),
+      salaEspera: g('salaEspera')
     };
 
     UI.montarClasses();
@@ -51,7 +53,16 @@ const UI = {
     Toque.iniciar();
     UI.montarRecordes();
 
-    g('btJogar').onclick = () => { Som.clique(); UI.mostrarTela('classes'); };
+    g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
+    g('btCriarSala').onclick = () => { Coop.intencao = 'criar'; UI.mostrarTela('classes'); };
+    g('btEntrarSala').onclick = () => {
+      const codigo = g('campoCodigo').value.trim().toUpperCase();
+      if (!/^[A-F0-9]{8}$/.test(codigo)) { Coop.status('Digite código de 8 caracteres.'); return; }
+      Coop.codigo = codigo;
+      Coop.intencao = 'entrar';
+      UI.mostrarTela('classes');
+    };
+    g('btSairSala').onclick = () => { Som.clique(); Coop.sair(); };
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
     g('btRecordes').onclick = () => { Som.clique(); UI.montarRecordes(); UI.montarMundial(); UI.mostrarTela('recordes'); };
@@ -173,7 +184,9 @@ const UI = {
       card.querySelector('.cc-jogar').onclick = () => {
         Som.clique();
         Som.destravar();
-        Jogo.novoJogo(c.id, escolhas[c.id]);
+        if (Coop.intencao === 'criar') Coop.criar(c.id, escolhas[c.id]);
+        else if (Coop.intencao === 'entrar') Coop.entrar(c.id, escolhas[c.id]);
+        else Jogo.novoJogo(c.id, escolhas[c.id]);
         UI.el.classeNome.textContent = c.nome;
       };
       UI.el.gradeClasses.appendChild(card);
@@ -399,9 +412,53 @@ const UI = {
   },
 
   /* Mostra se a run foi pro placar mundial (e repinta quando a resposta chega). */
+  /* --------------------------- Cooperativo --------------------------- */
+  // Painel de equipe: quem está na arena, com que classe e com quanta vida.
+  // Serve aos dois lados — o convidado monta a partir do snapshot recebido.
+  montarEquipe() {
+    const caixa = UI.el.salaEquipe;
+    const sair = document.getElementById('btSairSala');
+    if (sair) sair.classList.toggle('ativo', Coop.ativo());
+    if (!caixa) return;
+    if (!Coop.ativo()) { caixa.hidden = true; caixa.innerHTML = ''; return; }
+
+    const linha = (j, eu) => {
+      if (!j || !j.attr) return '';
+      const vida = Mat.limitar(j.vida / j.attr.vidaMax, 0, 1) * 100;
+      const nome = (eu ? Perfil.exibir() : (j.nome || 'COLEGA')).slice(0, 12);
+      return '<div class="eq-linha' + (eu ? ' eu' : '') + (j.vida <= 0 ? ' caido' : '') + '">'
+        + '<i class="eq-cor" style="background:' + j.skin.cor + '"></i>'
+        + '<span class="eq-nome">' + UI.escapar(nome) + '</span>'
+        + '<span class="eq-classe">' + UI.escapar(j.classe.nome) + '</span>'
+        + '<span class="eq-vida"><i style="width:' + vida.toFixed(0) + '%"></i></span>'
+        + '</div>';
+    };
+
+    let html = '<div class="eq-titulo">SALA ' + UI.escapar(Coop.codigo || '--') + '</div>';
+    html += linha(Jogo.jogador, true);
+    for (const outro of Jogo.outros.values()) html += linha(outro, false);
+    caixa.innerHTML = html;
+    caixa.hidden = false;
+  },
+
+  // Quando o anfitrião abre uma carta de melhoria a partida para para todo
+  // mundo; o convidado precisa saber que não travou.
+  atualizarEspera() {
+    const el = UI.el.salaEspera;
+    if (!el) return;
+    const esperando = Coop.convidado() && Coop.esperando;
+    el.hidden = !esperando;
+    if (esperando) el.textContent = 'O ANFITRIÃO ESTÁ ESCOLHENDO UMA MELHORIA…';
+  },
+
   atualizarStatusPlacar() {
     const el = UI.el.statusPlacar;
     if (!el) return;
+    if (Coop.papel) {
+      el.textContent = 'Partida cooperativa: ranking de equipe ainda indisponível.';
+      el.className = 'status-placar neutro';
+      return;
+    }
     if (!Placar.configurado()) {
       el.textContent = 'Pontuação salva neste aparelho como ' + Perfil.exibir() + '.';
       el.className = 'status-placar neutro';
@@ -472,6 +529,7 @@ const UI = {
     if (j.escudoAtivo) buffs.push('<span class="buff amarelo">⛨ ESCUDO ' + j.escudoRestante.toFixed(1) + 's</span>');
     if (j.ultAtiva > 0) buffs.push('<span class="buff vermelho">★ ULT ' + j.ultAtiva.toFixed(1) + 's</span>');
     UI.el.buffs.innerHTML = buffs.join('');
+    UI.atualizarEspera();
   },
 
   pintarHabilidade(el, progresso, ativo) {

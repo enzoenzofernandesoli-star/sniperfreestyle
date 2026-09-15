@@ -9,9 +9,9 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Oráculo de Jade, Eclipse Fantasma e Núcleo Infinito, cada um com 3–4 fases.
 - 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
   neste navegador. Skins mudam o visual do personagem, não seus atributos.
-- Arena ampliada para 2560×1440 unidades, com câmera que acompanha o jogador
-  em uma janela de 1280×720. No celular, a janela mantém renderização interna
-  de 960×540 para preservar desempenho.
+- Arena de 1280×720 unidades, toda visível de uma vez: a câmera fica no centro
+  e só treme e dá zoom, nunca acompanha o jogador. No celular a renderização
+  interna cai para 960×540 para preservar desempenho.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
 - Migração `banco/migracoes/001_placar_40_ondas.sql` aplicada em 14/09/2026 no
@@ -137,7 +137,9 @@ api/placar.js       função da Vercel: valida a run e grava no Postgres do Neon
 src/classes.js      CLASSES[] e MELHORIAS[] (dados puros — mexa aqui pra balancear)
 src/entidades.js    Jogador, Projetil, Inimigo, Boss, Coletavel
 src/jogo.js         estado, loop, ondas, colisões, efeitos de tela, render da arena
-src/ui.js           telas, HUD, barra de boss, cartas de melhoria
+src/ui.js           telas, HUD, barra de boss, cartas de melhoria, painel de equipe
+src/coop.js         cooperativo online: snapshot, previsão local e interpolação
+servidor/salas.js   servidor de salas (WebSocket) + servidor local de arquivos
 _original/          a versão antiga, intacta
 ```
 
@@ -149,6 +151,72 @@ Decisões que sustentam isso:
 - **Áudio procedural** — nada de `.mp3`: cada som é um oscilador com envelope, então o jogo
   pesa ~90 KB no total.
 - **Remoção por flag `.vivo`**, nunca `splice` em dois lugares: índice de laço não embaralha.
+
+---
+
+## Cooperativo online (2 a 4 pessoas)
+
+Está jogável e roda local. Quem simula a partida é o **anfitrião**, no navegador dele:
+ondas, inimigos, bosses, colisões, dano e drops. O servidor de salas só encaminha
+mensagem — ele não sabe nada de jogo. Isso deixa a hospedagem barata e faz o modo
+rodar em qualquer host que aceite WebSocket.
+
+### Rodar
+
+```
+npm install
+npm run salas          # ou: node servidor/salas.js 8123
+```
+
+Abra `http://localhost:8123` (a mesma porta serve o jogo e as salas).
+Anfitrião: **CRIAR SALA COOPERATIVA** → escolhe classe → aparece o código de 8 dígitos.
+Convidado: digita o código no menu → **ENTRAR NA SALA** → escolhe classe.
+
+Para jogar pela internet, suba `servidor/salas.js` num host com WebSocket e aponte o
+cliente com `window.COOP_URL = 'wss://SEU-HOST/sala'` antes de `src/coop.js`. A função
+serverless do placar (`api/placar.js`) não serve pra isso: ela não guarda estado de
+partida entre requisições.
+
+### Como não fica aos trancos
+
+O snapshot sai 20 vezes por segundo e a tela roda a 60. Entre um pacote e outro o
+convidado faz duas coisas:
+
+1. **Dead reckoning** — empurra o alvo de cada entidade pela velocidade que ela tinha.
+2. **Interpolação** — puxa a posição desenhada até esse alvo (salto acima de 260 px
+   corta direto, senão dash e respawn viravam deslize pela arena).
+
+A nave do próprio convidado ainda é **prevista localmente** com o input dele
+(`Jogador.moverPrevisto`), então o movimento responde na hora; a correção vem depois,
+puxando devagar para onde o anfitrião disse. Previsão local nunca cria projétil nem
+mexe em temporizador de combate — tiro, dano e progressão são sempre do anfitrião.
+
+Cada entidade leva um `id` (`Jogo.proximoId()`) para o convidado reconhecer a mesma
+nave entre dois snapshots. Sem isso não existe interpolação, só teletransporte.
+
+### O que trafega
+
+Só o que o convidado não consegue refazer: `def` de inimigo, `classe`, `skin` e os
+rastros ficam de fora e são remontados do lado dele a partir do `tipo`. Uma partida
+de 4 inimigos dá ~1,9 KB por snapshot (~37 KB/s por convidado).
+
+### Regras da sala
+
+- 4 jogadores no máximo; o quinto recebe "a sala já está cheia".
+- Anfitrião cai ou fecha a aba → a sala morre e os convidados voltam ao menu avisados.
+- Convidado não pausa a partida dos outros; quando o anfitrião abre uma carta de
+  melhoria, o convidado vê "O ANFITRIÃO ESTÁ ESCOLHENDO UMA MELHORIA…".
+- Ping/pong derruba conexão morta; sala sem anfitrião ou parada há 30 min é apagada.
+- Comando de convidado é limitado a 40/s e sempre validado por faixa no anfitrião
+  (`Coop.validarControle`) — nada do que chega da rede entra cru na simulação.
+
+### O que ainda falta
+
+- **Placar de equipe**: partida cooperativa não entra no ranking solo (nem em recorde
+  local). O placar de time precisa ser gravado pelo servidor da partida, não pelo
+  navegador — hoje o `api/placar.js` aceita pontuação enviada pelo cliente.
+- **Reconexão**: cair derruba pra valer, não devolve o jogador à sala.
+- **Hospedagem**: o serviço de salas ainda não tem host escolhido.
 
 ---
 
