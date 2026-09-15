@@ -124,6 +124,9 @@ para ele — melhoria com `exige` não polui o sorteio das outras classes.
   volta; destruição concede **1,4 s** de invulnerabilidade para escapar.
 - Durante a possessão, inimigos e boss consideram o corpo um aliado e não o atacam.
   No cooperativo, passam a mirar outro jogador que não esteja possuído.
+- Busca de alvo percorre jogadores diretamente, sem criar arrays por inimigo/quadro.
+  Rastro invisível da alma também fica suspenso durante a possessão para evitar pausas
+  de coleta de lixo em ondas cheias.
 
 ## Inimigos
 

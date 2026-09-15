@@ -185,12 +185,47 @@ test('inimigos tratam corpo possuído como aliado e miram outro jogador no coope
     colega.x = 900; colega.y = 500;
     Jogo.outros.set('colega', colega);
     const emEquipe = Jogo.alvoJogador(110, 100);
-    return { sozinho: sozinho === null, mirouColega: emEquipe === colega,
-      hostis: Jogo.jogadoresHostis().length };
+    return { sozinho: sozinho === null, mirouColega: emEquipe === colega };
   })()`, mundo);
   assert.equal(dados.sozinho, true, 'sozinho possuído não recebe alvo');
   assert.equal(dados.mirouColega, true, 'inimigo troca a mira para jogador não possuído');
-  assert.equal(dados.hostis, 1);
+});
+
+test('busca de alvo não cria lista temporária por inimigo', () => {
+  const mundo = vm.createContext({ console, Math });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.jogador = { x: 10, y: 10, vida: 1, corpoPossuido: {} };
+    Jogo.outros = new Map([['livre', { x: 80, y: 20, vida: 1, corpoPossuido: null }]]);
+    Jogo.jogadores = () => { throw new Error('alocação no caminho quente'); };
+    return Jogo.alvoJogador(0, 0) === Jogo.outros.get('livre');
+  })()`, mundo);
+  assert.equal(dados, true);
+});
+
+test('coletável continua seguindo jogador possuído e boss não ataca sem alvo hostil', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 5; Particulas.iniciar();
+    const j = Jogo.jogador = new Jogador('sniper', 'original');
+    j.corpoPossuido = { tipo: 'corredor', tempo: 10, vidaMax: 10, velocidade: 100 };
+    const xpAntes = j.xp;
+    const xp = new Coletavel('xp', j.x + 20, j.y, 2);
+    xp.atualizar(1 / 60);
+    const boss = new Boss(BOSSES[0], 5);
+    boss.entrando = 0; boss.telegrafo = 0; boss.recarga = 0;
+    boss.atualizar(1 / 60);
+    boss.executarAtaque('anel');
+    return { xpColetado: j.xp > xpAntes, velocidadeXp: Math.hypot(xp.vx, xp.vy), tiros: Jogo.projeteis.length };
+  })()`, mundo);
+  assert.equal(dados.xpColetado, true);
+  assert.ok(Number.isFinite(dados.velocidadeXp));
+  assert.equal(dados.tiros, 0);
 });
 
 test('corpo destruído absorve a morte e devolve a alma viva no mesmo lugar', () => {

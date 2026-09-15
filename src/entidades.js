@@ -121,11 +121,11 @@ class Jogador {
   get intangivel() { return this.invulneravel > 0 || this.dashRestante > 0 || this.ultAtiva > 0 && this.classe.id === 'espectro'; }
 
   alvoPossessao() {
-    let alvo = null, menor = 100;
+    let alvo = null, menorQ = 100 * 100;
     for (const e of Jogo.inimigos) {
       if (!e.vivo || e.vida <= 0 || e.vida / e.vidaMax >= 0.35) continue;
-      const d = Mat.distancia(this.x, this.y, e.x, e.y);
-      if (d <= menor) { alvo = e; menor = d; }
+      const d = Mat.distanciaQ(this.x, this.y, e.x, e.y);
+      if (d <= menorQ) { alvo = e; menorQ = d; }
     }
     return alvo;
   }
@@ -277,12 +277,17 @@ class Jogador {
     this.x = Mat.limitar(this.x, m, Jogo.LARGURA - m);
     this.y = Mat.limitar(this.y, m, Jogo.ALTURA - m);
 
-    // rastro fantasma
-    this.rastro.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.22 });
-    if (this.rastro.length > 14) this.rastro.shift();
-    for (let i = this.rastro.length - 1; i >= 0; i--) {
-      this.rastro[i].vida -= dt;
-      if (this.rastro[i].vida <= 0) this.rastro.splice(i, 1);
+    // Corpo possuído não desenha rastro da alma. Antes ele ainda alocava um
+    // objeto por quadro invisível, causando pausas de coleta de lixo.
+    if (this.corpoPossuido) {
+      if (this.rastro.length) this.rastro.length = 0;
+    } else {
+      this.rastro.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.22 });
+      if (this.rastro.length > 14) this.rastro.shift();
+      for (let i = this.rastro.length - 1; i >= 0; i--) {
+        this.rastro[i].vida -= dt;
+        if (this.rastro[i].vida <= 0) this.rastro.splice(i, 1);
+      }
     }
 
     // temporizadores
@@ -1643,6 +1648,7 @@ class Boss {
 
   executarAtaque(tipo) {
     const j = Jogo.alvoJogador(this.x, this.y);
+    if (!j) return;
     const angJog = Mat.anguloEntre(this.x, this.y, j.x, j.y);
     switch (tipo) {
       case 'unico':
@@ -1903,7 +1909,8 @@ class Coletavel {
   atualizar(dt) {
     this.vida -= dt;
     if (this.vida <= 0) { this.vivo = false; return; }
-    const j = Jogo.alvoJogador(this.x, this.y);
+    const j = Jogo.jogadorMaisProximo(this.x, this.y, false);
+    if (!j) return;
     const d = Mat.distancia(this.x, this.y, j.x, j.y);
     const raioIma = this.tipo === 'xp' ? j.attr.ima : 90;
     if (d < raioIma || Jogo.imaGlobal > 0) {

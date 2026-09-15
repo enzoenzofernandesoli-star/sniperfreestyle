@@ -96,6 +96,8 @@ saídas:
   move a aparência recebida — nunca decide entrada, saída, dano ou ataque.
 - Corpo possuído sai da lista de alvos hostis. Inimigos e boss miram outro jogador
   não possuído; se todos estiverem disfarçados, seguram movimento e ataque.
+- Seleção de alvo não materializa listas temporárias; isso evita travadas no anfitrião
+  quando muitos inimigos recalculam a facção durante a possessão.
 - Comando do convidado (movimento, mira, tiro, dash, escudo, ult) sobe a 30/s; o
   anfitrião valida faixa e frequência antes de usar (`Coop.validarControle`).
 - Snapshot a 20/s, ~1,9 KB numa partida de 4 inimigos. Não trafega o que o convidado

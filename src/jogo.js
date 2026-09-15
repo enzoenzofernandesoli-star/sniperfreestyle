@@ -32,15 +32,23 @@ const Jogo = {
   seq: 0,
   proximoId() { return ++Jogo.seq; },   // identidade estável para o cooperativo
   jogadores() { return [Jogo.jogador, ...Jogo.outros.values()].filter((j) => j && j.vida > 0); },
-  jogadoresHostis() { return Jogo.jogadores().filter((j) => !j.corpoPossuido); },
-  alvoJogador(x, y) {
+  jogadorMaisProximo(x, y, ignorarPossuidos) {
     let alvo = null, distancia = Infinity;
-    for (const j of Jogo.jogadoresHostis()) {
+    const local = Jogo.jogador;
+    if (local && local.vida > 0 && (!ignorarPossuidos || !local.corpoPossuido)) {
+      alvo = local;
+      distancia = Mat.distanciaQ(x, y, local.x, local.y);
+    }
+    // Caminho quente: chamado por cada inimigo. Iterar o Map diretamente evita
+    // criar dois arrays temporários por inimigo e por quadro durante possessão.
+    for (const j of Jogo.outros.values()) {
+      if (!j || j.vida <= 0 || ignorarPossuidos && j.corpoPossuido) continue;
       const d = Mat.distanciaQ(x, y, j.x, j.y);
       if (d < distancia) { alvo = j; distancia = d; }
     }
     return alvo;
   },
+  alvoJogador(x, y) { return Jogo.jogadorMaisProximo(x, y, true); },
   inimigos: [],
   projeteis: [],
   coletaveis: [],
