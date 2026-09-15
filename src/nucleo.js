@@ -393,24 +393,30 @@ const Som = {
 /* Pool fixo: zero alocação por quadro.                                      */
 const Particulas = {
   pool: [],
-  limite: 1500,
+  livres: [],          // índices prontos para uso: emitir vira O(1)
+  limite: 900,
   indice: 0,
 
   iniciar() {
+    Particulas.pool.length = 0;
+    Particulas.livres.length = 0;
     for (let i = 0; i < Particulas.limite; i++) {
       Particulas.pool.push({
         ativa: false, x: 0, y: 0, vx: 0, vy: 0, vida: 0, vidaMax: 1,
         tam: 2, cor: '#fff', atrito: 0.92, brilho: 0, forma: 'circulo', angulo: 0, giro: 0
       });
+      Particulas.livres.push(i);
     }
   },
 
   emitir(cfg) {
     if (!Config.particulasAtivas) return;
-    for (let tent = 0; tent < Particulas.limite; tent++) {
-      const p = Particulas.pool[Particulas.indice];
-      Particulas.indice = (Particulas.indice + 1) % Particulas.limite;
-      if (p.ativa) continue;
+    // Sem slot livre a partícula simplesmente não nasce. Melhor perder um
+    // brilho do que gastar quadro procurando lugar num pool cheio.
+    const indice = Particulas.livres.pop();
+    if (indice === undefined) return;
+    {
+      const p = Particulas.pool[indice];
       p.ativa = true;
       p.x = cfg.x; p.y = cfg.y;
       p.vx = cfg.vx || 0; p.vy = cfg.vy || 0;
@@ -463,10 +469,12 @@ const Particulas = {
   },
 
   atualizar(dt) {
-    for (const p of Particulas.pool) {
+    const pool = Particulas.pool;
+    for (let i = 0; i < pool.length; i++) {
+      const p = pool[i];
       if (!p.ativa) continue;
       p.vida -= dt;
-      if (p.vida <= 0) { p.ativa = false; continue; }
+      if (p.vida <= 0) { p.ativa = false; Particulas.livres.push(i); continue; }
       p.x += p.vx * dt; p.y += p.vy * dt;
       const f = Math.pow(p.atrito, dt * 60);
       p.vx *= f; p.vy *= f;
@@ -475,7 +483,9 @@ const Particulas = {
   },
 
   desenhar(ctx) {
-    for (const p of Particulas.pool) {
+    const pool = Particulas.pool;
+    for (let i = 0; i < pool.length; i++) {
+      const p = pool[i];
       if (!p.ativa) continue;
       const a = Mat.limitar(p.vida / p.vidaMax, 0, 1);
       ctx.globalAlpha = a;
@@ -504,7 +514,13 @@ const Particulas = {
     ctx.globalAlpha = 1;
   },
 
-  limpar() { for (const p of Particulas.pool) p.ativa = false; }
+  limpar() {
+    Particulas.livres.length = 0;
+    for (let i = 0; i < Particulas.pool.length; i++) {
+      Particulas.pool[i].ativa = false;
+      Particulas.livres.push(i);
+    }
+  }
 };
 
 /* --------------------- Números de dano flutuantes ----------------------- */

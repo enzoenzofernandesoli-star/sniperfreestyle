@@ -23,6 +23,7 @@
    ima .............. raio de atração de XP
    regen ............ vida por segundo
    orbes ............ orbes orbitais que dão dano de contato
+   lacaios .......... drones que seguem o jogador e atiram sozinhos
 */
 
 const CLASSES = [
@@ -75,7 +76,7 @@ const CLASSES = [
     cor2: '#8a0f31',
     icone: 'E',
     descricao: 'Escopeta de curto alcance e dash que corta. Velocíssimo, frágil, cura ao matar.',
-    forcas: ['5 projéteis por tiro', 'Dash causa dano', 'Cura 2% ao matar'],
+    forcas: ['5 projéteis por tiro', 'Dash causa dano', 'Cura 1% ao matar'],
     fraquezas: ['Só 2 corações', 'Alcance curto'],
     somTiro: 'shotgun',
     ult: { nome: 'CARNIFICINA', descricao: 'Fica intangível e corta tudo que tocar por 3 segundos.' },
@@ -88,7 +89,7 @@ const CLASSES = [
     },
     dashCorta: true,
     alcanceCurto: 340,
-    curaPorMorte: 0.02
+    curaPorMorte: 0.01
   },
   {
     id: 'arcano',
@@ -108,6 +109,26 @@ const CLASSES = [
       homing: 0.75, critChance: 0.1, critMult: 2,
       dashRecarga: 1.8, escudoRecarga: 11, escudoDuracao: 3, ultRecarga: 26,
       ima: 260, regen: 0, orbes: 2
+    }
+  },
+  {
+    id: 'invocador',
+    nome: 'INVOCADOR',
+    apelido: 'Nunca sozinho',
+    cor: '#7cf2a0',
+    cor2: '#1d6b45',
+    icone: 'I',
+    descricao: 'Tiro fraco, mas dois drones atiram junto e nunca param. O dano vem da tropa, não de você.',
+    forcas: ['2 drones que atiram sozinhos', '3 corações', 'Melhoria própria: +1 drone'],
+    fraquezas: ['Tiro pessoal fraco', 'Drones erram alvo que corre'],
+    somTiro: 'arcano',
+    ult: { nome: 'LEGIÃO', descricao: 'Chama três drones extras por 9 segundos.' },
+    atributos: {
+      vidaMax: 3, velocidade: 295, cadencia: 0.5, dano: 9, projeteis: 1,
+      espalhamento: 0.06, balaVel: 820, balaRaio: 5, perfuracao: 0, ricochete: 0,
+      homing: 0.25, critChance: 0.1, critMult: 1.9,
+      dashRecarga: 1.7, escudoRecarga: 11, escudoDuracao: 2.6, ultRecarga: 26,
+      ima: 180, regen: 0, orbes: 0, lacaios: 2
     }
   }
 ];
@@ -133,6 +154,11 @@ const SKINS = {
     { id: 'original', nome: 'Original', cor: '#b06dff', cor2: '#5a1fa8' },
     { id: 'aurora', nome: 'Aurora', cor: '#6cf5e9', cor2: '#225c79' },
     { id: 'rubi', nome: 'Rubi', cor: '#ff6588', cor2: '#87284f' }
+  ],
+  invocador: [
+    { id: 'original', nome: 'Original', cor: '#7cf2a0', cor2: '#1d6b45' },
+    { id: 'enxofre', nome: 'Enxofre', cor: '#ffe14d', cor2: '#7a6410' },
+    { id: 'abissal', nome: 'Abissal', cor: '#6db6ff', cor2: '#1c3f70' }
   ]
 };
 
@@ -230,9 +256,10 @@ const MELHORIAS = [
     aplicar: (p) => { p.multXP += 0.25; }
   },
   {
-    id: 'explode', nome: 'CARGA DE FRAGMENTOS', icone: '✹', raridade: 'lendario', max: 2,
-    texto: 'Inimigo morto explode em estilhaços',
-    aplicar: (p) => { p.explodeAoMatar += 1; }
+    id: 'lacaio', nome: 'MAIS UM NA TROPA', icone: '⌬', raridade: 'epico', max: 2,
+    texto: '+1 drone (só para o INVOCADOR)',
+    exige: (p) => p.classe.id === 'invocador',
+    aplicar: (p) => { p.attr.lacaios = (p.attr.lacaios || 0) + 1; p.sincronizarLacaios(); }
   },
   {
     id: 'balavel', nome: 'ACELERADOR', icone: '↠', raridade: 'comum', max: 3,
@@ -245,9 +272,9 @@ const MELHORIAS = [
     aplicar: (p) => { p.attr.homing = Math.min(1.2, p.attr.homing + 0.4); }
   },
   {
-    id: 'tempo', nome: 'DILATAÇÃO', icone: '⧖', raridade: 'lendario', max: 2,
-    texto: 'O dash congela o tempo por 0.35s',
-    aplicar: (p) => { p.dashCongela += 0.35; }
+    id: 'sobra', nome: 'SOBRA DE CARGA', icone: '⧖', raridade: 'raro', max: 3,
+    texto: '+0.4s de duração no escudo',
+    aplicar: (p) => { p.attr.escudoDuracao += 0.4; }
   },
   {
     id: 'vampiro', nome: 'SEDE', icone: '❖', raridade: 'lendario', max: 2,
@@ -276,7 +303,8 @@ function pesoMelhoria(jogador, m) {
 
 function sortearMelhorias(jogador, quantidade) {
   quantidade = quantidade || 3;
-  const disponiveis = MELHORIAS.filter((m) => (jogador.melhorias[m.id] || 0) < m.max);
+  const disponiveis = MELHORIAS.filter((m) => (jogador.melhorias[m.id] || 0) < m.max
+    && (!m.exige || m.exige(jogador)));
   const sorteadas = [];
   const usadas = {};
   let tentativas = 0;

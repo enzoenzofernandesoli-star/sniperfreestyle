@@ -412,7 +412,9 @@ const Coop = {
       ultCarga: Coop.numero(j.ultCarga), ultAtiva: Coop.numero(j.ultAtiva),
       invulneravel: Coop.numero(j.invulneravel), frenesi: Coop.numero(j.frenesi),
       recuo: Coop.numero(j.recuo), melhorias: j.melhorias,
-      orbes: j.orbes.map((o) => ({ angulo: Coop.numero(o.angulo), distancia: o.distancia, raio: o.raio, cooldown: 0 }))
+      orbes: j.orbes.map((o) => ({ angulo: Coop.numero(o.angulo), distancia: o.distancia, raio: o.raio, cooldown: 0 })),
+      // Drone é entidade do anfitrião: o convidado só recebe onde desenhar.
+      lacaios: j.lacaios.map((l) => ({ x: Coop.numero(l.x), y: Coop.numero(l.y), mira: Coop.numero(l.mira), temporario: !!l.temporario }))
     };
   },
   empacotarInimigo(e) {
@@ -588,6 +590,7 @@ const Coop = {
     j.ultCarga = d.ultCarga; j.ultAtiva = d.ultAtiva;
     j.invulneravel = d.invulneravel; j.frenesi = d.frenesi; j.recuo = d.recuo;
     j.orbes = d.orbes || [];
+    j.lacaios = (d.lacaios || []).map((l) => ({ x: l.x, y: l.y, mira: l.mira, angulo: 0, recarga: 99, temporario: l.temporario, restante: 99 }));
     if (!j.rastro) j.rastro = [];
   },
   absorverSimples(e, d) {

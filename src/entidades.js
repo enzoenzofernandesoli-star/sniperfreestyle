@@ -38,13 +38,13 @@ class Jogador {
     this.xpProximo = 60;
     this.melhorias = {};
     this.multXP = 1;
-    this.explodeAoMatar = 0;
-    this.dashCongela = 0;
     this.vampirismo = 0;
     this.espinhos = 0;
 
     this.orbes = [];
     this.sincronizarOrbes();
+    this.lacaios = [];
+    this.sincronizarLacaios();
     this.rastro = [];
     this.recuo = 0;
     this.nome = '';            // apelido mostrado no cooperativo
@@ -58,6 +58,63 @@ class Jogador {
   }
 
   get escudoAtivo() { return this.escudoRestante > 0; }
+  // Drones do INVOCADOR: seguem em órbita larga, procuram alvo sozinhos e
+  // atiram com uma fração do dano do dono. Não têm vida — o preço deles é o
+  // tiro pessoal fraco da classe, não um bichinho para babysittar.
+  sincronizarLacaios() {
+    const quantos = this.attr.lacaios || 0;
+    const fixos = this.lacaios ? this.lacaios.filter((l) => !l.temporario) : [];
+    while (fixos.length > quantos) fixos.pop();
+    while (fixos.length < quantos) fixos.push(this.novoLacaio(fixos.length, quantos));
+    const temporarios = this.lacaios ? this.lacaios.filter((l) => l.temporario) : [];
+    this.lacaios = fixos.concat(temporarios);
+    this.reposicionarLacaios();
+  }
+
+  novoLacaio(indice, total, tempo) {
+    return {
+      angulo: (Mat.TAU / Math.max(1, total)) * indice,
+      x: this.x, y: this.y, recarga: Mat.aleatorio(0, 0.5),
+      temporario: tempo !== undefined, restante: tempo || 0, mira: 0
+    };
+  }
+
+  reposicionarLacaios() {
+    const total = Math.max(1, this.lacaios.length);
+    this.lacaios.forEach((l, i) => { l.angulo = (Mat.TAU / total) * i; });
+  }
+
+  atualizarLacaios(dt) {
+    if (!this.lacaios.length) return;
+    const orbita = 78;
+    for (let i = this.lacaios.length - 1; i >= 0; i--) {
+      const l = this.lacaios[i];
+      if (l.temporario) {
+        l.restante -= dt;
+        if (l.restante <= 0) { this.lacaios.splice(i, 1); this.reposicionarLacaios(); continue; }
+      }
+      l.angulo += dt * 1.1;
+      const alvoX = this.x + Math.cos(l.angulo) * orbita;
+      const alvoY = this.y + Math.sin(l.angulo) * orbita;
+      l.x = Mat.suave(l.x, alvoX, 7, dt);
+      l.y = Mat.suave(l.y, alvoY, 7, dt);
+
+      l.recarga -= dt;
+      if (l.recarga > 0) continue;
+      const alvo = Jogo.inimigoMaisProximo(l.x, l.y, 560) || (Jogo.boss && Jogo.boss.vivo ? Jogo.boss : null);
+      if (!alvo) continue;
+      l.mira = Mat.anguloEntre(l.x, l.y, alvo.x, alvo.y);
+      l.recarga = this.attr.cadencia * 1.45;
+      Jogo.projeteis.push(new Projetil({
+        x: l.x, y: l.y, angulo: l.mira, velocidade: this.attr.balaVel * 0.9,
+        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.55,
+        dono: 'jogador', cor: CORES_TIRO.jogador, perfuracao: this.attr.perfuracao,
+        ricochete: 0, homing: 0.35, critico: false
+      }));
+      Som.tiro(this.classe.somTiro);
+    }
+  }
+
   get intangivel() { return this.invulneravel > 0 || this.dashRestante > 0 || this.ultAtiva > 0 && this.classe.id === 'espectro'; }
 
   /* --------------------------- Atualização --------------------------- */
@@ -85,7 +142,7 @@ class Jogador {
       this.dashRestante -= dt;
       this.x += this.dashVX * dt;
       this.y += this.dashVY * dt;
-      if (Mat.chance(0.9)) {
+      if (Mat.chance(0.45)) {
         Particulas.emitir({
           x: this.x, y: this.y, vx: Mat.aleatorio(-40, 40), vy: Mat.aleatorio(-40, 40),
           vida: 0.3, tam: 7, cor: this.classe.cor, brilho: 16, atrito: 0.85
@@ -133,6 +190,8 @@ class Jogador {
       this.vida = Math.min(this.attr.vidaMax, this.vida + this.attr.regen * dt);
     }
 
+    this.atualizarLacaios(dt);
+
     // orbes orbitais
     for (const o of this.orbes) {
       o.angulo += 2.4 * dt;
@@ -149,7 +208,7 @@ class Jogador {
           }
         }
       }
-      if (Mat.chance(0.4)) {
+      if (Mat.chance(0.2)) {
         Particulas.emitir({ x: ox, y: oy, vida: 0.25, tam: 3, cor: this.classe.cor, brilho: 12, atrito: 0.9 });
       }
     }
@@ -247,7 +306,6 @@ class Jogador {
     Particulas.anel(this.x, this.y, this.classe.cor, 26, 16);
     Camera.bater(4);
     Som.dash();
-    if (this.dashCongela > 0) Jogo.congelarTempo(this.dashCongela);
   }
 
   cortarNoDash() {
@@ -281,24 +339,30 @@ class Jogador {
 
     if (this.classe.id === 'sniper') {
       // raio perfurante gigante
-      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 6, cor: this.classe.cor });
-      Jogo.aplicarRaio(this.x, this.y, this.angulo, this.attr.dano * 6);
+      Jogo.raios.push({ x: this.x, y: this.y, angulo: this.angulo, vida: 0.5, vidaMax: 0.5, largura: 26, dano: this.attr.dano * 4.5, cor: this.classe.cor });
+      Jogo.aplicarRaio(this.x, this.y, this.angulo, this.attr.dano * 4.5);
     } else if (this.classe.id === 'guardiao') {
       // onda de choque expansiva
-      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 460, dano: this.attr.dano * 3.2, cor: this.classe.cor, atingidos: new Set(), empurrao: 900 });
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 400, dano: this.attr.dano * 2.6, cor: this.classe.cor, atingidos: new Set(), empurrao: 780 });
     } else if (this.classe.id === 'espectro') {
-      this.ultAtiva = 3;
-      this.invulneravel = Math.max(this.invulneravel, 3);
+      this.ultAtiva = 2.2;
+      this.invulneravel = Math.max(this.invulneravel, 2.2);
+    } else if (this.classe.id === 'invocador') {
+      // LEGIÃO: tropa temporária, sem invencibilidade nem dano instantâneo
+      const total = this.lacaios.length + 3;
+      for (let i = 0; i < 3; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 9));
+      this.reposicionarLacaios();
+      Particulas.anel(this.x, this.y, this.classe.cor, 70, 20);
     } else {
       // singularidade: suga e explode
-      Jogo.singularidades.push({ x: this.x, y: this.y, vida: 2.2, vidaMax: 2.2, raio: 300, dano: this.attr.dano * 7, cor: this.classe.cor, explodiu: false });
+      Jogo.singularidades.push({ x: this.x, y: this.y, vida: 2.2, vidaMax: 2.2, raio: 280, dano: this.attr.dano * 5, cor: this.classe.cor, explodiu: false });
     }
   }
 
   tickUlt(dt) {
     if (this.classe.id === 'espectro') {
       this.cortarNoDash();
-      if (Mat.chance(0.8)) {
+      if (Mat.chance(0.4)) {
         Particulas.emitir({ x: this.x + Mat.aleatorio(-18, 18), y: this.y + Mat.aleatorio(-18, 18), vida: 0.3, tam: 6, cor: '#ff4d6d', brilho: 18, atrito: 0.86 });
       }
     }
@@ -317,7 +381,7 @@ class Jogador {
     Jogo.flashTela(0.55, '#ff2b4d');
     Jogo.pararTempo(0.09);
     Som.dano();
-    Particulas.explosao(this.x, this.y, '#ff3355', 22, 320, 0.6, 4);
+    Particulas.explosao(this.x, this.y, '#ff3355', 10, 300, 0.5, 4);
     if (fonteX !== undefined) {
       const a = Mat.anguloEntre(fonteX, fonteY, this.x, this.y);
       this.vx += Math.cos(a) * 320;
@@ -369,6 +433,22 @@ class Jogador {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+
+    // drones
+    for (const l of this.lacaios) {
+      ctx.save();
+      ctx.translate(l.x - this.x, l.y - this.y);
+      ctx.rotate(l.mira);
+      ctx.globalAlpha = l.temporario ? 0.75 : 1;
+      ctx.fillStyle = this.skin.cor2;
+      ctx.strokeStyle = this.skin.cor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(9, 0); ctx.lineTo(-6, 6); ctx.lineTo(-3, 0); ctx.lineTo(-6, -6);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
 
     // orbes
     for (const o of this.orbes) {
@@ -878,8 +958,8 @@ class Inimigo {
   morrer(porTiro) {
     if (!this.vivo) return;
     this.vivo = false;
-    Particulas.explosao(this.x, this.y, this.def.cor, 20 + Math.floor(this.raio), 340, 0.6, 4);
-    Particulas.anel(this.x, this.y, this.def.cor, this.raio * 1.4, 14);
+    Particulas.explosao(this.x, this.y, this.def.cor, 8 + Math.floor(this.raio * 0.35), 300, 0.45, 4);
+    Particulas.anel(this.x, this.y, this.def.cor, this.raio * 1.1, 8);
     Camera.bater(3.5);
     Som.morteInimigo();
 
@@ -1287,7 +1367,7 @@ class Boss {
     }
 
     // partículas de aura
-    if (Mat.chance(0.6)) {
+    if (Mat.chance(0.28)) {
       const a = Math.random() * Mat.TAU;
       Particulas.emitir({
         x: this.x + Math.cos(a) * this.raio, y: this.y + Math.sin(a) * this.raio,
@@ -1425,11 +1505,11 @@ class Boss {
     Camera.pulsar(1.1);
     Jogo.flashTela(0.8, '#ffffff');
     Som.bossMorre();
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
       setTimeout(() => {
-        Particulas.explosao(this.x + Mat.aleatorio(-60, 60), this.y + Mat.aleatorio(-60, 60), this.def.cor, 40, 520, 0.9, 6);
+        Particulas.explosao(this.x + Mat.aleatorio(-60, 60), this.y + Mat.aleatorio(-60, 60), this.def.cor, 18, 480, 0.8, 6);
         Camera.bater(8);
-      }, i * 110);
+      }, i * 140);
     }
     Jogo.bossDerrotado(this);
   }

@@ -76,7 +76,7 @@ const Jogo = {
     Jogo.escalaRender = Jogo.modoLeve ? 0.75 : 1;
     Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
     Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
-    if (Jogo.modoLeve) Particulas.limite = 600;
+    if (Jogo.modoLeve) Particulas.limite = 400;
 
     Config.carregar();
     Recordes.carregar();
@@ -285,7 +285,7 @@ const Jogo = {
     Jogo.pontos += e.def.pontos * Jogo.multiplicador * bonusElite;
 
     // XP
-    const pedacos = Mat.inteiro(2, 4);
+    const pedacos = Mat.inteiro(1, 2);   // menos caco no chão, mesmo XP total
     for (let i = 0; i < pedacos; i++) {
       Jogo.coletaveis.push(new Coletavel('xp', e.x + Mat.aleatorio(-14, 14), e.y + Mat.aleatorio(-14, 14), (e.def.xp * bonusElite) / pedacos));
     }
@@ -294,17 +294,6 @@ const Jogo = {
     if (Mat.chance(e.elite ? 0.1 : 0.035)) {
       const sorteio = Mat.chance(0.25) ? 'vida' : Mat.escolher(['bomba', 'ima', 'frenesi']);
       Jogo.coletaveis.push(new Coletavel(sorteio, e.x, e.y));
-    }
-    // fragmentos da melhoria lendária
-    if (j.explodeAoMatar > 0) {
-      const n = 4 + j.explodeAoMatar * 2;
-      for (let i = 0; i < n; i++) {
-        Jogo.projeteis.push(new Projetil({
-          x: e.x, y: e.y, angulo: (Mat.TAU / n) * i + Math.random(),
-          velocidade: 620, raio: 4, dano: j.attr.dano * 0.45, dono: 'jogador',
-          cor: '#ffb347', perfuracao: 0, ricochete: 0, alcance: 220
-        }));
-      }
     }
     if (j.classe.curaPorMorte) j.curar(j.attr.vidaMax * j.classe.curaPorMorte);
     if (j.vampirismo > 0 && Mat.chance(j.vampirismo)) j.curar(0.5);

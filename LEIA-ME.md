@@ -102,6 +102,13 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 | **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
 | **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro que suga e explode |
+| **INVOCADOR** | 3 corações, tiro pessoal fraco, 2 drones que miram e atiram sozinhos | **LEGIÃO** — 3 drones extras por 9 s |
+
+O drone do INVOCADOR orbita a 78 px, procura alvo num raio de 560 px e atira com
+55% do dano do dono, numa cadência 45% mais lenta. Não tem vida: o preço da classe
+é o tiro pessoal fraco, não um bichinho para proteger. A melhoria **MAIS UM NA
+TROPA** (+1 drone, no máximo 2 vezes) só aparece para ele — melhoria com `exige`
+não polui o sorteio das outras classes.
 
 ## Inimigos
 
@@ -308,11 +315,36 @@ de 4 inimigos dá ~1,9 KB por snapshot (~37 KB/s por convidado).
 
 ---
 
+## Menos apelão, menos explosão, mais leve
+
+Três coisas saíram ou encolheram nesta passada:
+
+- **DILATAÇÃO** (dash congelava o tempo) e **CARGA DE FRAGMENTOS** (inimigo morto
+  explodia em estilhaços) saíram do jogo. Eram as duas que decidiam a run sozinhas,
+  e a segunda enchia a tela de projétil que ninguém pediu. No lugar entraram SOBRA
+  DE CARGA (+0,4 s de escudo) e MAIS UM NA TROPA.
+- Ultimates apararam: TRAÇANTE de 6× para 4,5× de dano, IMPACTO de 3,2× para 2,6×,
+  SINGULARIDADE de 7× para 5×, CARNIFICINA de 3 s para 2,2 s. Cura ao matar do
+  ESPECTRO caiu de 2% para 1%.
+- Partícula: morte de inimigo saiu de ~20+raio para ~8, o baque no jogador de 22
+  para 10, a morte de boss de 8 explosões de 40 para 4 de 18, e rastros e auras
+  emitem cerca de metade.
+
+### Desempenho
+
+O emissor de partículas varria o pool inteiro (1500 posições) a cada partícula
+quando a tela enchia. Agora há uma lista de índices livres: emitir é O(1) e, sem
+slot, a partícula simplesmente não nasce. O pool caiu para 900 (400 no celular).
+
+Medido com boss, 18 inimigos, 73 projéteis e 447 partículas vivas ao mesmo tempo:
+**0,40 ms de lógica e 0,88 ms de render por quadro** — 13× de folga dentro dos
+16,6 ms.
+
 ## Onde balancear
 
 | O quê | Onde |
 |---|---|
-| Atributos de classe | `src/classes.js` → `CLASSES[].atributos` |
+| Atributos de classe | `src/classes.js` → `CLASSES[].atributos` (`lacaios` = drones do INVOCADOR) |
 | Melhorias e raridade | `src/classes.js` → `MELHORIAS[]`, `PESO_RARIDADE` |
 | Vida/velocidade/dano de inimigo | `src/entidades.js` → `TIPOS_INIMIGO` |
 | Vida e padrões de boss | `src/entidades.js` → `BOSSES` |
