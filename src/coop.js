@@ -16,6 +16,10 @@
    =========================================================================== */
 
 const Coop = {
+  // Servidor de salas de plantão: usado quando o endereço onde o jogo está
+  // aberto não hospeda WebSocket (é o caso do site na Vercel).
+  SERVIDOR_PADRAO: 'wss://sniper-salas.onrender.com/sala',
+
   TAXA_ESTADO: 50,        // ms entre snapshots do anfitrião (20 por segundo)
   TAXA_CONTROLE: 33,      // ms entre comandos do convidado (30 por segundo)
   MAX_JOGADORES: 4,
@@ -82,11 +86,22 @@ const Coop = {
       else localStorage.removeItem('sniper.coopServidor');
     } catch { /* navegador sem storage: vale so nesta sessao */ }
   },
+  // Endereço que hospeda o jogo E as salas: localhost do `npm run salas` e o
+  // serviço do Render. Fora dessa lista (Vercel, por exemplo) o site é só
+  // arquivo estático e as salas moram no servidor padrão.
+  hospedaSalas() {
+    const h = location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || /^192\.168\./.test(h) || /^10\./.test(h)
+      || /\.onrender\.com$/.test(h);
+  },
   endereco() {
     const escolhido = Coop.servidorSalvo();
     if (escolhido) return escolhido;
     if (window.COOP_URL) return window.COOP_URL;
-    return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/sala';
+    if (Coop.hospedaSalas()) {
+      return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/sala';
+    }
+    return Coop.SERVIDOR_PADRAO;
   },
   // Codigo sugerido para o anfitriao editar antes de abrir a sala. Sem I, O, 0
   // e 1, que viram engano quando alguem dita o convite em voz alta.
@@ -101,8 +116,11 @@ const Coop = {
   // letras em vez de deixar o jogador achando que a sala caiu.
   semServidor() {
     const onde = Coop.servidorSalvo() || Coop.endereco();
-    return 'Nenhum servidor de salas respondeu em ' + onde + '. '
-      + 'Rode `npm run salas` e abra o endereço dele, ou cole o endereço do seu servidor em SERVIDOR DE SALAS (AVANÇADO).';
+    const dormindo = /onrender\.com/.test(onde)
+      ? ' Se for a primeira sala do dia, o servidor estava hibernando: espere uns 50 segundos e tente de novo.'
+      : '';
+    return 'Nenhum servidor de salas respondeu em ' + onde + '.' + dormindo
+      + ' Você também pode rodar `npm run salas` e colar o endereço dele em SERVIDOR DE SALAS (AVANÇADO).';
   },
   conectar(aoAbrir) {
     if (Coop.conexao) { Coop.conexao.onclose = null; Coop.conexao.close(); }

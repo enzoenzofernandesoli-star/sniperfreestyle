@@ -54,6 +54,20 @@ servidor não sabe quem está na sala além das conexões que precisa encaminhar
 | `comecou` | anfitrião → convidados | largada |
 | `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s |
 
+## Onde as salas moram
+
+O jogo decide sozinho com quem falar, nesta ordem:
+
+1. o que estiver em SERVIDOR DE SALAS (AVANÇADO), salvo em `sniper.coopServidor`;
+2. `window.COOP_URL`, se alguma página definir;
+3. o próprio endereço, quando ele hospeda WebSocket — `localhost`, IP de rede local
+   ou `*.onrender.com`;
+4. senão, `Coop.SERVIDOR_PADRAO` — hoje `wss://sniper-salas.onrender.com/sala`.
+
+É a regra 4 que faz o site da Vercel jogar online: ele serve só arquivo estático,
+mas as salas vêm do Render. Trocou de servidor? Muda `SERVIDOR_PADRAO` em
+`src/coop.js`, um lugar só.
+
 ## Jogar pela internet, não só na rede local
 
 O servidor de salas é WebSocket e precisa de um processo vivo. **A Vercel não hospeda

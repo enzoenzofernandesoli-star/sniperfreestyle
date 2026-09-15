@@ -465,8 +465,15 @@ const UI = {
   avisarServidor() {
     const caixa = document.getElementById('avisoServidor');
     if (!caixa) return;
-    const proprio = !Coop.servidorSalvo() && location.protocol === 'https:' && /vercel\.app$/.test(location.hostname);
-    caixa.hidden = !proprio;
+    // Só avisa quando o servidor usado não é o do próprio endereço — aí vale
+    // dizer de onde vêm as salas e que a primeira pode demorar a acordar.
+    const emprestado = !Coop.servidorSalvo() && !Coop.hospedaSalas();
+    caixa.hidden = !emprestado;
+    if (emprestado) {
+      caixa.innerHTML = 'Este endereço não hospeda salas, então o jogo usa o servidor '
+        + '<b>' + UI.escapar(new URL(Coop.SERVIDOR_PADRAO.replace('wss://', 'https://')).hostname) + '</b>. '
+        + 'Ele hiberna quando fica parado: a primeira sala do dia pode levar uns 50 segundos para abrir.';
+    }
   },
 
   abrirSala(modo) {
