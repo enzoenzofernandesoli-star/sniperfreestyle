@@ -69,51 +69,65 @@ const Placar = {
   async enviar(entrada) {
     if (!Placar.configurado()) { Placar.ultimoEnvio = null; return false; }
     Placar.ultimoEnvio = 'enviando';
-    try {
-      const resposta = await fetch(Placar._endereco(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: entrada.nome,
-          pontos: entrada.pontos,
-          classe: entrada.classe,
-          onda: entrada.onda,
-          nivel: entrada.nivel,
-          tempo: entrada.tempo,
-          abates: entrada.abates,
-          venceu: entrada.venceu
-        })
-      });
-      if (!resposta.ok) {
-        let motivo = '';
-        try { motivo = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
-        if (/banco|DATABASE_URL/i.test(motivo)) {
-          if (Placar._podeTentarReserva()) {
-            Placar.usandoReserva = true;
-            return Placar.enviar(entrada);
-          }
-          const gravou = await Placar._gravarDataApi(entrada);
-          if (gravou) {
-            Placar.usandoDataApi = true;
-            Placar.ultimoEnvio = 'ok';
-            Placar.cache = null;
-            return true;
-          }
-        }
-      }
-      Placar.ultimoEnvio = resposta.ok ? 'ok' : 'erro';
-      if (resposta.ok) Placar.cache = null;   // força recarregar o top
-      return resposta.ok;
-    } catch (e) {
-      Placar.ultimoEnvio = 'erro';
-      return false;
+
+    if (!Placar._preferirBanco() && await Placar._gravarServidor(entrada)) {
+      Placar.ultimoEnvio = 'ok';
+      Placar.cache = null;
+      return true;
     }
+    if (await Placar._gravarDataApi(entrada)) {
+      Placar.usandoDataApi = true;
+      Placar._lembrarBanco();
+      Placar.ultimoEnvio = 'ok';
+      Placar.cache = null;
+      return true;
+    }
+    Placar.ultimoEnvio = 'erro';
+    return false;
+  },
+
+  async _gravarServidor(entrada) {
+    for (const tentativa of [0, 1]) {
+      try {
+        const resposta = await fetch(Placar._endereco(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: entrada.nome,
+            pontos: entrada.pontos,
+            classe: entrada.classe,
+            onda: entrada.onda,
+            nivel: entrada.nivel,
+            tempo: entrada.tempo,
+            abates: entrada.abates,
+            venceu: entrada.venceu
+          })
+        });
+        if (resposta.ok) return true;
+      } catch (e) { /* sem rede ou sem servidor: cai para o banco */ }
+      if (tentativa === 0 && Placar._podeTentarReserva()) Placar.usandoReserva = true;
+      else return false;
+    }
+    return false;
   },
 
   /* Lê o top geral. Devolve null quando não dá — quem chama decide o que mostrar. */
   ultimoErro: '',
   usandoReserva: false,
   usandoDataApi: false,
+
+  // Lembrança por aparelho: neste endereço o placar mora no banco, não num
+  // servidor. Vale por um dia, para voltar a testar o servidor de vez em quando.
+  _preferirBanco() {
+    try {
+      const ate = Number(localStorage.getItem('sniper.placarDireto') || 0);
+      return ate > Date.now();
+    } catch (e) { return false; }
+  },
+  _lembrarBanco() {
+    try { localStorage.setItem('sniper.placarDireto', String(Date.now() + 24 * 3600 * 1000)); }
+    catch (e) { /* navegador sem storage */ }
+  },
   _token: null,
   _tokenAte: 0,
 
@@ -184,37 +198,49 @@ const Placar = {
     Placar.ultimoErro = '';
     const agora = Date.now();
     if (!forcar && Placar.cache && agora - Placar.cacheEm < 30000) return Placar.cache;
-    try {
-      const resposta = await fetch(Placar._endereco('?limite=' + PLACAR_CONFIG.limite));
-      if (!resposta.ok) {
-        // Guarda o motivo que a API deu: "sem banco configurado" é problema de
-        // deploy, não de rede, e a tela precisa dizer isso em vez de chutar.
+
+    // Quem já descobriu que este endereço não tem servidor de placar vai direto
+    // ao banco: evita duas requisições condenadas em toda abertura da tela.
+    if (!Placar._preferirBanco()) {
+      const doServidor = await Placar._lerServidor();
+      if (doServidor) {
+        Placar.cache = doServidor;
+        Placar.cacheEm = agora;
+        return doServidor;
+      }
+    }
+
+    // Servidor fora, sem banco, ou nem existindo: o Data API responde sozinho.
+    const doBanco = await Placar._lerDataApi();
+    if (doBanco) {
+      Placar.usandoDataApi = true;
+      Placar._lembrarBanco();
+      Placar.cache = doBanco;
+      Placar.cacheEm = agora;
+      return doBanco;
+    }
+    return null;
+  },
+
+  // Tenta o /api/placar do site e, se ele disser que está sem banco, o servidor
+  // de reserva. Devolve null quando nenhum dos dois serve.
+  async _lerServidor() {
+    for (const tentativa of [0, 1]) {
+      try {
+        const resposta = await fetch(Placar._endereco('?limite=' + PLACAR_CONFIG.limite));
+        if (resposta.ok) {
+          const linhas = await resposta.json();
+          if (Array.isArray(linhas)) return linhas;
+          return null;
+        }
         Placar.ultimoErro = '';
         try { Placar.ultimoErro = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
-        // Site sem banco: tenta o servidor de reserva e, se ele também estiver
-        // sem credencial, fala direto com o banco pelo Data API.
-        if (/banco|DATABASE_URL/i.test(Placar.ultimoErro)) {
-          if (Placar._podeTentarReserva()) {
-            Placar.usandoReserva = true;
-            return Placar.top(true);
-          }
-          const doBanco = await Placar._lerDataApi();
-          if (doBanco) {
-            Placar.usandoDataApi = true;
-            Placar.cache = doBanco;
-            Placar.cacheEm = Date.now();
-            return doBanco;
-          }
-        }
-        return null;
+      } catch (e) {
+        Placar.ultimoErro = 'servidor fora do ar';
       }
-      const linhas = await resposta.json();
-      if (!Array.isArray(linhas)) return null;
-      Placar.cache = linhas;
-      Placar.cacheEm = agora;
-      return linhas;
-    } catch (e) {
-      return null;
+      if (tentativa === 0 && Placar._podeTentarReserva()) Placar.usandoReserva = true;
+      else return null;
     }
+    return null;
   }
 };

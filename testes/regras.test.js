@@ -802,3 +802,44 @@ test('bala do drone é um tiro do jogador: mesmo dano, crítico e melhorias', ()
   assert.equal(dados.ricochete, 2, 'e o ricochete também');
   assert.ok(dados.contou >= 1, 'conta como tiro na estatística');
 });
+
+test('placar cai no banco quando nenhum servidor responde, e lembra disso', async () => {
+  const guardado = {};
+  const mundo = vm.createContext({
+    console, Math, URL,
+    location: { href: 'https://site.exemplo/', host: 'site.exemplo' },
+    localStorage: {
+      getItem: (c) => (c in guardado ? guardado[c] : null),
+      setItem: (c, v) => { guardado[c] = String(v); }
+    }
+  });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/placar-config.js'), 'utf8'), mundo, { filename: 'placar-config.js' });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/placar.js'), 'utf8'), mundo, { filename: 'placar.js' });
+
+  const pedidos = [];
+  mundo.fetch = async (endereco, opcoes) => {
+    pedidos.push(endereco);
+    if (endereco.indexOf('apirest') >= 0) {
+      return { ok: true, json: async () => (opcoes && opcoes.method === 'POST' ? {} : [{ nome: 'ANA', pontos: 10 }]) };
+    }
+    if (endereco.indexOf('neonauth') >= 0) return { ok: true, json: async () => ({ token: 'abc' }) };
+    if (endereco.indexOf('onrender') >= 0) throw new Error('servidor dormindo');
+    return { ok: false, json: async () => ({ erro: 'placar sem banco configurado' }) };
+  };
+
+  const linhas = await vm.runInContext('Placar.top(true)', mundo);
+  assert.equal(Array.isArray(linhas) && linhas.length, 1, 'o ranking veio do banco');
+  assert.equal(vm.runInContext('Placar.usandoDataApi', mundo), true);
+  assert.ok(pedidos.some((p) => p.indexOf('onrender') >= 0), 'tentou a reserva antes do banco');
+  assert.ok(guardado['sniper.placarDireto'], 'lembrou que aqui o placar mora no banco');
+
+  // segunda volta: com a lembrança salva, vai direto ao banco
+  pedidos.length = 0;
+  const denovo = await vm.runInContext('Placar.top(true)', mundo);
+  assert.equal(Array.isArray(denovo) && denovo.length, 1);
+  assert.ok(!pedidos.some((p) => p.indexOf('onrender') >= 0), 'não repete a tentativa condenada');
+
+  const gravou = await vm.runInContext(`Placar.enviar({ nome: 'ANA', pontos: 1, classe: 'SNIPER',
+    onda: 1, nivel: 1, tempo: 1, abates: 1, venceu: false })`, mundo);
+  assert.equal(gravou, true, 'a run também é gravada direto no banco');
+});
