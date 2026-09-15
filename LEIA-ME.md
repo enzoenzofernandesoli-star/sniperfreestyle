@@ -104,9 +104,38 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 
 ## Inimigos
 
-`CORREDOR` persegue · `BRUTO` tanque que resiste a 35% do dano · `ATIRADOR` mantém distância e
-atira · `KAMIKAZE` pisca, investe e explode · `DIVISOR` racha em 2 ao morrer ·
-`ORBITADOR` circula e dá rajada tripla · `COURAÇA` bloqueia tiro pela frente (flanqueie ou ricocheteie).
+Cada uma das doze primeiras ondas estreia um tipo — a onda 1 é só corredor, a 12 fecha a
+lista — e o aviso central diz o nome do estreante. Depois disso a mistura é sorteada
+entre todos.
+
+| Onda | Tipo | O que faz |
+|---|---|---|
+| 1 | `CORREDOR` | persegue em linha reta |
+| 2 | `ATIRADOR` | mantém distância e atira |
+| 3 | `BRUTO` | tanque, resiste a 35% do dano, **2 de dano** no contato |
+| 4 | `KAMIKAZE` | carrega, investe e explode por 2 |
+| 5 | `DIVISOR` | racha em 2 ao morrer |
+| 6 | `ORBITADOR` | circula e solta rajada tripla |
+| 7 | `COURAÇA` | bloqueia tiro pela frente, **2 de dano** (flanqueie ou ricocheteie) |
+| 8 | `LANCEIRO` | para, mira e dispara o corpo em linha reta — 3 de dano na investida |
+| 9 | `TECELÃO` | espiral contínua de projéteis enquanto recua |
+| 10 | `FANTASMA` | teleporta para o lado do jogador |
+| 11 | `ENXAME` | rápido, em zigue-zague |
+| 12 | `TORRETA` | quase parada, resiste a 50%, rajada de 3 tiros rápidos |
+
+## Dificuldade
+
+O jogo foi reapertado: **menos inimigos na tela, cada um pesando mais**.
+
+- Orçamento da onda caiu para cerca da metade e o teto de inimigos vivos foi de 30 para 14.
+- Vida base subiu 35–50% em todos os tipos e a escala por onda passou de +5,5% para +8%
+  (onda 40 vale ~4,1× a vida da onda 1).
+- `BRUTO`, `COURAÇA` e `LANCEIRO` tiram 2 corações no contato — a investida do lanceiro, 3.
+- Bosses: +35% de vida, escala por onda maior, atacam ~20% mais rápido e o telegrafo de
+  troca de fase caiu de 0,8 s para 0,6 s.
+- Melhoria repetida fica mais rara a cada cópia (peso × 0,45) e os tetos caíram: no máximo
+  **3 projéteis extras** por tiro, 4 cópias de dano ou cadência, 2 de regeneração — que
+  agora cura 0,025 coração/s em vez de 0,06.
 
 ## Bosses (ondas 5, 10, 15, 20, 25, 30, 35, 40)
 

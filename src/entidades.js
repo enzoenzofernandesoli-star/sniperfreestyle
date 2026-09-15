@@ -574,37 +574,64 @@ class Projetil {
 /* ============================== INIMIGOS ================================ */
 const TIPOS_INIMIGO = {
   corredor: {
-    nome: 'CORREDOR', cor: '#ff5470', cor2: '#7a0f27', raio: 17, vida: 22, velocidade: 145,
-    dano: 1, xp: 6, pontos: 10, lados: 3, comportamento: 'perseguir', desde: 1
-  },
-  bruto: {
-    nome: 'BRUTO', cor: '#ff8c42', cor2: '#7a3a0f', raio: 30, vida: 95, velocidade: 70,
-    dano: 1, xp: 18, pontos: 30, lados: 6, comportamento: 'perseguir', desde: 3, resiste: 0.65
+    nome: 'CORREDOR', cor: '#ff5470', cor2: '#7a0f27', raio: 17, vida: 30, velocidade: 150,
+    dano: 1, xp: 8, pontos: 10, lados: 3, comportamento: 'perseguir', desde: 1
   },
   atirador: {
-    nome: 'ATIRADOR', cor: '#c874ff', cor2: '#4b177a', raio: 19, vida: 38, velocidade: 110,
-    dano: 1, xp: 14, pontos: 25, lados: 5, comportamento: 'atirar', desde: 2,
-    distanciaIdeal: 320, recarga: 2.6, projetilVel: 340
+    nome: 'ATIRADOR', cor: '#c874ff', cor2: '#4b177a', raio: 19, vida: 54, velocidade: 115,
+    dano: 1, xp: 16, pontos: 25, lados: 5, comportamento: 'atirar', desde: 2,
+    distanciaIdeal: 320, recarga: 2.2, projetilVel: 360
+  },
+  bruto: {
+    nome: 'BRUTO', cor: '#ff8c42', cor2: '#7a3a0f', raio: 30, vida: 140, velocidade: 74,
+    dano: 2, xp: 22, pontos: 30, lados: 6, comportamento: 'perseguir', desde: 3, resiste: 0.65
   },
   kamikaze: {
-    nome: 'KAMIKAZE', cor: '#ffe14d', cor2: '#7a6a0f', raio: 15, vida: 18, velocidade: 250,
-    dano: 1, xp: 12, pontos: 22, lados: 4, comportamento: 'kamikaze', desde: 5, raioExplosao: 80
+    nome: 'KAMIKAZE', cor: '#ffe14d', cor2: '#7a6a0f', raio: 15, vida: 26, velocidade: 255,
+    dano: 2, xp: 15, pontos: 22, lados: 4, comportamento: 'kamikaze', desde: 4, raioExplosao: 88
   },
   divisor: {
-    nome: 'DIVISOR', cor: '#4dffc3', cor2: '#0f7a5c', raio: 24, vida: 58, velocidade: 100,
-    dano: 1, xp: 16, pontos: 28, lados: 8, comportamento: 'perseguir', desde: 6, divideEm: 2
+    nome: 'DIVISOR', cor: '#4dffc3', cor2: '#0f7a5c', raio: 24, vida: 82, velocidade: 105,
+    dano: 1, xp: 19, pontos: 28, lados: 8, comportamento: 'perseguir', desde: 5, divideEm: 2
   },
   orbitador: {
-    nome: 'ORBITADOR', cor: '#4da6ff', cor2: '#0f3d7a', raio: 20, vida: 50, velocidade: 170,
-    dano: 1, xp: 18, pontos: 32, lados: 7, comportamento: 'orbitar', desde: 6,
-    distanciaIdeal: 240, recarga: 2.1, projetilVel: 290
+    nome: 'ORBITADOR', cor: '#4da6ff', cor2: '#0f3d7a', raio: 20, vida: 72, velocidade: 175,
+    dano: 1, xp: 21, pontos: 32, lados: 7, comportamento: 'orbitar', desde: 6,
+    distanciaIdeal: 240, recarga: 1.8, projetilVel: 310
   },
   couraca: {
-    nome: 'COURAÇA', cor: '#9aa7b5', cor2: '#3a4450', raio: 26, vida: 75, velocidade: 92,
-    dano: 1, xp: 22, pontos: 40, lados: 4, comportamento: 'perseguir', desde: 9,
+    nome: 'COURAÇA', cor: '#9aa7b5', cor2: '#3a4450', raio: 26, vida: 110, velocidade: 96,
+    dano: 2, xp: 26, pontos: 40, lados: 4, comportamento: 'perseguir', desde: 7,
     escudoFrontal: true
+  },
+  // Da onda 8 em diante cada onda ainda estreia um jeito novo de atacar: não é
+  // só mais bicho na tela, é um problema diferente para resolver.
+  lanceiro: {
+    nome: 'LANCEIRO', cor: '#ff3d3d', cor2: '#6b0d0d', raio: 22, vida: 88, velocidade: 130,
+    dano: 2, xp: 24, pontos: 38, lados: 3, comportamento: 'investir', desde: 8,
+    alcanceInvestida: 460, forcaInvestida: 3.1
+  },
+  tecelao: {
+    nome: 'TECELÃO', cor: '#ff9edb', cor2: '#6b1f52', raio: 21, vida: 78, velocidade: 88,
+    dano: 1, xp: 25, pontos: 42, lados: 6, comportamento: 'espiral', desde: 9,
+    distanciaIdeal: 400, recarga: 0.34, projetilVel: 240
+  },
+  fantasma: {
+    nome: 'FANTASMA', cor: '#a0f0ff', cor2: '#164a58', raio: 18, vida: 60, velocidade: 165,
+    dano: 1, xp: 26, pontos: 44, lados: 5, comportamento: 'piscar', desde: 10,
+    recarga: 2.4
+  },
+  enxame: {
+    nome: 'ENXAME', cor: '#c6ff4d', cor2: '#3d6b0f', raio: 13, vida: 34, velocidade: 235,
+    dano: 1, xp: 12, pontos: 18, lados: 3, comportamento: 'zigue', desde: 11
+  },
+  torreta: {
+    nome: 'TORRETA', cor: '#ffc14d', cor2: '#6b4a09', raio: 24, vida: 130, velocidade: 34,
+    dano: 1, xp: 30, pontos: 50, lados: 8, comportamento: 'rajada', desde: 12,
+    recarga: 2.8, projetilVel: 420, resiste: 0.5
   }
 };
+
 
 class Inimigo {
   constructor(tipo, x, y, escala) {
@@ -680,6 +707,92 @@ class Inimigo {
         }
         break;
       }
+      // Investida telegrafada: para, mira, dispara o corpo numa linha reta. Dá
+      // para desviar — mas só se o jogador ler o telegrafo.
+      case 'investir': {
+        if (this.estado === 'normal') {
+          this.vx = Mat.suave(this.vx, Math.cos(angJog) * this.velocidade, 5, dt);
+          this.vy = Mat.suave(this.vy, Math.sin(angJog) * this.velocidade, 5, dt);
+          if (dist < this.def.alcanceInvestida) { this.estado = 'mirando'; this.timerEstado = 0.7; }
+        } else if (this.estado === 'mirando') {
+          this.timerEstado -= dt;
+          this.vx *= 0.86; this.vy *= 0.86;
+          this.anguloCarga = angJog;
+          this.flash = Math.max(this.flash, 0.2);
+          if (this.timerEstado <= 0) {
+            this.estado = 'investindo';
+            this.timerEstado = 0.85;
+            this.vx = Math.cos(this.anguloCarga) * this.velocidade * this.def.forcaInvestida;
+            this.vy = Math.sin(this.anguloCarga) * this.velocidade * this.def.forcaInvestida;
+          }
+        } else {
+          this.timerEstado -= dt;
+          this.vx *= 0.995; this.vy *= 0.995;
+          if (this.timerEstado <= 0) { this.estado = 'normal'; this.timerEstado = 0; }
+        }
+        break;
+      }
+      // Espiral contínua: nunca mira no jogador, cobre área. Obriga a andar.
+      case 'espiral': {
+        const dir = dist > this.def.distanciaIdeal ? 0.7 : -0.9;
+        this.vx = Mat.suave(this.vx, Math.cos(angJog) * dir * this.velocidade, 4, dt);
+        this.vy = Mat.suave(this.vy, Math.sin(angJog) * dir * this.velocidade, 4, dt);
+        this.recarga -= dt;
+        if (this.recarga <= 0 && dist < 760) {
+          this.recarga = this.def.recarga;
+          this.fase += 0.55;
+          Jogo.tiroInimigo(this.x, this.y, this.fase, this.def.projetilVel, this.def.dano, this.def.cor);
+          Jogo.tiroInimigo(this.x, this.y, this.fase + Math.PI, this.def.projetilVel, this.def.dano, this.def.cor);
+        }
+        break;
+      }
+      // Some e reaparece do lado de fora do alcance de tiro: não dá para
+      // resolver o fantasma só segurando o gatilho numa direção.
+      case 'piscar': {
+        this.recarga -= dt;
+        if (this.recarga <= 0 && dist > 120) {
+          this.recarga = this.def.recarga * Mat.aleatorio(0.8, 1.2);
+          Particulas.anel(this.x, this.y, this.def.cor, 26, 14);
+          const a = Math.random() * Mat.TAU;
+          this.x = Mat.limitar(j.x + Math.cos(a) * 190, this.raio, Jogo.LARGURA - this.raio);
+          this.y = Mat.limitar(j.y + Math.sin(a) * 190, this.raio, Jogo.ALTURA - this.raio);
+          Particulas.anel(this.x, this.y, this.def.cor, 26, 14);
+          this.vx = 0; this.vy = 0;
+        }
+        const ang = Mat.anguloEntre(this.x, this.y, j.x, j.y);
+        this.vx = Mat.suave(this.vx, Math.cos(ang) * this.velocidade, 7, dt);
+        this.vy = Mat.suave(this.vy, Math.sin(ang) * this.velocidade, 7, dt);
+        break;
+      }
+      // Rápido e em zigue-zague: trajetória que atrapalha a mira.
+      case 'zigue': {
+        const lateral = Math.sin(Jogo.tempo * 5.5 + this.fase) * 0.95;
+        const ax = Math.cos(angJog) - Math.sin(angJog) * lateral;
+        const ay = Math.sin(angJog) + Math.cos(angJog) * lateral;
+        this.vx = Mat.suave(this.vx, ax * this.velocidade, 8, dt);
+        this.vy = Mat.suave(this.vy, ay * this.velocidade, 8, dt);
+        break;
+      }
+      // Quase parada, mas castiga quem fica no aberto: rajada de três tiros.
+      case 'rajada': {
+        this.vx = Mat.suave(this.vx, Math.cos(angJog) * this.velocidade, 2, dt);
+        this.vy = Mat.suave(this.vy, Math.sin(angJog) * this.velocidade, 2, dt);
+        this.recarga -= dt;
+        if (this.estado === 'atirando') {
+          if (this.recarga <= 0) {
+            this.timerEstado--;
+            this.recarga = 0.16;
+            Jogo.tiroInimigo(this.x, this.y, angJog, this.def.projetilVel, this.def.dano, this.def.cor);
+            if (this.timerEstado <= 0) { this.estado = 'normal'; this.recarga = this.def.recarga; }
+          }
+        } else if (this.recarga <= 0 && dist < 700) {
+          this.estado = 'atirando';
+          this.timerEstado = 3;
+          this.recarga = 0.4;
+          this.flash = Math.max(this.flash, 0.25);
+        }
+        break;
+      }
       case 'kamikaze': {
         if (this.estado === 'normal') {
           this.vx = Mat.suave(this.vx, Math.cos(angJog) * this.velocidade * 0.55, 5, dt);
@@ -734,7 +847,7 @@ class Inimigo {
           this.flash = 0.15;
           if (this.vida <= 0) this.morrer(false);
         }
-      } else if (j.receberDano(this.def.dano, this.x, this.y)) {
+      } else if (j.receberDano(this.def.dano + (this.estado === 'investindo' ? 1 : 0), this.x, this.y)) {
         if (j.espinhos > 0) Jogo.danificarInimigo(this, j.espinhos, false, j.x, j.y);
         if (this.def.comportamento === 'kamikaze') this.explodir();
       }
@@ -948,6 +1061,11 @@ const BOSSES = [
 ];
 
 class Boss {
+  // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
+  // aqui é mais seguro que reescrever as fases de oito tabelas.
+  static VIDA_EXTRA = 1.35;
+  static RITMO_ATAQUE = 0.82;   // < 1 = ataca mais vezes
+
   constructor(def, onda) {
     this.id = Jogo.proximoId();
     this.def = def;
@@ -955,8 +1073,8 @@ class Boss {
     this.y = 150;
     this.direcao = 1;
     this.raio = def.raio;
-    const escala = 1 + (onda - 5) * 0.025;
-    this.vidaMax = def.vida * escala;
+    const escala = 1 + (onda - 5) * 0.035;
+    this.vidaMax = def.vida * escala * Boss.VIDA_EXTRA;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
     this.fase = def.fases[0];
@@ -967,6 +1085,7 @@ class Boss {
     this.flash = 0;
     this.vivo = true;
     this.entrando = 1.6;
+
     this.baseY = 150;
     this.orbita = 0;
     this.telegrafo = 0;
@@ -982,7 +1101,7 @@ class Boss {
     if (idx !== this.faseIndice) {
       this.faseIndice = idx;
       this.fase = this.def.fases[idx];
-      this.telegrafo = 0.8;
+      this.telegrafo = 0.6;
       Camera.bater(16);
       Jogo.flashTela(0.35, this.def.cor);
       Particulas.anel(this.x, this.y, this.def.cor, 120, 44);
@@ -1059,7 +1178,7 @@ class Boss {
     if (this.recarga <= 0) {
       const ataque = Mat.escolher(f.ataques);
       this.executarAtaque(ataque);
-      this.recarga = f.recarga * Mat.aleatorio(0.85, 1.15);
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura

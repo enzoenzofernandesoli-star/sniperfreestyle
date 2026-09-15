@@ -120,7 +120,7 @@ const Jogo = {
   /* ------------------------------ Ondas ------------------------------ */
   ehOndaDeBoss(onda) { return onda % 5 === 0; },
 
-  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.055; },
+  multiplicadorVida() { return 1 + (Jogo.onda - 1) * 0.08; },
 
   prepararOnda() {
     Jogo.ondaLimpa = false;
@@ -135,10 +135,18 @@ const Jogo = {
       Som.intensidade = 1;
       Jogo.aviso('⚠ ONDA ' + Jogo.onda + ' — BOSS');
     } else {
-      // orçamento de inimigos cresce com a onda
-      const orcamento = Math.round(4 + Math.min(Jogo.onda, 20) * 2.2 + Math.max(0, Jogo.onda - 20) * 0.8);
+      // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
+      // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
+      const orcamento = Math.round(3 + Math.min(Jogo.onda, 20) * 1.15 + Math.max(0, Jogo.onda - 20) * 0.45);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
+      // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
+      // onda quer ensinar.
+      const estreante = disponiveis.find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
       let restante = orcamento;
+      if (estreante) {
+        Jogo.composicao.push(estreante, estreante);
+        restante -= 2;
+      }
       while (restante > 0) {
         const tipo = Mat.escolher(disponiveis);
         Jogo.composicao.push(tipo);
@@ -147,7 +155,8 @@ const Jogo = {
       Mat.embaralhar(Jogo.composicao);
       Jogo.spawnRestante = Jogo.composicao.length;
       Som.intensidade = Mat.limitar(Jogo.onda / 42, 0, 0.8);
-      Jogo.aviso('ONDA ' + Jogo.onda);
+      const novo = Object.keys(TIPOS_INIMIGO).find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
+      Jogo.aviso(novo ? 'ONDA ' + Jogo.onda + ' — ' + TIPOS_INIMIGO[novo].nome : 'ONDA ' + Jogo.onda);
     }
     UI.atualizarHUD();
   },
@@ -411,8 +420,8 @@ const Jogo = {
     } else if (!Jogo.ondaLimpa) {
       if (Jogo.spawnRestante > 0) {
         Jogo.timerSpawn -= dtReal;
-        const ritmo = Math.max(0.26, 1.05 - Jogo.onda * 0.03);
-        const tetoSimultaneo = Math.min(30, Math.round(6 + Jogo.onda * 1.1));
+        const ritmo = Math.max(0.42, 1.15 - Jogo.onda * 0.022);
+        const tetoSimultaneo = Math.min(14, Math.round(4 + Jogo.onda * 0.45));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;

@@ -150,97 +150,97 @@ function classePorId(id) {
 
 const MELHORIAS = [
   {
-    id: 'dano', nome: 'PÓLVORA NEGRA', icone: '✦', raridade: 'comum', max: 8,
-    texto: '+18% de dano',
-    aplicar: (p) => { p.attr.dano *= 1.18; }
+    id: 'dano', nome: 'PÓLVORA NEGRA', icone: '✦', raridade: 'comum', max: 4,
+    texto: '+15% de dano',
+    aplicar: (p) => { p.attr.dano *= 1.15; }
   },
   {
-    id: 'cadencia', nome: 'GATILHO SOLTO', icone: '⚡', raridade: 'comum', max: 8,
+    id: 'cadencia', nome: 'GATILHO SOLTO', icone: '⚡', raridade: 'comum', max: 4,
     texto: '+15% de cadência de tiro',
     aplicar: (p) => { p.attr.cadencia *= 0.85; }
   },
   {
-    id: 'velocidade', nome: 'BOTAS LEVES', icone: '➤', raridade: 'comum', max: 6,
+    id: 'velocidade', nome: 'BOTAS LEVES', icone: '➤', raridade: 'comum', max: 3,
     texto: '+12% de velocidade',
     aplicar: (p) => { p.attr.velocidade *= 1.12; }
   },
   {
-    id: 'vida', nome: 'PLACA DE AÇO', icone: '❤', raridade: 'comum', max: 6,
+    id: 'vida', nome: 'PLACA DE AÇO', icone: '❤', raridade: 'comum', max: 3,
     texto: '+1 coração (e cura 1)',
     aplicar: (p) => { p.attr.vidaMax += 1; p.vida = Math.min(p.attr.vidaMax, p.vida + 1); }
   },
   {
-    id: 'projetil', nome: 'CANO DUPLO', icone: '⋔', raridade: 'raro', max: 4,
+    id: 'projetil', nome: 'CANO DUPLO', icone: '⋔', raridade: 'raro', max: 3,
     texto: '+1 projétil por tiro',
     aplicar: (p) => { p.attr.projeteis += 1; p.attr.espalhamento = Math.max(0.14, p.attr.espalhamento + 0.1); }
   },
   {
-    id: 'perfuracao', nome: 'PONTA DE TUNGSTÊNIO', icone: '⇴', raridade: 'raro', max: 4,
+    id: 'perfuracao', nome: 'PONTA DE TUNGSTÊNIO', icone: '⇴', raridade: 'raro', max: 3,
     texto: 'Projétil atravessa +1 inimigo',
     aplicar: (p) => { p.attr.perfuracao += 1; }
   },
   {
-    id: 'ricochete', nome: 'QUICA-QUICA', icone: '⟲', raridade: 'raro', max: 3,
+    id: 'ricochete', nome: 'QUICA-QUICA', icone: '⟲', raridade: 'raro', max: 2,
     texto: 'Projétil quica +1 vez nas paredes',
     aplicar: (p) => { p.attr.ricochete += 1; }
   },
   {
-    id: 'crit', nome: 'OLHO DE ÁGUIA', icone: '◎', raridade: 'raro', max: 5,
+    id: 'crit', nome: 'OLHO DE ÁGUIA', icone: '◎', raridade: 'raro', max: 3,
     texto: '+10% de crítico',
     aplicar: (p) => { p.attr.critChance = Math.min(0.85, p.attr.critChance + 0.1); }
   },
   {
-    id: 'critdano', nome: 'EXECUÇÃO', icone: '☠', raridade: 'epico', max: 4,
+    id: 'critdano', nome: 'EXECUÇÃO', icone: '☠', raridade: 'epico', max: 3,
     texto: '+60% de dano crítico',
     aplicar: (p) => { p.attr.critMult += 0.6; }
   },
   {
-    id: 'dash', nome: 'REATOR DE DASH', icone: '»', raridade: 'comum', max: 5,
+    id: 'dash', nome: 'REATOR DE DASH', icone: '»', raridade: 'comum', max: 3,
     texto: '-22% na recarga do dash',
     aplicar: (p) => { p.attr.dashRecarga *= 0.78; }
   },
   {
-    id: 'escudo', nome: 'CAPACITOR', icone: '⛨', raridade: 'raro', max: 5,
+    id: 'escudo', nome: 'CAPACITOR', icone: '⛨', raridade: 'raro', max: 3,
     texto: '-25% na recarga do escudo',
     aplicar: (p) => { p.attr.escudoRecarga *= 0.75; }
   },
   {
-    id: 'ult', nome: 'NÚCLEO INSTÁVEL', icone: '★', raridade: 'epico', max: 4,
+    id: 'ult', nome: 'NÚCLEO INSTÁVEL', icone: '★', raridade: 'epico', max: 3,
     texto: '-25% na recarga da ultimate',
     aplicar: (p) => { p.attr.ultRecarga *= 0.75; }
   },
   {
-    id: 'orbe', nome: 'SATÉLITE', icone: '◉', raridade: 'epico', max: 4,
+    id: 'orbe', nome: 'SATÉLITE', icone: '◉', raridade: 'epico', max: 3,
     texto: '+1 orbe orbital que causa dano',
     aplicar: (p) => { p.attr.orbes += 1; p.sincronizarOrbes(); }
   },
   {
-    id: 'regen', nome: 'SIMBIOSE', icone: '✚', raridade: 'epico', max: 4,
-    texto: 'Regenera 0.06 coração/s',
-    aplicar: (p) => { p.attr.regen += 0.06; }
+    id: 'regen', nome: 'SIMBIOSE', icone: '✚', raridade: 'epico', max: 2,
+    texto: 'Regenera 0.025 coração/s',
+    aplicar: (p) => { p.attr.regen += 0.025; }
   },
   {
-    id: 'ima', nome: 'ÍMÃ GRAVITACIONAL', icone: '◈', raridade: 'comum', max: 4,
+    id: 'ima', nome: 'ÍMÃ GRAVITACIONAL', icone: '◈', raridade: 'comum', max: 3,
     texto: '+70 de raio de coleta de XP',
     aplicar: (p) => { p.attr.ima += 70; }
   },
   {
-    id: 'xp', nome: 'APRENDIZ RÁPIDO', icone: '✧', raridade: 'raro', max: 4,
+    id: 'xp', nome: 'APRENDIZ RÁPIDO', icone: '✧', raridade: 'raro', max: 3,
     texto: '+25% de XP ganho',
     aplicar: (p) => { p.multXP += 0.25; }
   },
   {
-    id: 'explode', nome: 'CARGA DE FRAGMENTOS', icone: '✹', raridade: 'lendario', max: 3,
+    id: 'explode', nome: 'CARGA DE FRAGMENTOS', icone: '✹', raridade: 'lendario', max: 2,
     texto: 'Inimigo morto explode em estilhaços',
     aplicar: (p) => { p.explodeAoMatar += 1; }
   },
   {
-    id: 'balavel', nome: 'ACELERADOR', icone: '↠', raridade: 'comum', max: 5,
+    id: 'balavel', nome: 'ACELERADOR', icone: '↠', raridade: 'comum', max: 3,
     texto: '+20% de velocidade do projétil',
     aplicar: (p) => { p.attr.balaVel *= 1.2; }
   },
   {
-    id: 'homing', nome: 'MIRA MAGNÉTICA', icone: '⌖', raridade: 'epico', max: 3,
+    id: 'homing', nome: 'MIRA MAGNÉTICA', icone: '⌖', raridade: 'epico', max: 2,
     texto: 'Projétil persegue o inimigo mais próximo',
     aplicar: (p) => { p.attr.homing = Math.min(1.2, p.attr.homing + 0.4); }
   },
@@ -250,9 +250,9 @@ const MELHORIAS = [
     aplicar: (p) => { p.dashCongela += 0.35; }
   },
   {
-    id: 'vampiro', nome: 'SEDE', icone: '❖', raridade: 'lendario', max: 3,
-    texto: '8% de chance de curar ao matar',
-    aplicar: (p) => { p.vampirismo += 0.08; }
+    id: 'vampiro', nome: 'SEDE', icone: '❖', raridade: 'lendario', max: 2,
+    texto: '5% de chance de curar ao matar',
+    aplicar: (p) => { p.vampirismo += 0.05; }
   },
   {
     id: 'espinho', nome: 'COURAÇA DE ESPINHOS', icone: '✜', raridade: 'raro', max: 3,
@@ -267,6 +267,13 @@ const COR_RARIDADE = {
 };
 
 /* Sorteia 3 melhorias válidas (respeitando nível máximo de cada uma). */
+// Melhoria já pegada perde peso a cada cópia: a carta ainda pode repetir, mas as
+// três opções tendem a trazer coisa nova em vez do mesmo +dano de sempre.
+function pesoMelhoria(jogador, m) {
+  const tem = jogador.melhorias[m.id] || 0;
+  return PESO_RARIDADE[m.raridade] * Math.pow(0.45, tem);
+}
+
 function sortearMelhorias(jogador, quantidade) {
   quantidade = quantidade || 3;
   const disponiveis = MELHORIAS.filter((m) => (jogador.melhorias[m.id] || 0) < m.max);
@@ -274,11 +281,12 @@ function sortearMelhorias(jogador, quantidade) {
   const usadas = {};
   let tentativas = 0;
   while (sorteadas.length < quantidade && disponiveis.length && tentativas++ < 400) {
-    const pesoTotal = disponiveis.reduce((s, m) => s + (usadas[m.id] ? 0 : PESO_RARIDADE[m.raridade]), 0);
+    const pesoTotal = disponiveis.reduce((s, m) => s + (usadas[m.id] ? 0 : pesoMelhoria(jogador, m)), 0);
+    if (pesoTotal <= 0) break;
     let r = Math.random() * pesoTotal;
     for (const m of disponiveis) {
       if (usadas[m.id]) continue;
-      r -= PESO_RARIDADE[m.raridade];
+      r -= pesoMelhoria(jogador, m);
       if (r <= 0) { usadas[m.id] = true; sorteadas.push(m); break; }
     }
   }

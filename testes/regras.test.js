@@ -47,11 +47,43 @@ test('cada classe tem três skins cosméticas e menos vida inicial', () => {
   assert.equal(vm.runInContext("skinDaClasse('sniper', 'inexistente').id", contexto), 'original');
 });
 
-test('vida dos inimigos cresce mais devagar durante as novas ondas', () => {
+test('vida do inimigo mais que quadruplica da primeira à última onda', () => {
   const inicio = vm.runInContext('Jogo.onda = 1; Jogo.multiplicadorVida()', contexto);
   const fim = vm.runInContext('Jogo.onda = 40; Jogo.multiplicadorVida()', contexto);
   assert.equal(inicio, 1);
-  assert.ok(fim > inicio && fim < 3.2);
+  assert.ok(fim > 4 && fim < 5, 'onda 40 entre 4x e 5x, não numa escalada sem fim');
+});
+
+test('a onda traz menos inimigos, e cada onda até a 12 estreia um tipo', () => {
+  const dados = vm.runInContext(`(() => {
+    const porOnda = {};
+    for (const [id, t] of Object.entries(TIPOS_INIMIGO)) porOnda[t.desde] = id;
+    const estreias = [];
+    for (let o = 1; o <= 12; o++) estreias.push(porOnda[o] || null);
+    Jogo.jogador = null;
+    const tetos = [];
+    for (const o of [1, 10, 20, 40]) {
+      Jogo.onda = o;
+      tetos.push(Math.min(14, Math.round(4 + o * 0.45)));
+    }
+    return { estreias, tetos };
+  })()`, contexto);
+  assert.equal(Array.from(dados.estreias).filter(Boolean).length, 12, 'uma estreia por onda até a 12');
+  assert.deepEqual(Array.from(dados.tetos), [4, 9, 13, 14], 'teto de inimigos vivos ficou baixo');
+});
+
+test('melhoria repetida perde peso e o teto de cópias é no máximo 4', () => {
+  const dados = vm.runInContext(`(() => {
+    const jogador = { melhorias: {} };
+    const dano = MELHORIAS.find((m) => m.id === 'dano');
+    const limpo = pesoMelhoria(jogador, dano);
+    jogador.melhorias.dano = 2;
+    return { limpo, repetido: pesoMelhoria(jogador, dano), maiorTeto: Math.max(...MELHORIAS.map((m) => m.max)),
+      tiros: MELHORIAS.find((m) => m.id === 'projetil').max };
+  })()`, contexto);
+  assert.ok(dados.repetido < dados.limpo * 0.25, 'terceira cópia vale bem menos que a primeira');
+  assert.equal(dados.maiorTeto, 4);
+  assert.equal(dados.tiros, 3, 'no máximo três projéteis extras por tiro');
 });
 
 test('só tiros disparados pelo jogador usam a nova paleta', () => {
