@@ -313,8 +313,12 @@ const UI = {
     caixa.innerHTML = '<p class="vazio">Carregando o placar mundial…</p>';
     const linhas = await Placar.top(true);
     if (!linhas) {
-      caixa.innerHTML = '<p class="vazio">Não deu pra falar com o placar mundial agora.<br>' +
-        'Sua pontuação continua salva neste aparelho.</p>';
+      const semBanco = /banco|DATABASE_URL/i.test(Placar.ultimoErro || '');
+      caixa.innerHTML = '<p class="vazio">' + (semBanco
+        ? 'O placar mundial está sem banco configurado neste endereço.<br>'
+          + 'Falta a variável <b>DATABASE_URL</b> no projeto da Vercel.'
+        : 'Não deu pra falar com o placar mundial agora.')
+        + '<br>Sua pontuação continua salva neste aparelho.</p>';
       return;
     }
     if (!linhas.length) {

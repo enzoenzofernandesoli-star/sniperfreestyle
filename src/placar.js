@@ -94,13 +94,22 @@ const Placar = {
   },
 
   /* Lê o top geral. Devolve null quando não dá — quem chama decide o que mostrar. */
+  ultimoErro: '',
+
   async top(forcar) {
     if (!Placar.configurado()) return null;
+    Placar.ultimoErro = '';
     const agora = Date.now();
     if (!forcar && Placar.cache && agora - Placar.cacheEm < 30000) return Placar.cache;
     try {
       const resposta = await fetch(Placar._endereco('?limite=' + PLACAR_CONFIG.limite));
-      if (!resposta.ok) return null;
+      if (!resposta.ok) {
+        // Guarda o motivo que a API deu: "sem banco configurado" é problema de
+        // deploy, não de rede, e a tela precisa dizer isso em vez de chutar.
+        Placar.ultimoErro = '';
+        try { Placar.ultimoErro = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
+        return null;
+      }
       const linhas = await resposta.json();
       if (!Array.isArray(linhas)) return null;
       Placar.cache = linhas;
