@@ -8,7 +8,7 @@ const Jogo = {
   // enquadramento e sobra espaço para fugir de boss.
   LARGURA: 1760,
   ALTURA: 990,
-  TOTAL_ONDAS: Infinity,
+  TOTAL_ONDAS: 100,
   modoLeve: false,
   escalaRender: 1,
   intervaloHUD: 0,
@@ -210,15 +210,23 @@ const Jogo = {
   },
 
   spawnarBoss() {
+    // O último da lista é o boss final: ele só aparece na onda 100 e fica de
+    // fora do rodízio das ondas múltiplas de 5.
+    const rodizio = BOSSES.filter((b) => !b.final);
+    const final = Jogo.onda >= Jogo.TOTAL_ONDAS;
     const encontro = Math.floor(Jogo.onda / 5) - 1;
-    const indice = encontro % BOSSES.length;
-    const def = BOSSES[indice];
+    const def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
     Jogo.boss = new Boss(def, Jogo.onda);
-    Jogo.flashTela(0.5, def.cor);
-    Camera.bater(20);
+    Jogo.flashTela(final ? 0.9 : 0.5, def.cor);
+    Camera.bater(final ? 40 : 20);
     Som.bossEntra();
-    const ciclo = Math.floor(encontro / BOSSES.length) + 1;
-    Jogo.aviso(def.nome + (ciclo > 1 ? ' · ASCENSÃO ' + ciclo : ''));
+    if (final) {
+      Jogo.aviso(def.nome);
+      Jogo.pararTempo(0.6);
+    } else {
+      const ciclo = Math.floor(encontro / rodizio.length) + 1;
+      Jogo.aviso(def.nome + (ciclo > 1 ? ' · ASCENSÃO ' + ciclo : ''));
+    }
     UI.mostrarBarraBoss(Jogo.boss);
   },
 
@@ -437,6 +445,7 @@ const Jogo = {
     if (Jogo.intervaloOnda > 0) {
       Jogo.intervaloOnda -= dtReal;
       if (Jogo.intervaloOnda <= 0 && Jogo.ondaLimpa) {
+        if (Jogo.onda >= Jogo.TOTAL_ONDAS) { Jogo.vitoria(); return; }
         Jogo.onda++;
         Jogo.prepararOnda();
       } else if (Jogo.intervaloOnda <= 0 && Jogo.ehOndaDeBoss(Jogo.onda) && !Jogo.boss) {

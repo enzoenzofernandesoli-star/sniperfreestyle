@@ -10,13 +10,69 @@ for (const arquivo of ['src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
   vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), contexto, { filename: arquivo });
 }
 
-test('ondas são infinitas e bosses continuam depois do oitavo', () => {
-  assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), Infinity);
-  assert.equal(vm.runInContext('BOSSES.length', contexto), 8);
+test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () => {
+  assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 100);
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(40)', contexto), true);
-  assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(45)', contexto), true);
-  assert.equal(vm.runInContext('BOSSES[Math.floor(40 / 5) - 1].id', contexto), 'nucleo');
-  assert.equal(vm.runInContext('BOSSES[(Math.floor(45 / 5) - 1) % BOSSES.length].id', contexto), 'sentinela');
+  assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(100)', contexto), true);
+  const dados = vm.runInContext(`(() => {
+    const rodizio = BOSSES.filter((b) => !b.final);
+    const finais = BOSSES.filter((b) => b.final);
+    const naOnda = (o) => (o >= Jogo.TOTAL_ONDAS)
+      ? finais[0].id
+      : rodizio[(Math.floor(o / 5) - 1) % rodizio.length].id;
+    return { rodizio: rodizio.length, finais: finais.map((b) => b.id),
+      onda40: naOnda(40), onda45: naOnda(45), onda100: naOnda(100),
+      vidaFinal: finais[0].vida, tiroFinal: finais[0].velocidadeTiro };
+  })()`, contexto);
+  assert.equal(dados.rodizio, 8, 'os oito bosses de sempre seguem no rodízio');
+  assert.deepEqual(Array.from(dados.finais), ['ceifador'], 'só um boss final');
+  assert.equal(dados.onda40, 'nucleo');
+  assert.equal(dados.onda45, 'sentinela', 'depois do oitavo o rodízio recomeça');
+  assert.equal(dados.onda100, 'ceifador', 'a onda 100 é sempre o CEIFADOR');
+  assert.ok(dados.vidaFinal >= 9000 && dados.tiroFinal > 2, 'o final tem mais vida e bala mais rápida');
+});
+
+test('coração tem teto de 6, venha de onde vier', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 1;
+    const j = new Jogador('guardiao', 'original');
+    const antes = j.attr.vidaMax;
+    const coracao = MELHORIAS.find((m) => m.id === 'vida');
+    for (let i = 0; i < 10; i++) j.aplicarMelhoria(coracao);
+    return { antes, depois: j.attr.vidaMax, teto: Jogador.VIDA_MAXIMA };
+  })()`, mundo);
+  assert.equal(dados.teto, 6);
+  assert.equal(dados.depois, 6, 'dez melhorias de vida param no teto');
+  assert.ok(dados.antes <= 6);
+});
+
+test('a EXECUÇÃO do boss final mata com qualquer quantidade de coração', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  // a morte passa por registrarPartida, que fala com Coop e UI — aqui só o
+  // resultado do dano interessa
+  vm.runInContext(`var Coop = { ativo: () => false };
+    var UI = { mostrarFinal() {}, atualizarHUD() {}, mostrarTela() {}, esconderBarraBoss() {} };
+    var Perfil = { exibir: () => 'TESTE' };
+    var Placar = { enviar() {}, configurado: () => false };`, mundo);
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 100;
+    const j = new Jogador('guardiao', 'original');
+    Jogo.jogador = j;
+    j.attr.vidaMax = Jogador.VIDA_MAXIMA; j.vida = Jogador.VIDA_MAXIMA;
+    const ceifador = BOSSES.find((b) => b.final);
+    const lamina = ceifador.fases.every((f) => f.ataques.includes('execucao'));
+    j.receberDano(99, 0, 0);
+    return { lamina, vidaDepois: j.vida };
+  })()`, mundo);
+  assert.equal(dados.lamina, true, 'a EXECUÇÃO está em todas as fases dele');
+  assert.ok(dados.vidaDepois <= 0, 'seis corações não sobrevivem a uma lâmina');
 });
 
 test('arena cabe em uma tela e a câmera fica no centro', () => {

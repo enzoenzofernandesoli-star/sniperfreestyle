@@ -192,8 +192,8 @@ const MELHORIAS = [
   },
   {
     id: 'vida', nome: 'PLACA DE AÇO', icone: '❤', raridade: 'comum', max: 3,
-    texto: '+1 coração (e cura 1)',
-    aplicar: (p) => { p.attr.vidaMax += 1; p.vida = Math.min(p.attr.vidaMax, p.vida + 1); }
+    texto: '+1 coração (e cura 1), até o teto de 6',
+    aplicar: (p) => { p.attr.vidaMax = Math.min(Jogador.VIDA_MAXIMA, p.attr.vidaMax + 1); p.vida = Math.min(p.attr.vidaMax, p.vida + 1); }
   },
   {
     id: 'projetil', nome: 'CANO DUPLO', icone: '⋔', raridade: 'raro', max: 3,

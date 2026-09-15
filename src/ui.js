@@ -392,13 +392,13 @@ const UI = {
     UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
     UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
     UI.el.finalSub.textContent = venceu
-      ? 'A arena infinita foi dominada.'
+      ? 'As 100 ondas caíram. Você derrubou o CEIFADOR ABSOLUTO.'
       : 'Caiu na onda ' + Jogo.onda + '. Tenta superar esse recorde.';
 
     const linhas = [
       ['PONTOS', Math.round(Jogo.pontos).toLocaleString('pt-BR')],
       ['CLASSE', j.classe.nome],
-      ['ONDA', Jogo.onda + ' / ∞'],
+      ['ONDA', Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
       ['NÍVEL', j.nivel],
       ['ABATES', Jogo.estat.abates],
       ['BOSSES', Jogo.estat.bosses],
@@ -621,7 +621,7 @@ const UI = {
     }
 
     UI.el.pontos.textContent = Math.round(Jogo.pontos).toLocaleString('pt-BR');
-    UI.el.onda.textContent = Jogo.onda + '/∞';
+    UI.el.onda.textContent = Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
     UI.el.nivel.textContent = j.nivel;
     UI.el.barraXP.style.width = Mat.limitar(j.xp / j.xpProximo, 0, 1) * 100 + '%';
     UI.el.fps.textContent = Jogo.fps;

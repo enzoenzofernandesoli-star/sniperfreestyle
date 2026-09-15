@@ -9,6 +9,9 @@ const CORES_TIRO = Object.freeze({
 
 /* =============================== JOGADOR ================================ */
 class Jogador {
+  // Teto duro de corações: nenhuma melhoria, cura ou classe passa disso.
+  static VIDA_MAXIMA = 6;
+
   constructor(classeId, skinId) {
     this.classe = classePorId(classeId);
     this.skin = skinDaClasse(classeId, skinId);
@@ -42,6 +45,8 @@ class Jogador {
     this.espinhos = 0;
 
     this.orbes = [];
+    this.attr.vidaMax = Math.min(Jogador.VIDA_MAXIMA, this.attr.vidaMax);
+    this.vida = Math.min(this.vida, this.attr.vidaMax);
     this.sincronizarOrbes();
     this.lacaios = [];
     this.sincronizarLacaios();
@@ -1396,6 +1401,19 @@ const BOSSES = [
     ]
   },
   {
+    // Boss final da onda 100. `final: true` tira ele do rodízio normal.
+    // `velocidadeTiro` multiplica a velocidade de todo projétil que ele solta.
+    id: 'ceifador', nome: 'CEIFADOR ABSOLUTO', titulo: 'O Fim da Arena',
+    final: true, velocidadeTiro: 2.1,
+    cor: '#ff1744', cor2: '#3d0010', raio: 92, vida: 21000, lados: 3,
+    fases: [
+      { movimento: 'investida', velocidade: 360, ataques: ['execucao', 'leque', 'precisao'], recarga: 0.7 },
+      { movimento: 'teleporte', velocidade: 320, ataques: ['execucao', 'parede', 'cacador'], recarga: 0.55 },
+      { movimento: 'cerco', velocidade: 2.3, ataques: ['execucao', 'espiral', 'cruz', 'minas'], recarga: 0.42 },
+      { movimento: 'caotico', velocidade: 520, ataques: ['execucao', 'parede', 'laser', 'chuva', 'cacador', 'cruz'], recarga: 0.3 }
+    ]
+  },
+  {
     id: 'nucleo', nome: 'NÚCLEO INFINITO', titulo: 'Último Pulso',
     cor: '#ff5cae', cor2: '#791c55', raio: 78, vida: 7600, lados: 7,
     fases: [
@@ -1664,39 +1682,68 @@ class Boss {
     Particulas.anel(this.x, this.y, this.def.cor, 120, 40);
   }
 
+  // Tudo que o boss atira passa por aqui: é o ponto onde o CEIFADOR acelera os
+  // projéteis dele sem precisar duplicar cada ataque.
+  atirar(x, y, angulo, velocidade, dano, cor, raio, extra) {
+    const fator = this.def.velocidadeTiro || 1;
+    Jogo.tiroInimigo(x, y, angulo, velocidade * fator, dano, cor, raio, extra);
+  }
+
   executarAtaque(tipo) {
     const j = Jogo.alvoJogador(this.x, this.y);
     if (!j) return;
     const angJog = Mat.anguloEntre(this.x, this.y, j.x, j.y);
     switch (tipo) {
+      // EXECUÇÃO: a foice do CEIFADOR. Um telegrafo branco, depois três lâminas
+      // largas que matam com qualquer quantidade de coração. É para desviar,
+      // não para tankar.
+      case 'execucao': {
+        if (this.execucaoPronta === undefined) this.execucaoPronta = 0;
+        Jogo.aviso('⚠ EXECUÇÃO — DESVIE');
+        Jogo.flashTela(0.45, '#ffffff');
+        Camera.bater(16);
+        Som.bossEntra();
+        const base = angJog;
+        for (let k = 0; k < 3; k++) {
+          setTimeout(() => {
+            if (!this.vivo) return;
+            const alvo = Jogo.alvoJogador(this.x, this.y);
+            const a = Mat.anguloEntre(this.x, this.y, alvo.x, alvo.y);
+            for (let i = -2; i <= 2; i++) {
+              this.atirar(this.x, this.y, a + i * 0.16, 520, 99, '#ffffff', 16, { letal: true });
+            }
+          }, 620 + k * 260);
+        }
+        break;
+      }
       case 'unico':
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
-            if (this.vivo) Jogo.tiroInimigo(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9);
+            if (this.vivo) this.atirar(this.x, this.y, Mat.anguloEntre(this.x, this.y, j.x, j.y), 480, 1, this.def.cor, 9);
           }, i * 130);
         }
         break;
       case 'leque3':
-        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9);
+        for (let i = -1; i <= 1; i++) this.atirar(this.x, this.y, angJog + i * 0.24, 430, 1, this.def.cor, 9);
         break;
       case 'leque': {
         const n = 9;
         for (let i = 0; i < n; i++) {
           const a = angJog + Mat.misturar(-0.85, 0.85, i / (n - 1));
-          Jogo.tiroInimigo(this.x, this.y, a, 400, 1, this.def.cor, 8);
+          this.atirar(this.x, this.y, a, 400, 1, this.def.cor, 8);
         }
         break;
       }
       case 'anel': {
         const n = 24;
-        for (let i = 0; i < n; i++) Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8);
+        for (let i = 0; i < n; i++) this.atirar(this.x, this.y, (Mat.TAU / n) * i + this.tempoVivo, 320, 1, this.def.cor, 8);
         Camera.bater(6);
         break;
       }
       case 'espiral': {
         this.anguloEspiral += 0.42;
         for (let b = 0; b < 3; b++) {
-          Jogo.tiroInimigo(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8);
+          this.atirar(this.x, this.y, this.anguloEspiral + (Mat.TAU / 3) * b, 330, 1, this.def.cor, 8);
         }
         break;
       }
@@ -1710,7 +1757,7 @@ class Boss {
       case 'cacador': {
         const n = this.desesperado ? 5 : 3;
         for (let i = 0; i < n; i++) {
-          Jogo.tiroInimigo(this.x, this.y, angJog + (i - (n - 1) / 2) * 0.5, 230, 1, this.def.cor, 9,
+          this.atirar(this.x, this.y, angJog + (i - (n - 1) / 2) * 0.5, 230, 1, this.def.cor, 9,
             { perseguePor: 2.5 });
         }
         break;
@@ -1721,7 +1768,7 @@ class Boss {
         for (let i = 0; i < n; i++) {
           const a = (Mat.TAU / n) * i + Math.random();
           const d = 200 + Math.random() * 260;
-          Jogo.tiroInimigo(
+          this.atirar(
             Mat.limitar(this.x + Math.cos(a) * d, 40, Jogo.LARGURA - 40),
             Mat.limitar(this.y + Math.sin(a) * d, 40, Jogo.ALTURA - 40),
             0, 0, 1, this.def.cor, 11, { explodeEm: this.furioso ? 1.4 : 2, estilhacos: 10 });
@@ -1736,7 +1783,7 @@ class Boss {
         for (let i = 0; i < n; i++) {
           const a = (Mat.TAU / n) * i;
           if (Math.abs(Mat.normalizarAngulo(a - brecha)) < largura) continue;
-          Jogo.tiroInimigo(this.x, this.y, a, 300, 1, this.def.cor, 9);
+          this.atirar(this.x, this.y, a, 300, 1, this.def.cor, 9);
         }
         Camera.bater(8);
         break;
@@ -1746,7 +1793,7 @@ class Boss {
         this.anguloEspiral += 0.3;
         for (let b = 0; b < 4; b++) {
           const a = this.anguloEspiral + (Mat.TAU / 4) * b;
-          for (let k = 1; k <= 3; k++) Jogo.tiroInimigo(this.x, this.y, a, 260 + k * 70, 1, this.def.cor, 8);
+          for (let k = 1; k <= 3; k++) this.atirar(this.x, this.y, a, 260 + k * 70, 1, this.def.cor, 8);
         }
         break;
       }
@@ -1755,7 +1802,7 @@ class Boss {
         const prev = 0.42;
         const alvoX = j.x + j.vx * prev, alvoY = j.y + j.vy * prev;
         const a = Mat.anguloEntre(this.x, this.y, alvoX, alvoY);
-        for (let i = -1; i <= 1; i++) Jogo.tiroInimigo(this.x, this.y, a + i * 0.1, 620, 1, this.def.cor, 7);
+        for (let i = -1; i <= 1; i++) this.atirar(this.x, this.y, a + i * 0.1, 620, 1, this.def.cor, 7);
         break;
       }
       // Chuva: cai uma cortina do topo da arena, some o lugar seguro parado.
@@ -1764,7 +1811,7 @@ class Boss {
         for (let i = 0; i < colunas; i++) {
           if (Mat.chance(0.22)) continue;   // buracos por onde dá para correr
           const x = (Jogo.LARGURA / colunas) * (i + 0.5);
-          Jogo.tiroInimigo(x, -20, Math.PI / 2, 340, 1, this.def.cor, 8);
+          this.atirar(x, -20, Math.PI / 2, 340, 1, this.def.cor, 8);
         }
         break;
       }
