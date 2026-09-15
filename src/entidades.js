@@ -550,6 +550,9 @@ class Projetil {
     this.perfuracao = cfg.perfuracao || 0;
     this.ricochete = cfg.ricochete || 0;
     this.homing = cfg.homing || 0;
+    this.perseguePor = cfg.perseguePor || 0;   // segundos que um tiro de boss persegue
+    this.explodeEm = cfg.explodeEm || 0;       // mina: estoura sozinha nesse tempo
+    this.estilhacos = cfg.estilhacos || 0;
     this.critico = !!cfg.critico;
     this.alcance = cfg.alcance || 0;
     this.percorrido = 0;
@@ -560,6 +563,31 @@ class Projetil {
   }
 
   atualizar(dt) {
+    // mina do boss: fica parada, pisca e abre um anel quando o tempo acaba
+    if (this.explodeEm > 0) {
+      this.explodeEm -= dt;
+      this.giro += dt * 6;
+      if (this.explodeEm <= 0) {
+        const n = this.estilhacos || 10;
+        for (let i = 0; i < n; i++) {
+          Jogo.tiroInimigo(this.x, this.y, (Mat.TAU / n) * i + Math.random() * 0.2, 300, this.dano, this.cor, 7);
+        }
+        Particulas.anel(this.x, this.y, this.cor, 60, 16);
+        this.vivo = false;
+      }
+      return;
+    }
+
+    // tiro de boss que persegue por alguns segundos antes de seguir reto
+    if (this.perseguePor > 0 && this.dono === 'inimigo') {
+      this.perseguePor -= dt;
+      const alvo = Jogo.alvoJogador(this.x, this.y);
+      if (alvo) {
+        const desejado = Mat.anguloEntre(this.x, this.y, alvo.x, alvo.y);
+        this.angulo = Mat.girarPara(this.angulo, desejado, 1.8 * dt);
+      }
+    }
+
     // teleguiado
     if (this.homing > 0 && this.dono === 'jogador') {
       const alvo = Jogo.inimigoMaisProximo(this.x, this.y, 420);
@@ -1078,7 +1106,7 @@ const BOSSES = [
     fases: [
       { movimento: 'horizontal', velocidade: 210, ataques: ['unico', 'leque3'], recarga: 1.0 },
       { movimento: 'investida', velocidade: 250, ataques: ['leque3', 'precisao'], recarga: 0.8 },
-      { movimento: 'cerco', velocidade: 1.2, ataques: ['leque3', 'anel', 'precisao'], recarga: 0.62 }
+      { movimento: 'cerco', velocidade: 1.2, ataques: ['leque3', 'anel', 'precisao', 'cacador'], recarga: 0.62 }
     ]
   },
   {
@@ -1090,7 +1118,7 @@ const BOSSES = [
     fases: [
       { movimento: 'senoidal', velocidade: 260, ataques: ['leque', 'chuva'], recarga: 1.3 },
       { movimento: 'senoidal', velocidade: 350, ataques: ['leque', 'precisao', 'parede'], recarga: 0.9 },
-      { movimento: 'cerco', velocidade: 1.5, ataques: ['leque', 'anel', 'invocar', 'chuva'], recarga: 0.66 }
+      { movimento: 'cerco', velocidade: 1.5, ataques: ['leque', 'anel', 'invocar', 'chuva', 'cacador'], recarga: 0.66 }
     ]
   },
   {
@@ -1102,7 +1130,7 @@ const BOSSES = [
     fases: [
       { movimento: 'circular', velocidade: 1.0, ataques: ['espiral'], recarga: 0.14 },
       { movimento: 'teleporte', velocidade: 200, ataques: ['espiral', 'cruz'], recarga: 0.4 },
-      { movimento: 'circular', velocidade: 2.1, ataques: ['espiral', 'parede', 'invocar'], recarga: 0.28 }
+      { movimento: 'circular', velocidade: 2.1, ataques: ['espiral', 'parede', 'invocar', 'minas'], recarga: 0.28 }
     ]
   },
   {
@@ -1115,7 +1143,7 @@ const BOSSES = [
       { movimento: 'perseguir', velocidade: 185, ataques: ['leque', 'laser', 'precisao'], recarga: 1.05 },
       { movimento: 'investida', velocidade: 300, ataques: ['parede', 'anel'], recarga: 0.7 },
       { movimento: 'teleporte', velocidade: 230, ataques: ['laser', 'invocar', 'cruz'], recarga: 0.5 },
-      { movimento: 'caotico', velocidade: 430, ataques: ['espiral', 'parede', 'laser', 'chuva'], recarga: 0.34 }
+      { movimento: 'caotico', velocidade: 430, ataques: ['espiral', 'parede', 'laser', 'chuva', 'minas', 'cacador'], recarga: 0.34 }
     ]
   },
   {
@@ -1124,7 +1152,7 @@ const BOSSES = [
     fases: [
       { movimento: 'investida', velocidade: 270, ataques: ['leque3', 'anel'], recarga: 0.85 },
       { movimento: 'cerco', velocidade: 1.3, ataques: ['chuva', 'invocar', 'precisao'], recarga: 0.7 },
-      { movimento: 'caotico', velocidade: 350, ataques: ['laser', 'parede', 'cruz'], recarga: 0.55 }
+      { movimento: 'caotico', velocidade: 350, ataques: ['laser', 'parede', 'cruz', 'minas'], recarga: 0.55 }
     ]
   },
   {
@@ -1133,7 +1161,7 @@ const BOSSES = [
     fases: [
       { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'precisao'], recarga: 0.24 },
       { movimento: 'teleporte', velocidade: 240, ataques: ['cruz', 'parede'], recarga: 0.55 },
-      { movimento: 'cerco', velocidade: 1.7, ataques: ['espiral', 'invocar', 'laser', 'chuva'], recarga: 0.4 }
+      { movimento: 'cerco', velocidade: 1.7, ataques: ['espiral', 'invocar', 'laser', 'chuva', 'cacador'], recarga: 0.4 }
     ]
   },
   {
@@ -1142,7 +1170,7 @@ const BOSSES = [
     fases: [
       { movimento: 'teleporte', velocidade: 240, ataques: ['leque3', 'laser'], recarga: 0.85 },
       { movimento: 'caotico', velocidade: 370, ataques: ['parede', 'invocar', 'precisao'], recarga: 0.58 },
-      { movimento: 'cerco', velocidade: 1.9, ataques: ['espiral', 'cruz', 'laser', 'chuva'], recarga: 0.44 }
+      { movimento: 'cerco', velocidade: 1.9, ataques: ['espiral', 'cruz', 'laser', 'minas', 'cacador'], recarga: 0.44 }
     ]
   },
   {
@@ -1152,7 +1180,7 @@ const BOSSES = [
       { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'leque3', 'precisao'], recarga: 0.38 },
       { movimento: 'investida', velocidade: 330, ataques: ['parede', 'invocar'], recarga: 0.6 },
       { movimento: 'teleporte', velocidade: 280, ataques: ['laser', 'cruz', 'chuva'], recarga: 0.5 },
-      { movimento: 'cerco', velocidade: 2.1, ataques: ['espiral', 'parede', 'laser', 'cruz', 'chuva'], recarga: 0.34 }
+      { movimento: 'cerco', velocidade: 2.1, ataques: ['espiral', 'parede', 'laser', 'cruz', 'chuva', 'minas', 'cacador'], recarga: 0.34 }
     ]
   }
 ];
@@ -1164,6 +1192,8 @@ class Boss {
   static VIDA_EXTRA = 1.35;
   static RITMO_ATAQUE = 0.7;    // < 1 = ataca mais vezes
   static FURIA_VIDA = 0.4;      // abaixo disso o boss acelera
+  static DESESPERO_VIDA = 0.15; // e abaixo disso ele perde o freio de vez
+  static DESESPERO_RITMO = 0.42;
   static FURIA_RITMO = 0.55;    // e ataca quase o dobro de vezes
 
   constructor(def, onda) {
@@ -1189,6 +1219,9 @@ class Boss {
     this.baseY = 150;
     this.orbita = 0;
     this.telegrafo = 0;
+    this.guardas = 0;
+    this.blindado = false;
+    this.desesperado = false;
     this.laser = null;
     this.enraivecido = false;
   }
@@ -1209,6 +1242,7 @@ class Boss {
       Som.bossEntra();
       // Trocar de fase não é descanso: sai um anel junto com o telegrafo.
       this.executarAtaque('anel');
+      if (idx > 0) this.chamarGuardas();
     }
   }
 
@@ -1231,7 +1265,11 @@ class Boss {
     const f = this.fase;
     // Fim de barra é a parte difícil: o boss anda e atira mais rápido.
     this.furioso = this.porcentagem <= Boss.FURIA_VIDA;
-    const impeto = this.furioso ? 1.25 : 1;
+    this.desesperado = this.porcentagem <= Boss.DESESPERO_VIDA;
+    const impeto = this.desesperado ? 1.5 : this.furioso ? 1.25 : 1;
+    // Blindagem: enquanto os guardas da fase estiverem vivos, o boss come 75%
+    // menos dano. Ignorar os guardas e furar o boss deixou de funcionar.
+    this.blindado = this.guardas > 0 && Jogo.inimigos.some((e) => e.guardaBoss && e.vivo);
 
     // movimento
     switch (f.movimento) {
@@ -1345,7 +1383,8 @@ class Boss {
     if (this.recarga <= 0) {
       const ataque = Mat.escolher(f.ataques);
       this.executarAtaque(ataque);
-      this.recarga = f.recarga * Boss.RITMO_ATAQUE * (this.furioso ? Boss.FURIA_RITMO : 1) * Mat.aleatorio(0.85, 1.15);
+      const ritmo = this.desesperado ? Boss.DESESPERO_RITMO : this.furioso ? Boss.FURIA_RITMO : 1;
+      this.recarga = f.recarga * Boss.RITMO_ATAQUE * ritmo * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1375,6 +1414,29 @@ class Boss {
         cor: this.def.cor, brilho: 14, atrito: 0.9
       });
     }
+  }
+
+  // Guardas da fase: nascem blindando o boss. Enquanto um deles respirar, o
+  // boss leva 25% do dano — primeiro limpa a guarda, depois volta para ele.
+  chamarGuardas() {
+    // Guarda de fase anterior que sobreviveu vira inimigo comum: a blindagem
+    // vale só para a leva atual, senão o boss ficaria protegido para sempre.
+    for (const e of Jogo.inimigos) e.guardaBoss = false;
+    const quantos = 2 + this.faseIndice;
+    this.guardas = quantos;
+    for (let i = 0; i < quantos; i++) {
+      const a = (Mat.TAU / quantos) * i + Math.random();
+      const g = new Inimigo(
+        Mat.escolher(['couraca', 'torreta', 'orbitador']),
+        Mat.limitar(this.x + Math.cos(a) * 170, 40, Jogo.LARGURA - 40),
+        Mat.limitar(this.y + Math.sin(a) * 170, 40, Jogo.ALTURA - 40),
+        1, true
+      );
+      g.guardaBoss = true;
+      Jogo.inimigos.push(g);
+    }
+    Jogo.aviso('GUARDAS BLINDAM O BOSS');
+    Particulas.anel(this.x, this.y, '#ffd34d', 140, 40);
   }
 
   // Boss sozinho vira duelo de decorar padrão. A escolta obriga a dividir a
@@ -1432,6 +1494,29 @@ class Boss {
           angulo: angJog - 0.6, giro: 1.5 * (Mat.chance(0.5) ? 1 : -1) };
         Som.bossEntra();
         break;
+      // Caçador: tiros lentos que perseguem por 2,5 s. Não dá para só andar
+      // reto — tem que quebrar a linha com dash ou com o canto da arena.
+      case 'cacador': {
+        const n = this.desesperado ? 5 : 3;
+        for (let i = 0; i < n; i++) {
+          Jogo.tiroInimigo(this.x, this.y, angJog + (i - (n - 1) / 2) * 0.5, 230, 1, this.def.cor, 9,
+            { perseguePor: 2.5 });
+        }
+        break;
+      }
+      // Minas: nega o espaço. Ficam paradas, piscando, e abrem um anel.
+      case 'minas': {
+        const n = 4 + this.faseIndice;
+        for (let i = 0; i < n; i++) {
+          const a = (Mat.TAU / n) * i + Math.random();
+          const d = 200 + Math.random() * 260;
+          Jogo.tiroInimigo(
+            Mat.limitar(this.x + Math.cos(a) * d, 40, Jogo.LARGURA - 40),
+            Mat.limitar(this.y + Math.sin(a) * d, 40, Jogo.ALTURA - 40),
+            0, 0, 1, this.def.cor, 11, { explodeEm: this.furioso ? 1.4 : 2, estilhacos: 10 });
+        }
+        break;
+      }
       // Parede de tiros com uma única brecha: obriga a achar o buraco e passar.
       case 'parede': {
         const n = 30;
@@ -1490,6 +1575,7 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
+    if (this.blindado) q *= 0.25;
     this.vida -= q;
     this.flash = 0.25;
     Camera.bater(crit ? 5 : 2);

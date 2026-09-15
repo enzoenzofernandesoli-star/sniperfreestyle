@@ -168,7 +168,9 @@ Medido com bot de teste e vida infinita, atirando sem parar: o primeiro boss cai
 não tiro de sorte.
 
 
-- Orçamento da onda caiu para cerca da metade e o teto de inimigos vivos foi de 30 para 14.
+- Orçamento da onda cresce até 5 + 2,1 por onda, e o teto de inimigos vivos ao
+  mesmo tempo é de **30** (20 no celular) — a arena de 1760×990 aguenta a multidão
+  e o perfil de custo também.
 - Vida base subiu 35–50% em todos os tipos e a escala por onda passou de +5,5% para +8%
   (onda 40 vale ~4,1× a vida da onda 1).
 - `BRUTO`, `COURAÇA` e `LANCEIRO` tiram 2 corações no contato — a investida do lanceiro, 3.
@@ -196,10 +198,24 @@ parado que cospe bala:
 | `precisao` | mira onde você **vai** estar, não onde está |
 | `chuva` | cortina caindo do topo, com colunas vazias por onde correr |
 
-Além disso: trocar de fase dispara um anel junto com o telegrafo (nada de
-descanso), e abaixo de 30% de vida o boss entra em **fúria** — anda 25% mais
-rápido, ataca quase o dobro de vezes, o aviso do laser encurta e a brecha da
-parede fecha.
+Dois ataques a mais, para o boss negar espaço em vez de só cuspir bala:
+
+| Ataque | O que faz |
+|---|---|
+| `cacador` | 3 a 5 tiros lentos que **perseguem por 2,5 s** — andar reto não resolve |
+| `minas` | 4 a 7 minas paradas piscando; cada uma abre um anel de 10 tiros ao estourar |
+
+E três camadas de pressão:
+
+- **Guardas blindados**: em toda troca de fase a partir da segunda, o boss chama
+  2 a 4 guardas (couraça, torreta ou orbitador, sempre elites). Enquanto um deles
+  estiver vivo o boss leva **25% do dano** — primeiro limpa a guarda, depois volta
+  para ele. Guarda de leva antiga vira inimigo comum, então a blindagem nunca é
+  eterna.
+- **Fúria** abaixo de 40% de vida: 25% mais rápido, quase o dobro de ataques,
+  aviso de laser mais curto, brecha da parede menor e mina com pavio mais curto.
+- **Desespero** abaixo de 15%: 50% mais rápido e ritmo de ataque em 42% do
+  original. O fim de cada boss é a parte pior, não a mais fácil.
 
 
 1. **SENTINELA CARMESIM** — movimento horizontal → tiro único, leque de 3, anel
@@ -336,9 +352,10 @@ O emissor de partículas varria o pool inteiro (1500 posições) a cada partícu
 quando a tela enchia. Agora há uma lista de índices livres: emitir é O(1) e, sem
 slot, a partícula simplesmente não nasce. O pool caiu para 900 (400 no celular).
 
-Medido com boss, 18 inimigos, 73 projéteis e 447 partículas vivas ao mesmo tempo:
-**0,40 ms de lógica e 0,88 ms de render por quadro** — 13× de folga dentro dos
-16,6 ms.
+Medido no pior caso de verdade — boss da onda 40 em desespero, 39 inimigos (5
+deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
+**0,85 ms de lógica e 1,89 ms de render por quadro**, dentro de um orçamento de
+16,6 ms. Sobra 6× mesmo na pior cena que o jogo consegue montar.
 
 ## Onde balancear
 

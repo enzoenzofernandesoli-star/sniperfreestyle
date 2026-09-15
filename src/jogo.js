@@ -151,7 +151,7 @@ const Jogo = {
     } else {
       // Menos inimigos na tela do que antes, e cada um valendo mais: a onda
       // deixou de ser enxurrada e virou briga. O orçamento cresce devagar.
-      const orcamento = Math.round(3 + Math.min(Jogo.onda, 20) * 1.3 + Math.max(0, Jogo.onda - 20) * 0.7);
+      const orcamento = Math.round(5 + Math.min(Jogo.onda, 20) * 2.1 + Math.max(0, Jogo.onda - 20) * 1.2);
       const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
@@ -256,11 +256,13 @@ const Jogo = {
     return melhor;
   },
 
-  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio) {
-    Jogo.projeteis.push(new Projetil({
+  tiroInimigo(x, y, angulo, velocidade, dano, cor, raio, extra) {
+    const cfg = {
       x: x, y: y, angulo: angulo, velocidade: velocidade,
       raio: raio || 7, dano: dano, dono: 'inimigo', cor: cor || '#ff4d6d'
-    }));
+    };
+    if (extra) Object.assign(cfg, extra);
+    Jogo.projeteis.push(new Projetil(cfg));
   },
 
   danificarInimigo(e, dano, critico, fx, fy) {
@@ -426,8 +428,9 @@ const Jogo = {
     } else if (!Jogo.ondaLimpa) {
       if (Jogo.spawnRestante > 0) {
         Jogo.timerSpawn -= dtReal;
-        const ritmo = Math.max(0.32, 1.05 - Jogo.onda * 0.024);
-        const tetoSimultaneo = Math.min(16, Math.round(4 + Jogo.onda * 0.5));
+        const ritmo = Math.max(0.2, 0.95 - Jogo.onda * 0.026);
+        // teto alto de novo: a arena cresceu e o perfil de custo aguenta
+        const tetoSimultaneo = Math.min(Jogo.modoLeve ? 20 : 30, Math.round(6 + Jogo.onda * 0.9));
         if (Jogo.timerSpawn <= 0 && Jogo.inimigos.length < tetoSimultaneo) {
           Jogo.spawnarInimigo();
           Jogo.timerSpawn = ritmo;
