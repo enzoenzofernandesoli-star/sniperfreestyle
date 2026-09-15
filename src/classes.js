@@ -119,7 +119,7 @@ const CLASSES = [
     cor2: '#1d6b45',
     icone: 'I',
     descricao: 'Dois drones caçam sozinhos enquanto o INVOCADOR sustenta a linha com tiro teleguiado.',
-    forcas: ['2 drones que caçam e atiram sozinhos', '3 corações', 'Tiro teleguiado que atravessa', 'Melhoria própria: até +2 drones'],
+    forcas: ['2 drones: a bala deles é um tiro seu', '3 corações', 'Tiro teleguiado que atravessa', 'Melhoria própria: até +2 drones'],
     fraquezas: ['Cadência pessoal média', 'Drone leva um tempo para virar a mira'],
     somTiro: 'arcano',
     ult: { nome: 'LEGIÃO', descricao: 'Chama três drones extras por 10 s e acelera a tropa inteira.' },

@@ -113,12 +113,26 @@ class Jogador {
       if (!alvo) continue;
       l.mira = Mat.anguloEntre(l.x, l.y, alvo.x, alvo.y);
       l.recarga = this.attr.cadencia * (this.ultAtiva > 0 ? 0.8 : 1.05);
+      // A bala do drone é um tiro seu saindo de outro lugar: mesmo dano, mesmo
+      // crítico, mesma perfuração, ricochete e alcance. Toda melhoria que vale
+      // para o seu tiro vale para o dele — e ele conta na estatística de tiros.
+      const a = this.attr;
+      const crit = Mat.chance(a.critChance);
       Jogo.projeteis.push(new Projetil({
-        x: l.x, y: l.y, angulo: l.mira, velocidade: this.attr.balaVel * 0.9,
-        raio: Math.max(3, this.attr.balaRaio - 1), dano: this.attr.dano * 0.65,
-        dono: 'jogador', cor: CORES_TIRO.jogador, perfuracao: this.attr.perfuracao,
-        ricochete: this.attr.ricochete, homing: 0.6, critico: false
+        x: l.x, y: l.y, angulo: l.mira,
+        velocidade: a.balaVel * Mat.aleatorio(0.95, 1.05),
+        raio: a.balaRaio,
+        dano: a.dano * (crit ? a.critMult : 1),
+        critico: crit,
+        dono: 'jogador',
+        cor: crit ? CORES_TIRO.critico : CORES_TIRO.jogador,
+        perfuracao: a.perfuracao,
+        ricochete: a.ricochete,
+        homing: Math.max(a.homing, 0.6),
+        alcance: this.classe.alcanceCurto || 0
       }));
+      Jogo.estat.tiros++;
+      Particulas.faisca(l.x, l.y, l.mira, this.skin.cor);
       Som.tiro(this.classe.somTiro);
     }
   }

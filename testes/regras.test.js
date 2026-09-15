@@ -769,3 +769,36 @@ test('escudo da couraça tem vida própria e quebra', () => {
   assert.equal(dados.depois, 0);
   assert.equal(dados.acelerou, true, 'ao perder o escudo o bicho fica mais rápido');
 });
+
+test('bala do drone é um tiro do jogador: mesmo dano, crítico e melhorias', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 1;
+    const j = new Jogador('invocador', 'original');
+    Jogo.jogador = j;
+    j.attr.critChance = 1;          // força o crítico para comparar o pior caso
+    j.attr.perfuracao = 3;
+    j.attr.ricochete = 2;
+    Jogo.inimigos.length = 0;
+    Jogo.projeteis.length = 0;
+    const alvo = new Inimigo('corredor', j.x + 200, j.y, 1, false);
+    alvo.nascendo = 0;
+    Jogo.inimigos.push(alvo);
+    for (const l of j.lacaios) l.recarga = 0;
+    const tirosAntes = Jogo.estat.tiros;
+    j.atualizarLacaios(0.016);
+    const b = Jogo.projeteis[0];
+    return { dano: b.dano, esperado: j.attr.dano * j.attr.critMult, critico: b.critico,
+      perfuracao: b.perfuracao, ricochete: b.ricochete, dono: b.dono,
+      contou: Jogo.estat.tiros - tirosAntes };
+  })()`, mundo);
+  assert.equal(dados.dono, 'jogador');
+  assert.equal(dados.dano, dados.esperado, 'dano cheio, com o mesmo multiplicador de crítico');
+  assert.equal(dados.critico, true);
+  assert.equal(dados.perfuracao, 3, 'herda a perfuração das melhorias');
+  assert.equal(dados.ricochete, 2, 'e o ricochete também');
+  assert.ok(dados.contou >= 1, 'conta como tiro na estatística');
+});
