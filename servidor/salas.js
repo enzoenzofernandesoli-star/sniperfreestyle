@@ -36,6 +36,12 @@ const SALA_OCIOSA = 30 * 60 * 1000;
 /* ----------------------------- HTTP estático ---------------------------- */
 const servidor = http.createServer((req, res) => {
   if (req.url && req.url.split('?')[0] === '/api/placar') {
+    // O placar é público e pode ser lido pelo jogo hospedado em outro endereço
+    // (a Vercel, por exemplo, que serve o jogo mas não fala com o banco).
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
     const consulta = new URL(req.url, 'http://localhost');
     req.query = Object.fromEntries(consulta.searchParams);
     res.status = (codigo) => { res.statusCode = codigo; return res; };

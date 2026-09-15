@@ -21,6 +21,11 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   `COOPERATIVO.md`.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2, Invocador 4 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
+- Placar mundial: o jogo tenta `/api/placar` do próprio endereço e, se ele
+  responder que está sem banco, repete no servidor de reserva
+  (`PLACAR_CONFIG.reserva`, hoje o serviço do Render). Assim a credencial do Neon
+  precisa existir em **um** servidor só, não em todos os endereços que servem o
+  jogo. O servidor de salas responde `/api/placar` com CORS liberado por isso.
 - Instalação que já usa o placar de 40 ondas precisa executar
   `banco/migracoes/002_placar_ondas_infinitas.sql` antes de publicar esta API.
   O placar online também exige `DATABASE_URL` no servidor da Vercel.

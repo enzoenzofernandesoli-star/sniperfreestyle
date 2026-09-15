@@ -62,7 +62,7 @@ const Placar = {
   },
 
   _endereco(consulta) {
-    return PLACAR_CONFIG.url.replace(/\/+$/, '') + (consulta || '');
+    return Placar._base().replace(/\/+$/, '') + (consulta || '');
   },
 
   /* Envia a run. Nunca lança: o jogo não pode quebrar por causa da rede. */
@@ -84,6 +84,14 @@ const Placar = {
           venceu: entrada.venceu
         })
       });
+      if (!resposta.ok && Placar._podeTentarReserva()) {
+        let motivo = '';
+        try { motivo = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
+        if (/banco|DATABASE_URL/i.test(motivo)) {
+          Placar.usandoReserva = true;
+          return Placar.enviar(entrada);
+        }
+      }
       Placar.ultimoEnvio = resposta.ok ? 'ok' : 'erro';
       if (resposta.ok) Placar.cache = null;   // força recarregar o top
       return resposta.ok;
@@ -95,6 +103,19 @@ const Placar = {
 
   /* Lê o top geral. Devolve null quando não dá — quem chama decide o que mostrar. */
   ultimoErro: '',
+  usandoReserva: false,
+
+  // Endereço em uso: começa no do próprio site e cai para a reserva assim que
+  // o site responde que está sem banco configurado.
+  _base() {
+    return (Placar.usandoReserva && PLACAR_CONFIG.reserva) ? PLACAR_CONFIG.reserva : PLACAR_CONFIG.url;
+  },
+  // Só vale tentar a reserva se ela existir e não for o próprio endereço.
+  _podeTentarReserva() {
+    if (!PLACAR_CONFIG.reserva || Placar.usandoReserva) return false;
+    try { return new URL(PLACAR_CONFIG.reserva, location.href).host !== location.host; }
+    catch (e) { return false; }
+  },
 
   async top(forcar) {
     if (!Placar.configurado()) return null;
@@ -108,6 +129,11 @@ const Placar = {
         // deploy, não de rede, e a tela precisa dizer isso em vez de chutar.
         Placar.ultimoErro = '';
         try { Placar.ultimoErro = (await resposta.json()).erro || ''; } catch (e) { /* corpo sem json */ }
+        // Site sem banco: tenta o servidor de reserva uma vez antes de desistir.
+        if (/banco|DATABASE_URL/i.test(Placar.ultimoErro) && Placar._podeTentarReserva()) {
+          Placar.usandoReserva = true;
+          return Placar.top(true);
+        }
         return null;
       }
       const linhas = await resposta.json();

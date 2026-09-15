@@ -14,5 +14,9 @@
 
 const PLACAR_CONFIG = {
   url: '/api/placar',
+  // Endereço de reserva: usado quando o /api/placar do próprio site responde
+  // que está sem banco (é o caso da Vercel sem DATABASE_URL). Assim o placar
+  // mundial só precisa de credencial em UM servidor, não em todos.
+  reserva: 'https://sniper-salas.onrender.com/api/placar',
   limite: 25          // quantas linhas o placar mundial mostra
 };

@@ -706,3 +706,25 @@ test('serviço de salas encaminha comandos, lota em 4 e recusa o quinto', async 
   quinto.close();
   await new Promise((ok) => servidor.close(ok));
 });
+
+test('placar cai para o servidor de reserva quando o site está sem banco', async () => {
+  const mundo = vm.createContext({ console, Math, URL, location: { href: 'https://site.exemplo/', host: 'site.exemplo' } });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/placar-config.js'), 'utf8'), mundo, { filename: 'placar-config.js' });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/placar.js'), 'utf8'), mundo, { filename: 'placar.js' });
+
+  const pedidos = [];
+  mundo.localStorage = { getItem: () => null, setItem() {} };
+  mundo.fetch = async (endereco) => {
+    pedidos.push(endereco);
+    if (endereco.indexOf('http') !== 0) {
+      return { ok: false, json: async () => ({ erro: 'placar sem banco configurado: defina DATABASE_URL' }) };
+    }
+    return { ok: true, json: async () => [{ nome: 'ANA', pontos: 10 }] };
+  };
+
+  const linhas = await vm.runInContext('Placar.top(true)', mundo);
+  assert.equal(Array.isArray(linhas) && linhas.length, 1, 'o top veio do servidor de reserva');
+  assert.equal(pedidos.length, 2, 'tentou o próprio site e só então a reserva');
+  assert.ok(pedidos[1].startsWith('https://'), 'a segunda tentativa foi no endereço de reserva');
+  assert.equal(vm.runInContext('Placar.usandoReserva', mundo), true);
+});
