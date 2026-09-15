@@ -1592,6 +1592,8 @@ class Boss {
     this.orbita = 0;
     this.telegrafo = 0;
     this.absorveu = 0;
+    this.imune = 0;
+    this.imuneMax = 1;
     this.janelaDano = 0;
     this.danoNaJanela = 0;
     this.desesperado = false;
@@ -1615,6 +1617,9 @@ class Boss {
       Som.bossEntra();
       // Trocar de fase não é descanso: sai um anel junto com o telegrafo.
       this.executarAtaque('anel');
+      // E a fase nova começa com escudo: ele fica imune por alguns segundos,
+      // atirando o tempo todo. Quanto mais avançada a fase, mais tempo dura.
+      this.erguerEscudo(2 + idx * 0.8);
     }
   }
 
@@ -1637,6 +1642,8 @@ class Boss {
       this.vida = Math.min(this.vidaMax, this.vida + this.vidaMax * this.def.regenera * real);
       if (this.absorveu > 0) this.absorveu -= dt;
     }
+
+    if (this.imune > 0) this.imune = Math.max(0, this.imune - (Jogo.dtReal || dt));
 
     this.atualizarFase();
     if (this.telegrafo > 0) { this.telegrafo -= dt; return; }
@@ -1803,6 +1810,17 @@ class Boss {
         cor: this.def.cor, brilho: 14, atrito: 0.9
       });
     }
+  }
+
+  // Escudo de fase: nada atravessa enquanto durar. O boss continua andando e
+  // atirando, então o tempo de imunidade é tempo de desviar, não de descansar.
+  erguerEscudo(segundos) {
+    this.imune = Math.max(this.imune || 0, segundos);
+    this.imuneMax = this.imune;
+    Jogo.aviso('ESCUDO DE FASE — IMUNE');
+    Particulas.anel(this.x, this.y, '#8fe3ff', this.raio * 2, 30);
+    Camera.bater(12);
+    Som.bossEntra();
   }
 
   // Boss sozinho vira duelo de decorar padrão. A escolta obriga a dividir a
@@ -1988,6 +2006,11 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
+    if (this.imune > 0) {
+      this.absorveu = 0.3;
+      if (fx !== undefined && Mat.chance(0.3)) Particulas.faisca(fx, fy, Math.random() * Mat.TAU, '#8fe3ff');
+      return;
+    }
     if (this.def.tetoDeDano) {
       const teto = this.vidaMax * this.def.tetoDeDano;
       if (q > teto) {
@@ -2017,6 +2040,8 @@ class Boss {
 
   morrer() {
     this.vivo = false;
+    Jogo.comemorar67(this.def);
+    Som.proximaTrilha();
     Jogo.pararTempo(0.5);
     Camera.bater(34);
     Camera.pulsar(1.1);
@@ -2032,6 +2057,29 @@ class Boss {
   }
 
   desenhar(ctx) {
+    // Escudo de fase: bolha hexagonal girando, que encolhe conforme o tempo
+    // de imunidade acaba.
+    if (this.imune > 0) {
+      const p = Mat.limitar(this.imune / (this.imuneMax || 1), 0, 1);
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(Jogo.tempo * 1.6);
+      ctx.strokeStyle = '#8fe3ff';
+      ctx.lineWidth = 3 + p * 3;
+      ctx.globalAlpha = 0.35 + p * 0.45;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 24; ctx.shadowColor = '#8fe3ff';
+      const r = this.raio + 26;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (Mat.TAU / 6) * i;
+        const px = Math.cos(a) * r, py = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Couraça acesa quando o acerto foi maior que o teto: o jogador vê que o
     // dano bateu e não entrou.
     if (this.absorveu > 0) {

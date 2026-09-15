@@ -72,6 +72,7 @@ const Jogo = {
   imaGlobal: 0,
 
   flash: { alpha: 0, cor: '#fff' },
+  festa67: null,        // o 67 gigante que aparece a cada boss derrubado
   avisoTexto: '',
   avisoTimer: 0,
 
@@ -109,6 +110,7 @@ const Jogo = {
     Particulas.limpar();
     Textos.limpar();
     Jogo.boss = null;
+    Jogo.festa67 = null;
     Jogo.onda = 1;
     Jogo.pontos = 0;
     Jogo.combo = 0;
@@ -380,6 +382,82 @@ const Jogo = {
         vida: 0.4, tam: 5, cor: '#8fe3ff', brilho: 18, atrito: 0.88
       });
     }
+  },
+
+  // Cada boss derrubado cospe um 67 gigante na tela, e o estilo muda de um
+  // para o outro: o índice vem da posição do boss na tabela, então o mesmo
+  // boss sempre traz o mesmo 67.
+  ESTILOS_67: [
+    { id: 'neon',    cor: '#31e0ff', cor2: '#093a4d', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
+    { id: 'lava',    cor: '#ff8e45', cor2: '#5c1a00', fonte: '900 320px Impact, Arial Black, sans-serif' },
+    { id: 'vidro',   cor: '#eaf6ff', cor2: '#33556b', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
+    { id: 'ouro',    cor: '#ffd34d', cor2: '#6b4a00', fonte: '900 330px Impact, Arial Black, sans-serif' },
+    { id: 'toxico',  cor: '#c6ff4d', cor2: '#2f5c00', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
+    { id: 'jade',    cor: '#56f0b0', cor2: '#0d4d38', fonte: '900 310px Impact, Arial Black, sans-serif' },
+    { id: 'fantasma',cor: '#b9b2ff', cor2: '#2d2160', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
+    { id: 'rosa',    cor: '#ff5cae', cor2: '#5c0d38', fonte: '900 330px Impact, Arial Black, sans-serif' },
+    { id: 'ferro',   cor: '#cfdbe8', cor2: '#3a4756', fonte: '900 320px Impact, Arial Black, sans-serif' },
+    { id: 'gelo',    cor: '#7ef9ff', cor2: '#0e4a57', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
+    { id: 'raio',    cor: '#ffe14d', cor2: '#5c4c00', fonte: '900 330px Impact, Arial Black, sans-serif' },
+    { id: 'abismo',  cor: '#ff2e6e', cor2: '#3d001a', fonte: '900 320px Orbitron, Arial Black, sans-serif' },
+    { id: 'arauto',  cor: '#ff5252', cor2: '#4d0000', fonte: '900 340px Impact, Arial Black, sans-serif' },
+    { id: 'final',   cor: '#ffffff', cor2: '#7a0010', fonte: '900 360px Impact, Arial Black, sans-serif' }
+  ],
+
+  comemorar67(def) {
+    // O final tem o 67 branco reservado; os outros seguem a posição na tabela.
+    const indice = def && def.final
+      ? Jogo.ESTILOS_67.length - 1
+      : Math.max(0, BOSSES.indexOf(def)) % (Jogo.ESTILOS_67.length - 1);
+    Jogo.festa67 = { estilo: Jogo.ESTILOS_67[indice], vida: 2.6, vidaMax: 2.6, semente: Math.random() * 10 };
+    Jogo.flashTela(0.55, Jogo.ESTILOS_67[indice].cor);
+  },
+
+  desenhar67(ctx) {
+    const f = Jogo.festa67;
+    if (!f) return;
+    const p = 1 - f.vida / f.vidaMax;              // 0 no começo, 1 no fim
+    const entrada = Mat.limitar(p / 0.18, 0, 1);   // estufa na chegada
+    const saida = Mat.limitar((p - 0.75) / 0.25, 0, 1);
+    const escala = (0.4 + entrada * 0.75 - saida * 0.25) * (1 + Math.sin(Jogo.tempo * 9) * 0.02);
+    const e = f.estilo;
+
+    ctx.save();
+    ctx.globalAlpha = 1 - saida;
+    ctx.translate(Jogo.LARGURA / 2, Jogo.ALTURA / 2);
+    ctx.scale(escala, escala);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = e.fonte;
+
+    // tremor curto na entrada, para o número "bater" na tela
+    if (p < 0.2) {
+      const t = (0.2 - p) * 26;
+      ctx.translate(Mat.aleatorio(-t, t), Mat.aleatorio(-t, t));
+    }
+    ctx.rotate(Math.sin(Jogo.tempo * 2 + f.semente) * 0.03);
+
+    // sombra chapada atrás
+    ctx.fillStyle = e.cor2;
+    ctx.fillText('67', 14, 16);
+
+    // corpo com brilho
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 60;
+    ctx.shadowColor = e.cor;
+    ctx.fillStyle = e.cor;
+    ctx.fillText('67', 0, 0);
+
+    // contorno e faixa de leitura, cada estilo com o seu acabamento
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = (1 - saida) * 0.85;
+    ctx.strokeText('67', 0, 0);
+
+    ctx.globalAlpha = (1 - saida) * 0.28;
+    ctx.fillStyle = '#000000';
+    for (let y = -170; y < 170; y += 12) ctx.fillRect(-320, y, 640, 4);
+    ctx.restore();
   },
 
   aplicarRaioBoss(x, y, angulo, cor) {
@@ -656,6 +734,10 @@ const Jogo = {
     Particulas.atualizar(dt);
     Textos.atualizar(dtReal);
     Jogo.flash.alpha = Math.max(0, Jogo.flash.alpha - dtReal * 2.6);
+    if (Jogo.festa67) {
+      Jogo.festa67.vida -= dtReal;
+      if (Jogo.festa67.vida <= 0) Jogo.festa67 = null;
+    }
     Jogo.intervaloHUD -= dtReal;
     if (Jogo.intervaloHUD <= 0) {
       UI.atualizarHUD();
@@ -842,6 +924,8 @@ const Jogo = {
     vin.addColorStop(1, 'rgba(0,0,0,.72)');
     ctx.fillStyle = vin;
     ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+
+    Jogo.desenhar67(ctx);
 
     // aviso central
     if (Jogo.avisoTimer > 0 && Jogo.estado === 'jogando') {

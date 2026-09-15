@@ -882,3 +882,45 @@ test('o CEIFADOR é invencível por regra: nem build máxima derruba a barra', (
   assert.equal(dados.vivo, true, 'ele não morre');
   assert.ok(dados.voltouPara >= dados.vidaMax * 0.99, 'a barra volta ao topo sozinha');
 });
+
+test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  vm.runInContext('var UI = { aviso() {}, mostrarBarraBoss() {}, atualizarBarraBoss() {}, montarEquipe() {} };', mundo);
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 20;
+    Jogo.dtReal = 0.016;
+    const b = new Boss(BOSSES[3], 20);
+    b.entrando = 0;
+
+    b.vida = b.vidaMax * 0.5;
+    b.atualizarFase();                       // entra na fase 2
+    const imuneNaTroca = b.imune;
+    const antes = b.vida;
+    b.receberDano(9999, true, 0, 0);
+    const levouImune = antes - b.vida;
+
+    b.imune = 0;                             // escudo caiu
+    const antes2 = b.vida;
+    b.receberDano(300, true, 0, 0);
+    const levouDepois = antes2 - b.vida;
+
+    const estilos = BOSSES.map((def) => {
+      Jogo.comemorar67(def);
+      return Jogo.festa67.estilo.id;
+    });
+    const doFinal = (() => { Jogo.comemorar67(BOSSES.find((x) => x.final)); return Jogo.festa67.estilo.id; })();
+
+    return { imuneNaTroca, levouImune, levouDepois, estilos, doFinal,
+      trilhas: Som.TRILHAS.length };
+  })()`, mundo);
+
+  assert.ok(dados.imuneNaTroca >= 2, 'a fase nova começa com escudo de pelo menos 2 s');
+  assert.equal(dados.levouImune, 0, 'nada passa pelo escudo de fase');
+  assert.equal(dados.levouDepois, 300, 'passado o escudo, o dano volta a valer');
+  assert.equal(new Set(Array.from(dados.estilos)).size >= 8, true, 'os 67 não são todos iguais');
+  assert.equal(dados.doFinal, 'final', 'o boss final tem o 67 reservado dele');
+  assert.ok(dados.trilhas >= 5, 'há trilha suficiente para rodar a cada boss');
+});

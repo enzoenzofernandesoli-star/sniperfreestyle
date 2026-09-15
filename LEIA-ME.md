@@ -203,6 +203,24 @@ Medido com o boss atirando num alvo parado por 29 s:
 O elite só aparece a partir da onda 25, e a velocidade e a cadência do inimigo
 comum crescem na metade do ritmo de antes.
 
+## Escudo de fase, trilha e o 67
+
+Duas coisas acontecem em toda luta de boss, do primeiro ao último:
+
+- **Escudo de fase.** Sempre que o boss troca de fase ele ergue um escudo
+  hexagonal e fica **imune**, continuando a andar e atirar o tempo todo. Dura
+  `2 + índice da fase × 0,8` segundos — 2,8 s na segunda fase, 3,6 s na terceira,
+  4,4 s na quarta. O contador roda em tempo de relógio, então hitstop não
+  encurta. Enquanto durar, nada entra: nem ultimate, nem crítico.
+- **67.** Boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
+  o estilo muda de boss para boss — cor, fonte, sombra e faixa de leitura vêm de
+  `Jogo.ESTILOS_67`, escolhidos pela posição do boss na tabela. O CEIFADOR tem o
+  branco reservado só para ele.
+- **A trilha muda junto.** `Som.proximaTrilha()` avança para a próxima das sete
+  faixas de `Som.TRILHAS`: raiz, escala, timbre do baixo, timbre do lead e BPM
+  mudam de uma para a outra. Cada boss morto deixa a música diferente do que
+  estava antes.
+
 ## CEIFADOR ABSOLUTO — onda 100
 
 O boss final não entra no rodízio: ele só aparece na última onda, e a regra dele é

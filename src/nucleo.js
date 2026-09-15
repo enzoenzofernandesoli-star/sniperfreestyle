@@ -340,21 +340,39 @@ const Som = {
   },
 
   // trilha: baixo + arpejo em escala menor; acelera e abre o filtro no boss
+  // Cada boss derrubado troca a trilha: raiz, escala e timbre mudam juntos, e
+  // a faixa 0 é a de sempre. É a mesma música procedural — o que muda é o modo.
+  TRILHAS: [
+    { raiz: 55, escala: [0, 3, 5, 7, 10, 12, 15], baixo: 'sawtooth', lead: 'triangle', bpm: 0 },
+    { raiz: 49, escala: [0, 2, 3, 7, 8, 12, 14], baixo: 'square', lead: 'triangle', bpm: 6 },
+    { raiz: 62, escala: [0, 4, 7, 11, 12, 16, 19], baixo: 'sawtooth', lead: 'square', bpm: 10 },
+    { raiz: 46, escala: [0, 1, 5, 7, 8, 12, 13], baixo: 'square', lead: 'sawtooth', bpm: 12 },
+    { raiz: 58, escala: [0, 3, 7, 10, 12, 15, 19], baixo: 'triangle', lead: 'square', bpm: 16 },
+    { raiz: 41, escala: [0, 2, 5, 6, 9, 12, 14], baixo: 'sawtooth', lead: 'sawtooth', bpm: 20 },
+    { raiz: 65, escala: [0, 3, 5, 6, 7, 10, 12], baixo: 'square', lead: 'triangle', bpm: 24 }
+  ],
+  trilha: 0,
+  proximaTrilha() {
+    Som.trilha = (Som.trilha + 1) % Som.TRILHAS.length;
+    Som.passoMusica = 0;
+  },
+
   tocarMusica() {
     if (!Som.pronto || Config.volumeMusica <= 0) return;
+    const faixa = Som.TRILHAS[Som.trilha] || Som.TRILHAS[0];
     const t = Som.ctx.currentTime;
-    const bpm = 96 + Som.intensidade * 44;
+    const bpm = 96 + faixa.bpm + Som.intensidade * 44;
     const passoSeg = 60 / bpm / 2;
     if (Som.proximaNota < t) Som.proximaNota = t + 0.05;
     let guarda = 0;
     while (Som.proximaNota < t + 0.2 && guarda++ < 32) {
       const p = Som.passoMusica;
-      const escala = [0, 3, 5, 7, 10, 12, 15];
-      const raiz = 55;
-      if (p % 4 === 0) Som._agendar(raiz, 'sawtooth', Som.proximaNota, passoSeg * 2.2, 0.15);
+      const escala = faixa.escala;
+      const raiz = faixa.raiz;
+      if (p % 4 === 0) Som._agendar(raiz, faixa.baixo, Som.proximaNota, passoSeg * 2.2, 0.15);
       if (p % 2 === 0 || Som.intensidade > 0.5) {
         const grau = escala[(Math.floor(p / 2) + (p % 3)) % escala.length];
-        Som._agendar(raiz * 4 * Math.pow(2, grau / 12), 'triangle', Som.proximaNota, passoSeg * 1.2, 0.06);
+        Som._agendar(raiz * 4 * Math.pow(2, grau / 12), faixa.lead, Som.proximaNota, passoSeg * 1.2, 0.06);
       }
       if (p % 8 === 4) Som._agendarRuido(Som.proximaNota, 0.09, 0.09);
       Som.passoMusica = (p + 1) % 32;
