@@ -1540,7 +1540,7 @@ const BOSSES = [
 class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
-  static VIDA_EXTRA = 3.0;   // vida de todo boss, num lugar só
+  static VIDA_EXTRA = 2.5;   // vida de todo boss, num lugar só
   // Aperto geral aplicado a todo boss: ataca 50% mais vezes e cospe 50% mais
   // bala por ataque. Mexer aqui mexe nos catorze de uma vez.
   static DIFICULDADE = 1.5;

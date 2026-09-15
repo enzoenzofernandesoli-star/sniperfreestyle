@@ -11,7 +11,7 @@
    Pra publicar uma versão nova basta subir o VERSAO: o cache antigo é apagado.
    =========================================================================== */
 
-const VERSAO = 'sniper-freestyle-v35';
+const VERSAO = 'sniper-freestyle-v36';
 
 const CASCO = [
   './',
