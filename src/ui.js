@@ -206,6 +206,12 @@ const UI = {
     return '<div class="attr"><span>' + rotulo + '</span><div class="attr-barra"><i style="width:' + p + '%"></i></div></div>';
   },
 
+  // O HUD inteiro bebe de uma variável só; assim o controle vale para bloco,
+  // barra de boss, botões de toque e o que mais vier depois.
+  aplicarOpacidadeHud() {
+    document.documentElement.style.setProperty('--opacidade-hud', Config.opacidadeHud);
+  },
+
   montarConfig() {
     const bind = (id, chave, transformar) => {
       const el = document.getElementById(id);
@@ -215,6 +221,7 @@ const UI = {
         el.oninput = () => {
           Config[chave] = el.value / 100;
           Som.aplicarVolumes();
+          UI.aplicarOpacidadeHud();
           Config.salvar();
         };
       } else {
@@ -227,6 +234,8 @@ const UI = {
     bind('cfgTremor', 'tremorAtivo');
     bind('cfgParticulas', 'particulasAtivas');
     bind('cfgDano', 'mostrarDano');
+    bind('cfgHud', 'opacidadeHud');
+    UI.aplicarOpacidadeHud();
 
     const sel = document.getElementById('cfgToque');
     if (sel) {

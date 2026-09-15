@@ -967,3 +967,56 @@ test('a carta de melhoria espera o letreiro do boss terminar', () => {
   assert.equal(dados.depois.festa, false, 'terminado o letreiro');
   assert.equal(dados.depois.estado, 'melhoria', 'aí sim a carta entra');
 });
+
+test('boss morto leva junto a barra e os tiros dele', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  vm.runInContext(`var escondeu = 0;
+    var UI = { el: { classeNome: {}, onda: {}, buffs: {} }, aviso() {}, mostrarBarraBoss() {},
+      atualizarBarraBoss() {}, montarEquipe() {}, mostrarTela() {}, atualizarHUD() {},
+      montarMelhorias() {}, mostrarMelhorias() {}, esconderBarraBoss() { escondeu++; } };
+    var Coop = { ativo: () => false, convidado: () => false, anfitriao: () => false };
+    var document = { documentElement: { style: { setProperty() {} } } };
+    var window = {};`, mundo);
+
+  const dados = vm.runInContext(`(() => {
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.estado = 'jogando';
+    Jogo.onda = 20;
+    Jogo.inimigos.length = 0;
+    Jogo.projeteis.length = 0;
+    Jogo.spawnarBoss();
+    const b = Jogo.boss;
+    b.entrando = 0;
+
+    // bala do boss e um tiro do jogador na arena
+    b.executarAtaque('anel');
+    Jogo.projeteis.push(new Projetil({ x: 10, y: 10, angulo: 0, velocidade: 100, raio: 4, dano: 1, dono: 'jogador' }));
+    const antes = {
+      inimigos: Jogo.projeteis.filter((p) => p.dono !== 'jogador').length,
+      meus: Jogo.projeteis.filter((p) => p.dono === 'jogador').length
+    };
+
+    escondeu = 0;
+    b.vida = 1;
+    b.receberDano(99999, true, b.x, b.y);
+
+    return {
+      antes,
+      depois: {
+        boss: Jogo.boss,
+        inimigos: Jogo.projeteis.filter((p) => p.dono !== 'jogador').length,
+        meus: Jogo.projeteis.filter((p) => p.dono === 'jogador').length
+      },
+      escondeu
+    };
+  })()`, mundo);
+
+  assert.ok(dados.antes.inimigos > 0, 'o boss tinha bala na tela antes de morrer');
+  assert.equal(dados.depois.boss, null, 'o boss sai da arena');
+  assert.equal(dados.depois.inimigos, 0, 'e as balas dele vão junto');
+  assert.equal(dados.depois.meus, dados.antes.meus, 'o tiro do jogador continua lá');
+  assert.ok(dados.escondeu >= 1, 'a barra do boss é escondida na morte');
+});

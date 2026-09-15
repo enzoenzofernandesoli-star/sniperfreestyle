@@ -40,6 +40,7 @@ const Config = {
   volumeEfeitos: 0.55,
   tremorAtivo: true,
   particulasAtivas: true,
+  opacidadeHud: 0.85,   // 0,25 a 1 — quanto o HUD deixa ver a arena por baixo
   mostrarDano: true,
   controlesToque: 'auto',   // 'auto' | 'sempre' | 'nunca'
   // As chaves de localStorage seguem com o prefixo antigo 'sniper.' de propósito:
@@ -57,6 +58,7 @@ const Config = {
         volumeEfeitos: Config.volumeEfeitos,
         tremorAtivo: Config.tremorAtivo,
         particulasAtivas: Config.particulasAtivas,
+        opacidadeHud: Config.opacidadeHud,
         mostrarDano: Config.mostrarDano,
         controlesToque: Config.controlesToque
       }));

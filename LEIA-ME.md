@@ -41,8 +41,11 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   Lasers, fragmentos e projéteis refletidos mantêm suas cores originais.
 - Projétil que atravessa inimigo ou boss pode acertar o mesmo alvo novamente após
   ricochetear na parede. O limite de perfuração continua valendo em cada acerto.
-- Em aparelhos de toque, o canvas usa 75% da resolução da arena (1320×742 em vez
-  de 1760×990), preservando coordenadas e tamanho visual. Partículas simultâneas
+- Em aparelhos de toque, o canvas usa 62% da resolução da arena (1091×614 em vez
+  de 1760×990 — **62% menos pixel para desenhar**), preservando coordenadas e
+  tamanho visual. O HUD encolhe, encosta nos cantos e perde o `backdrop-filter`,
+  que é o efeito mais caro dele em GPU de celular. Partículas simultâneas caem
+  para 260. Partículas simultâneas
   caem de 1500 para 600, rastros emitem menos partículas e efeitos de brilho
   caros saem dos projéteis, partículas e moldura.
 - HUD atualiza a cada 100 ms no celular; durante menus, arena redesenha a até

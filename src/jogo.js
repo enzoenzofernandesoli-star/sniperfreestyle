@@ -83,10 +83,12 @@ const Jogo = {
     Jogo.canvas = document.getElementById('telaJogo');
     Jogo.ctx = Jogo.canvas.getContext('2d');
     Jogo.modoLeve = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0);
-    Jogo.escalaRender = Jogo.modoLeve ? 0.75 : 1;
+    // No celular o custo por pixel é o que trava. 0,62 dá um quadro 2,6 vezes
+    // mais barato que o tamanho cheio e a diferença mal aparece na tela pequena.
+    Jogo.escalaRender = Jogo.modoLeve ? 0.62 : 1;
     Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
     Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
-    if (Jogo.modoLeve) Particulas.limite = 400;
+    if (Jogo.modoLeve) Particulas.limite = 260;
 
     Config.carregar();
     Recordes.carregar();
@@ -251,6 +253,15 @@ const Jogo = {
     Jogo.estat.bosses++;
     Jogo.pontos += 1500 * Jogo.onda;
     UI.esconderBarraBoss();
+    // Bala e mina do boss morrem com ele. Ficavam voando pela arena depois da
+    // onda virar, matando o jogador por um inimigo que já não existe.
+    for (let i = Jogo.projeteis.length - 1; i >= 0; i--) {
+      const b = Jogo.projeteis[i];
+      if (b.dono === 'jogador') continue;
+      Particulas.explosao(b.x, b.y, b.cor, 3, 110, 0.22, 2);
+      Jogo.projeteis.splice(i, 1);
+    }
+    Jogo.raios.length = 0;
     // chuva de recompensa
     for (let i = 0; i < 26; i++) {
       Jogo.coletaveis.push(new Coletavel('xp', Jogo.boss.x + Mat.aleatorio(-70, 70), Jogo.boss.y + Mat.aleatorio(-70, 70), 12));
@@ -775,7 +786,11 @@ const Jogo = {
     Jogo.intervaloHUD -= dtReal;
     if (Jogo.intervaloHUD <= 0) {
       UI.atualizarHUD();
-      if (Jogo.boss) UI.atualizarBarraBoss(Jogo.boss);
+      // Sem boss vivo, sem barra. Antes ela só sumia pelo caminho da morte do
+      // boss, então qualquer outra saída (reiniciar, virar onda, convidado
+      // perdendo o snapshot) deixava a barra pendurada na tela.
+      if (Jogo.boss && Jogo.boss.vivo) UI.atualizarBarraBoss(Jogo.boss);
+      else UI.esconderBarraBoss();
       Jogo.intervaloHUD = Jogo.modoLeve ? 0.1 : 0.05;
     }
   },
