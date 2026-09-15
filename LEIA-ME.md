@@ -211,6 +211,16 @@ outra.
 - **~72.000 de vida** na onda 100, contra ~12.000 de um boss de onda 20.
 - **Bala 2,1× mais rápida** que a de qualquer outro boss — `velocidadeTiro` no
   `def` multiplica tudo que ele dispara, passando por `Boss.atirar`.
+- **Ele não pode ser derrotado, e isso é regra, não bug.** Três números fecham a
+  conta: `regenera: 0.07` devolve 7% da barra por segundo (em tempo de relógio,
+  então câmera lenta e hitstop não ajudam), `tetoDeDano: 0.004` limita um único
+  acerto a 0,4% da barra, e `tetoPorSegundo: 0.02` limita **todo** o dano de um
+  segundo a 2%. Como 2% entra e 7% volta, a barra sobe sempre. Testado com a
+  build máxima do jogo — todas as melhorias no teto, 14 drones, ultimate a cada
+  recarga, três minutos de tiro ininterrupto: a barra nunca desceu de **98,2%**.
+  A tela mostra "REGENERAÇÃO ABSOLUTA" no lugar do título e acende uma couraça
+  branca quando o acerto é grande demais, para o jogador ver o que está
+  acontecendo.
 - **EXECUÇÃO**, em todas as quatro fases: telegrafo branco com aviso na tela e
   então **três rajadas de cinco lâminas com 99 de dano** — mata com seis corações,
   com escudo, com o que for. Não existe tankar: ou desvia, ou morre.

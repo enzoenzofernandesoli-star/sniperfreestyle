@@ -1456,6 +1456,12 @@ const BOSSES = [
     // `velocidadeTiro` multiplica a velocidade de todo projétil que ele solta.
     id: 'ceifador', nome: 'CEIFADOR ABSOLUTO', titulo: 'O Fim da Arena',
     final: true, velocidadeTiro: 2.1,
+    // Ele não é difícil: ele é invencível, de propósito. `regenera` devolve 7%
+    // da barra por segundo — mais do que qualquer build do jogo tira — e
+    // `tetoDeDano` limita o quanto um único acerto pode arrancar, para que nem
+    // ultimate nem crítico gigante furem a conta. A onda 100 é onde a corrida
+    // termina, não onde ela é vencida.
+    regenera: 0.07, tetoDeDano: 0.004, tetoPorSegundo: 0.02,
     cor: '#ff1744', cor2: '#3d0010', raio: 92, vida: 21000, lados: 3,
     fases: [
       { movimento: 'investida', velocidade: 360, ataques: ['execucao', 'leque', 'precisao'], recarga: 0.7 },
@@ -1585,6 +1591,9 @@ class Boss {
     this.baseY = 150;
     this.orbita = 0;
     this.telegrafo = 0;
+    this.absorveu = 0;
+    this.janelaDano = 0;
+    this.danoNaJanela = 0;
     this.desesperado = false;
     this.laser = null;
     this.enraivecido = false;
@@ -1619,6 +1628,14 @@ class Boss {
       this.y = Mat.misturar(-120, this.baseY, 1 - Math.max(0, this.entrando) / 1.6);
       if (this.entrando <= 0) this.chamarEscolta();
       return;
+    }
+
+    // Regeneração absoluta: a barra volta sozinha, mais rápido do que qualquer
+    // build consegue tirar. É o que torna a onda 100 inacabável.
+    if (this.def.regenera && this.vida > 0) {
+      const real = Jogo.dtReal || dt;   // hitstop e slow-motion não freiam a cura
+      this.vida = Math.min(this.vidaMax, this.vida + this.vidaMax * this.def.regenera * real);
+      if (this.absorveu > 0) this.absorveu -= dt;
     }
 
     this.atualizarFase();
@@ -1971,6 +1988,25 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
+    if (this.def.tetoDeDano) {
+      const teto = this.vidaMax * this.def.tetoDeDano;
+      if (q > teto) {
+        q = teto;
+        this.absorveu = 0.4;   // brilho de couraça: o excesso não passou
+      }
+    }
+    // Teto por segundo: é ele que fecha a conta. Um acerto sozinho já era
+    // limitado, mas uma build de muitos projéteis somava acertos até passar da
+    // regeneração. Agora a barra tem um máximo de dano por segundo, e esse
+    // máximo é menor que o quanto ela recupera no mesmo segundo.
+    if (this.def.tetoPorSegundo) {
+      const agora = Jogo.tempoJogo;
+      if (agora - (this.janelaDano || 0) >= 1) { this.janelaDano = agora; this.danoNaJanela = 0; }
+      const restante = Math.max(0, this.vidaMax * this.def.tetoPorSegundo - (this.danoNaJanela || 0));
+      if (q > restante) { q = restante; this.absorveu = 0.4; }
+      this.danoNaJanela = (this.danoNaJanela || 0) + q;
+      if (q <= 0) { this.flash = 0.25; return; }
+    }
     this.vida -= q;
     this.flash = 0.25;
     Camera.bater(crit ? 5 : 2);
@@ -1996,6 +2032,20 @@ class Boss {
   }
 
   desenhar(ctx) {
+    // Couraça acesa quando o acerto foi maior que o teto: o jogador vê que o
+    // dano bateu e não entrou.
+    if (this.absorveu > 0) {
+      ctx.save();
+      ctx.globalAlpha = Mat.limitar(this.absorveu, 0, 1) * 0.8;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 26; ctx.shadowColor = this.def.cor;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.raio + 16, 0, Mat.TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     const d = this.def;
     // telegrafo de fase
     if (this.telegrafo > 0) {

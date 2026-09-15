@@ -847,3 +847,38 @@ test('placar cai no banco quando nenhum servidor responde, e lembra disso', asyn
     onda: 1, nivel: 1, tempo: 1, abates: 1, venceu: false })`, mundo);
   assert.equal(gravou, true, 'a run também é gravada direto no banco');
 });
+
+test('o CEIFADOR é invencível por regra: nem build máxima derruba a barra', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 100;
+    Jogo.tempoJogo = 0;
+    Jogo.dtReal = 0.016;
+    const ceifador = BOSSES.find((b) => b.final);
+    const b = new Boss(ceifador, 100);
+    b.entrando = 0;
+
+    // um segundo inteiro de dano absurdo, acerto atrás de acerto
+    const antes = b.vida;
+    for (let i = 0; i < 400; i++) b.receberDano(999999, true, 0, 0);
+    const depoisDoAtaque = b.vida;
+
+    // e um segundo de regeneração
+    for (let i = 0; i < 62; i++) { Jogo.tempoJogo += 0.016; b.atualizar(0.016); }
+    return {
+      vidaMax: b.vidaMax, tirado: antes - depoisDoAtaque,
+      tetoSegundo: b.vidaMax * ceifador.tetoPorSegundo,
+      regenSegundo: b.vidaMax * ceifador.regenera,
+      voltouPara: b.vida, vivo: b.vivo
+    };
+  })()`, mundo);
+
+  assert.ok(dados.tirado <= dados.tetoSegundo + 1, 'um segundo de dano não passa do teto');
+  assert.ok(dados.regenSegundo > dados.tetoSegundo * 2,
+    'a regeneração por segundo é maior que o dano máximo por segundo — a barra nunca cai');
+  assert.equal(dados.vivo, true, 'ele não morre');
+  assert.ok(dados.voltouPara >= dados.vidaMax * 0.99, 'a barra volta ao topo sozinha');
+});

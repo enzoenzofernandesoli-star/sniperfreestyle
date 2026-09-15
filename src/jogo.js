@@ -431,6 +431,7 @@ const Jogo = {
     else if (Jogo.lentidao > 0) { Jogo.lentidao -= dtReal; escala = 0.28; }
 
     const dt = dtReal * escala;
+    Jogo.dtReal = dtReal;   // quem precisa de tempo de relógio, e não de jogo
     Jogo.tempo += dt;
     Jogo.tempoJogo += dtReal;
     Jogo.imaGlobal = Math.max(0, Jogo.imaGlobal - dtReal);

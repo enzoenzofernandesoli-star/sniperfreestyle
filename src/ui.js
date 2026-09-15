@@ -675,7 +675,11 @@ const UI = {
   mostrarBarraBoss(boss) {
     UI.el.bossBarra.classList.add('ativa');
     UI.el.bossNome.textContent = boss.def.nome;
-    UI.el.bossTitulo.textContent = boss.def.titulo;
+    // Quem regenera avisa na cara: é para o jogador entender que a barra volta
+    // por regra do jogo, não por bug.
+    UI.el.bossTitulo.textContent = boss.def.regenera
+      ? boss.def.titulo + ' · REGENERAÇÃO ABSOLUTA'
+      : boss.def.titulo;
     UI.el.bossBarra.style.setProperty('--cor-boss', boss.def.cor);
   },
   atualizarBarraBoss(boss) {
