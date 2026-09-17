@@ -268,7 +268,10 @@ class Jogador {
     // movimento
     const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey) || 1;
-    const velocidadeAtual = this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade;
+    // A CARNIFICINA também dá pernas: sem isso o ESPECTRO não alcança ninguém
+    // durante os cinco segundos em que o corte vale seis vezes o tiro.
+    const corrida = (this.ultAtiva > 0 && this.classe.id === 'espectro') ? 1.4 : 1;
+    const velocidadeAtual = (this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade) * corrida;
     const zigue = this.corpoPossuido && TIPOS_INIMIGO[this.corpoPossuido.tipo].comportamento === 'zigue'
       ? Math.sin(Jogo.tempo * 8) * 0.28 : 0;
     const alvoVX = ((ex / mag) - (ey / mag) * zigue) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
@@ -456,16 +459,28 @@ class Jogador {
   }
 
   cortarNoDash() {
-    // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão.
-    const extra = this.ultAtiva > 0 ? 90 : 12;
-    const forca = this.ultAtiva > 0 ? 3.4 : 2.2;
+    // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão: vale
+    // dez vezes o tiro e volta no mesmo alvo quase quatro vezes mais rápido.
+    const naUlt = this.ultAtiva > 0;
+    const extra = naUlt ? 175 : 12;
+    const forca = naUlt ? 10 : 2.4;
+    const espera = naUlt ? 70 : 240;
     for (const e of Jogo.inimigos) {
       if (e._cortado) continue;
       if (Mat.distancia(this.x, this.y, e.x, e.y) < this.raio + e.raio + extra) {
         e._cortado = true;
         Jogo.danificarInimigo(e, this.attr.dano * forca, true, this.x, this.y);
-        setTimeout(() => { e._cortado = false; }, 260);
+        setTimeout(() => { e._cortado = false; }, espera);
       }
+    }
+    // O boss também sangra na foice, senão a ult seria inútil justo na luta que
+    // mais importa.
+    const b = Jogo.boss;
+    if (naUlt && b && b.vivo && !b._cortado
+      && Mat.distancia(this.x, this.y, b.x, b.y) < this.raio + b.raio + extra) {
+      b._cortado = true;
+      b.receberDano(this.attr.dano * forca, true, this.x, this.y);
+      setTimeout(() => { if (Jogo.boss) Jogo.boss._cortado = false; }, espera);
     }
   }
 
@@ -507,10 +522,13 @@ class Jogador {
       // inimigo que estiver no caminho.
       Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 820, dano: this.attr.dano * 5, cor: this.classe.cor, atingidos: new Set(), empurrao: 1300, limpaTiros: true });
     } else if (this.classe.id === 'espectro') {
-      // CARNIFICINA: mais tempo intangível e corte com alcance maior
-      this.ultAtiva = 3.5;
-      this.invulneravel = Math.max(this.invulneravel, 3.5);
-      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 340, dano: this.attr.dano * 2, cor: this.classe.cor, atingidos: new Set(), empurrao: 520 });
+      // CARNIFICINA: a jogada mais forte do jogo, e a mais arriscada de usar —
+      // ela só rende se o jogador atravessar a arena colado nos inimigos.
+      this.ultAtiva = 5;
+      this.invulneravel = Math.max(this.invulneravel, 5);
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 620,
+        dano: this.attr.dano * 4, cor: this.classe.cor, atingidos: new Set(),
+        empurrao: 900, limpaTiros: true });
     } else if (this.classe.id === 'invocador') {
       // LEGIÃO: tropa maior, mais longa, e um estouro na chamada
       const total = this.lacaios.length + 5;

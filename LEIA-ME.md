@@ -115,7 +115,7 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 |---|---|---|
 | **SNIPER** | tiro perfurante, dano altíssimo, 25% de crítico, 2 corações | **TRAÇANTE** — feixe largo que varre a arena |
 | **GUARDIÃO** | 4 corações, escudo que **reflete** os tiros inimigos, lento | **IMPACTO** — onda de choque que empurra e destroça |
-| **ESPECTRO** | escopeta de 5 projéteis, dash que corta, 400 px/s, cura ao matar | **CARNIFICINA** — intangível e cortando por 3 s |
+| **ESPECTRO** | **a classe mais forte, e só de perto**: escopeta de 5×13, dash que corta, cura 2,5% por abate | **CARNIFICINA** — 5 s intangível, foice de 175 px valendo 10× o tiro, 40% mais rápido, e cada abate estende |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro de 480 px que explode numa onda de 700 |
 | **INVOCADOR** | 3 corações, tiro teleguiado e 2 drones que caçam sozinhos | **LEGIÃO** — 3 drones extras por 10 s, tropa inteira mais rápida |
 
@@ -163,6 +163,25 @@ entre todos.
 | 10 | `FANTASMA` | teleporta para o lado do jogador |
 | 11 | `ENXAME` | rápido, em zigue-zague |
 | 12 | `TORRETA` | quase parada, resiste a 50%, rajada de 3 tiros rápidos |
+
+## Quem é o mais forte
+
+O ESPECTRO é, de propósito, a classe mais forte do jogo — e a que mais cobra
+por isso. Medido contra um boss, nível 12, em tempo real:
+
+| Classe | Colado (120 px) | Longe (700 px) |
+|---|---|---|
+| **ESPECTRO** | **1.214 de dano/s** | **0** |
+| INVOCADOR | 536 | 302 |
+| ARCANO | 373 | — |
+| GUARDIÃO | 362 | — |
+| SNIPER | 350 | 918 |
+
+Com a ultimate ligada, colado: **ESPECTRO 2.298** contra 1.205 do INVOCADOR.
+
+O zero da coluna da direita é a regra da classe, não um defeito: com
+`alcanceCurto: 360` o tiro dele simplesmente morre no ar antes de chegar. Ele é
+o mais forte do jogo dentro de 360 px e nada fora disso.
 
 ## Dificuldade
 

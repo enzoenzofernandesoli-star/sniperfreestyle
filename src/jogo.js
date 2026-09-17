@@ -350,6 +350,12 @@ const Jogo = {
       Jogo.coletaveis.push(new Coletavel(sorteio, e.x, e.y));
     }
     if (j.classe.curaPorMorte) j.curar(j.attr.vidaMax * j.classe.curaPorMorte);
+    // CARNIFICINA se alimenta: cada abate durante a ult empurra o cronômetro
+    // dela para frente, até um teto. Quem mergulha na multidão é premiado.
+    if (j.ultAtiva > 0 && j.classe.id === 'espectro') {
+      j.ultAtiva = Math.min(9, j.ultAtiva + 0.35);
+      j.invulneravel = Math.max(j.invulneravel, j.ultAtiva);
+    }
     if (j.vampirismo > 0 && Mat.chance(j.vampirismo)) j.curar(0.5);
     // a remoção do array acontece no laço principal (flag .vivo), nunca aqui:
     // splicar em dois lugares embaralha os índices do laço.

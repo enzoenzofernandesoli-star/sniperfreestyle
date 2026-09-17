@@ -75,21 +75,21 @@ const CLASSES = [
     cor: '#ff4d6d',
     cor2: '#8a0f31',
     icone: 'E',
-    descricao: 'Escopeta de curto alcance e dash que corta. Velocíssimo, frágil, cura ao matar.',
-    forcas: ['5 projéteis por tiro', 'Dash causa dano', 'Cura 1% ao matar'],
-    fraquezas: ['Só 2 corações', 'Alcance curto'],
+    descricao: 'A classe mais forte do jogo, e a que mais cobra por isso: o dano só existe colado no inimigo. Escopeta de alcance curtíssimo, dash que corta e cura a cada abate.',
+    forcas: ['5 projéteis de 13 de dano por tiro', 'Dash corta quem encostar', 'Cura 2,5% da vida a cada abate', 'CARNIFICINA praticamente zera a arena'],
+    fraquezas: ['Só 2 corações', 'Alcance curtíssimo: 360 px', 'Errou a distância, morreu'],
     somTiro: 'shotgun',
-    ult: { nome: 'CARNIFICINA', descricao: 'Intangível por 3,5 s cortando num raio largo, com estouro na ativação.' },
+    ult: { nome: 'CARNIFICINA', descricao: '5 s intangível cortando num raio enorme, 40% mais rápido, e cada abate estende a matança.' },
     atributos: {
-      vidaMax: 2, velocidade: 400, cadencia: 0.36, dano: 11, projeteis: 5,
-      espalhamento: 0.5, balaVel: 1050, balaRaio: 4, perfuracao: 0, ricochete: 0,
-      homing: 0, critChance: 0.14, critMult: 2,
-      dashRecarga: 0.75, escudoRecarga: 14, escudoDuracao: 2, ultRecarga: 24,
-      ima: 170, regen: 0, orbes: 0
+      vidaMax: 2, velocidade: 430, cadencia: 0.32, dano: 13, projeteis: 5,
+      espalhamento: 0.5, balaVel: 1100, balaRaio: 5, perfuracao: 1, ricochete: 0,
+      homing: 0, critChance: 0.22, critMult: 2.3,
+      dashRecarga: 0.62, escudoRecarga: 12, escudoDuracao: 2, ultRecarga: 19,
+      ima: 190, regen: 0, orbes: 0
     },
     dashCorta: true,
-    alcanceCurto: 340,
-    curaPorMorte: 0.01
+    alcanceCurto: 360,
+    curaPorMorte: 0.025
   },
   {
     id: 'arcano',
