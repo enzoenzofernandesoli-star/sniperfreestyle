@@ -1540,10 +1540,15 @@ const BOSSES = [
 class Boss {
   // Dificuldade do boss num lugar só: vida e intervalo entre ataques. Mexer
   // aqui é mais seguro que reescrever as fases de oito tabelas.
-  static VIDA_EXTRA = 2.5;   // vida de todo boss, num lugar só
-  // Aperto geral aplicado a todo boss: ataca 50% mais vezes e cospe 50% mais
-  // bala por ataque. Mexer aqui mexe nos catorze de uma vez.
-  static DIFICULDADE = 1.5;
+  // Vida e aperto não são mais um número fixo para os catorze: cada um é uma
+  // faixa que a campanha percorre. O boss da onda 5 pega a ponta de baixo, o da
+  // 90 pega a de cima. Era o que faltava — um multiplicador único deixava o
+  // primeiro boss tão apertado quanto o último.
+  static VIDA_MIN = 1.4;      // multiplicador de vida no primeiro encontro
+  static VIDA_MAX = 2.9;      // e no último antes do final
+  static APERTO_MIN = 0.8;    // ataca 20% menos vezes que a tabela pede
+  static APERTO_MAX = 1.55;   // e, no fim, 55% mais
+  static DIFICULDADE = 1.5;   // continua valendo para o CEIFADOR, que é teto
   static RITMO_ATAQUE = 1.15;   // < 1 = ataca mais vezes
   static FURIA_VIDA = 0.25;     // abaixo disso o boss acelera
   static FURIA_RITMO = 0.75;
@@ -1557,8 +1562,20 @@ class Boss {
   // Até a onda 50 ela sobe devagar — é a metade tranquila do jogo, onde dá para
   // aprender o padrão. Da 50 em diante ela acelera e o jogo mostra os dentes.
   static dureza(onda) {
-    if (onda <= 50) return Mat.limitar((onda - 5) / 45, 0, 1) * 0.35;
+    // Até a onda 50 a curva sobe ao quadrado: quase nada nos três primeiros
+    // encontros, que é onde o jogador ainda está montando a build, e acelerando
+    // só depois. Da 50 em diante é reta até 1 na onda 90.
+    if (onda <= 50) {
+      const t = Mat.limitar((onda - 5) / 45, 0, 1);
+      return t * t * 0.35;
+    }
     return Mat.limitar(0.35 + ((onda - 50) / 40) * 0.65, 0, 1);
+  }
+
+  // O quanto ESTE boss aperta, entre APERTO_MIN e APERTO_MAX. O final ignora a
+  // faixa e usa DIFICULDADE cheia.
+  get aperto() {
+    return this.def.final ? Boss.DIFICULDADE : Mat.misturar(Boss.APERTO_MIN, Boss.APERTO_MAX, this.dureza);
   }
 
   // A luta tem que crescer, não começar no talo: a primeira fase é de leitura
@@ -1580,7 +1597,8 @@ class Boss {
     const escala = 1 + Math.min(encontro - 1, 7) * 0.13 + Math.pow(Math.max(0, encontro - 8), 0.78) * 0.09;
     // Boss final ignora a rampa: ele é o teto, não um degrau.
     this.dureza = def.final ? 1 : Boss.dureza(onda);
-    this.vidaMax = def.vida * escala * Boss.VIDA_EXTRA;
+    const vidaExtra = def.final ? Boss.VIDA_MAX : Mat.misturar(Boss.VIDA_MIN, Boss.VIDA_MAX, this.dureza);
+    this.vidaMax = def.vida * escala * vidaExtra;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
     this.fase = def.fases[0];
@@ -1623,7 +1641,9 @@ class Boss {
       this.executarAtaque('anel');
       // E a fase nova começa com escudo: ele fica imune por alguns segundos,
       // atirando o tempo todo. Quanto mais avançada a fase, mais tempo dura.
-      this.erguerEscudo(2 + idx * 0.8);
+      // Escudo curto no começo da campanha, longo no fim: 1,2 s de imunidade na
+      // segunda fase do primeiro boss contra 4,4 s na quarta fase do último.
+      this.erguerEscudo((1 + idx * 0.5) + this.dureza * (1 + idx * 0.4));
     }
   }
 
@@ -1807,7 +1827,7 @@ class Boss {
       // de ler o padrão, o fim não dá.
       const doEncontro = 1.6 - this.dureza * 0.75;
       this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo
-        * this.ritmoAscensao / Boss.DIFICULDADE * Mat.aleatorio(0.85, 1.15);
+        * this.ritmoAscensao / this.aperto * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -1878,7 +1898,7 @@ class Boss {
   // `cheio` é o valor da versão dura; a fração vem da dureza da campanha.
   volume(minimo, cheio) {
     const base = Mat.misturar(minimo, cheio, this.dureza);
-    return Math.round(base * (this.def.volumeExtra || 1) * Boss.DIFICULDADE);
+    return Math.max(1, Math.round(base * (this.def.volumeExtra || 1) * this.aperto));
   }
 
   // Tudo que o boss atira passa por aqui: é o ponto onde o CEIFADOR acelera os

@@ -917,7 +917,8 @@ test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => 
       trilhas: Som.TRILHAS.length };
   })()`, mundo);
 
-  assert.ok(dados.imuneNaTroca >= 2, 'a fase nova começa com escudo de pelo menos 2 s');
+  // o escudo cresce com a campanha: curto no boss da onda 20, longo no da 90
+  assert.ok(dados.imuneNaTroca > 1, 'a fase nova começa com escudo');
   assert.equal(dados.levouImune, 0, 'nada passa pelo escudo de fase');
   assert.equal(dados.levouDepois, 300, 'passado o escudo, o dano volta a valer');
   assert.equal(new Set(Array.from(dados.estilos)).size >= 8, true, 'os 67 não são todos iguais');

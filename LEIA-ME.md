@@ -208,21 +208,31 @@ comum crescem na metade do ritmo de antes.
 
 ## Vida de boss
 
-`Boss.VIDA_EXTRA` multiplica a vida de **todos** os bosses de uma vez — é o botão
-para engrossar ou afinar a luta inteira sem mexer em tabela. Hoje está em **2,5**.
-Ao lado dele, `Boss.DIFICULDADE` (hoje **1,5**) aperta o resto: divide o intervalo
-entre ataques e multiplica a quantidade de bala de cada ataque. Os dois juntos
-valem para os catorze bosses.
+Vida e aperto deixaram de ser um número fixo para os catorze: cada um é uma
+**faixa** que a campanha percorre, guiada por `Boss.dureza`.
+
+| Botão | Primeiro encontro | Último |
+|---|---|---|
+| `VIDA_MIN` → `VIDA_MAX` | ×1,4 | ×2,9 |
+| `APERTO_MIN` → `APERTO_MAX` | ×0,8 (ataca 20% menos que a tabela) | ×1,55 |
+
+O aperto divide o intervalo entre ataques e multiplica a bala por ataque. O
+escudo de fase segue a mesma faixa: 1,2 s na segunda fase do primeiro boss,
+4,4 s na quarta fase do último. O CEIFADOR ignora tudo isso e usa o teto.
+
+A curva até a onda 50 passou a subir **ao quadrado**, não em linha reta: quase
+nada nos três primeiros encontros, que é onde a build ainda está crua.
 
 | Onda | Boss | Vida |
 |---|---|---|
-| 5 | SENTINELA CARMESIM | 2.375 |
-| 20 | O ARQUITETO | 17.027 |
-| 40 | NÚCLEO INFINITO | 36.290 |
-| 50 | TITÃ DE FERRO | 47.484 |
-| 70 | RAINHA ESTÁTICA | 67.086 |
-| 90 | ÚLTIMO ARAUTO | 98.093 |
-| 100 | CEIFADOR ABSOLUTO | 133.096 (e regenera 7% disso por segundo) |
+| 5 | SENTINELA CARMESIM | 1.330 |
+| 10 | SERPENTE DE VÍDEO | 2.861 |
+| 20 | O ARQUITETO | 9.933 |
+| 40 | NÚCLEO INFINITO | 24.933 |
+| 50 | TITÃ DE FERRO | 36.563 |
+| 70 | RAINHA ESTÁTICA | 64.737 |
+| 90 | ÚLTIMO ARAUTO | 113.787 |
+| 100 | CEIFADOR ABSOLUTO | 154.392 (e regenera 7% disso por segundo) |
 
 Tempo de matar medido com o jogador imóvel acertando tudo: 39 s no boss da onda
 5 com nível 3, ~1,5 min nos da 20 e 40, ~3,5 min no da 70 e ~5 min no da 90.

@@ -142,6 +142,13 @@ const UI = {
     }
   },
 
+  // O teto do dano sai da classe mais forte, não de um número fixo: com teto
+  // fixo a barra do ESPECTRO já batia em 100% e qualquer aumento de dano dele
+  // não aparecia mais na tela.
+  tetoDano() {
+    return Math.max(...CLASSES.map((c) => c.atributos.dano * c.atributos.projeteis));
+  },
+
   montarClasses() {
     UI.el.gradeClasses.innerHTML = '';
     const escolhas = {};
@@ -157,9 +164,9 @@ const UI = {
         '<p class="cc-desc">' + c.descricao + '</p>' +
         '<div class="cc-attr">' +
         UI.barrinha('VIDA', c.atributos.vidaMax / 4) +
-        UI.barrinha('DANO', Math.min(1, (c.atributos.dano * c.atributos.projeteis) / 45)) +
+        UI.barrinha('DANO', (c.atributos.dano * c.atributos.projeteis) / UI.tetoDano()) +
         UI.barrinha('CADÊNCIA', Math.min(1, 0.12 / c.atributos.cadencia)) +
-        UI.barrinha('VELOCIDADE', c.atributos.velocidade / 420) +
+        UI.barrinha('VELOCIDADE', c.atributos.velocidade / 460) +
         '</div>' +
         '<ul class="cc-lista">' + c.forcas.map((f) => '<li class="bom">+ ' + f + '</li>').join('') +
         c.fraquezas.map((f) => '<li class="ruim">− ' + f + '</li>').join('') + '</ul>' +

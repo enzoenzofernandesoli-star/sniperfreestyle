@@ -81,7 +81,7 @@ const CLASSES = [
     somTiro: 'shotgun',
     ult: { nome: 'CARNIFICINA', descricao: 'Intangível por 3,5 s cortando num raio largo, com estouro na ativação.' },
     atributos: {
-      vidaMax: 2, velocidade: 400, cadencia: 0.36, dano: 9, projeteis: 5,
+      vidaMax: 2, velocidade: 400, cadencia: 0.36, dano: 11, projeteis: 5,
       espalhamento: 0.5, balaVel: 1050, balaRaio: 4, perfuracao: 0, ricochete: 0,
       homing: 0, critChance: 0.14, critMult: 2,
       dashRecarga: 0.75, escudoRecarga: 14, escudoDuracao: 2, ultRecarga: 24,
