@@ -267,6 +267,13 @@ const Jogo = {
       Jogo.coletaveis.push(new Coletavel('xp', Jogo.boss.x + Mat.aleatorio(-70, 70), Jogo.boss.y + Mat.aleatorio(-70, 70), 12));
     }
     Jogo.coletaveis.push(new Coletavel('vida', Jogo.boss.x, Jogo.boss.y + 40));
+    // Bolo de moedas do boss, espalhado em oito para o jogador ver o estrago.
+    const bolo = Math.round((60 + Jogo.onda * 14) / 8);
+    for (let i = 0; i < 8; i++) {
+      const a = (Mat.TAU / 8) * i;
+      Jogo.coletaveis.push(new Coletavel('moeda',
+        Jogo.boss.x + Math.cos(a) * 70, Jogo.boss.y + Math.sin(a) * 70, bolo));
+    }
     Jogo.boss = null;
     Jogo.filaDeMelhorias += 1;
     Jogo.terminarOnda();
@@ -328,6 +335,14 @@ const Jogo = {
     if (e.vida <= 0) e.morrer(true);
   },
 
+  // Quanto de moeda um inimigo larga. Elite paga o triplo; a onda entra com
+  // peso pequeno para a campanha longa render mais sem virar torneira.
+  moedasDe(e) {
+    const base = Math.max(1, Math.round(e.def.pontos / 10));
+    const porOnda = 1 + Jogo.onda * 0.02;
+    return Math.max(1, Math.round(base * porOnda * (e.elite ? 3 : 1)));
+  },
+
   marcarMorte(e, porTiro) {
     const j = Jogo.jogador;
     Jogo.estat.abates++;
@@ -343,6 +358,11 @@ const Jogo = {
     for (let i = 0; i < pedacos; i++) {
       Jogo.coletaveis.push(new Coletavel('xp', e.x + Mat.aleatorio(-14, 14), e.y + Mat.aleatorio(-14, 14), (e.def.xp * bonusElite) / pedacos));
     }
+    // Moeda da loja. Todo inimigo larga a sua — é a única fonte de moeda que o
+    // jogo tem, então ela não pode depender de sorte. O valor sai da ficha do
+    // inimigo dividido por dez: bicho de onda 1 vale 1, torreta vale 5.
+    Jogo.coletaveis.push(new Coletavel('moeda', e.x + Mat.aleatorio(-10, 10), e.y + Mat.aleatorio(-10, 10), Jogo.moedasDe(e)));
+
     // Item raro ficou mais raro, e cura é o mais difícil de cair: vida perdida
     // tem que doer até o fim da partida.
     if (Mat.chance(e.elite ? 0.1 : 0.035)) {

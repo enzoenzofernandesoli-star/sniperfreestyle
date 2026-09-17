@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const raiz = path.join(__dirname, '..');
 const contexto = vm.createContext({ console, Math });
-for (const arquivo of ['src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+for (const arquivo of ['src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
   vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), contexto, { filename: arquivo });
 }
 
@@ -38,7 +38,7 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
 
 test('coração tem teto de 6, venha de onde vier', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -56,7 +56,7 @@ test('coração tem teto de 6, venha de onde vier', () => {
 
 test('a EXECUÇÃO do boss final mata com qualquer quantidade de coração', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   // a morte passa por registrarPartida, que fala com Coop e UI — aqui só o
@@ -81,7 +81,7 @@ test('a EXECUÇÃO do boss final mata com qualquer quantidade de coração', () 
 
 test('arena cabe em uma tela e a câmera fica no centro', () => {
   const mundo = vm.createContext({ console, Math });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -102,10 +102,54 @@ test('arena cabe em uma tela e a câmera fica no centro', () => {
   assert.deepEqual(Array.from(dados.boss), [880, 150]);
 });
 
-test('as cinco classes têm três skins cosméticas cada', () => {
-  const dados = vm.runInContext('CLASSES.map(c => ({ id: c.id, vida: c.atributos.vidaMax, skins: SKINS[c.id].length }))', contexto);
-  assert.deepEqual(Array.from(dados, (d) => [d.vida, d.skins]), [[2, 3], [4, 3], [2, 3], [2, 3], [3, 3]]);
-  assert.equal(vm.runInContext("skinDaClasse('sniper', 'inexistente').id", contexto), 'original');
+test('cosmético é da conta, não da classe, e não encosta em atributo', () => {
+  const dados = vm.runInContext(`(() => {
+    const ids = [...CASCOS, ...TIROS, ...ACESSORIOS, ...EMOJIS].map((i) => i.id);
+    const gratis = [...CASCOS, ...TIROS, ...ACESSORIOS, ...EMOJIS].filter((i) => i.preco === 0).map((i) => i.id);
+    const campos = new Set();
+    for (const i of [...CASCOS, ...TIROS, ...ACESSORIOS, ...EMOJIS]) for (const k of Object.keys(i)) campos.add(k);
+    return {
+      total: ids.length, unicos: new Set(ids).size,
+      gratisSaoOsIniciais: gratis.every((id) => Carteira.itens.includes(id)),
+      gratisPorVitrine: gratis.length,
+      campos: [...campos],
+      vidas: CLASSES.map((c) => c.atributos.vidaMax),
+      mesmoCascoParaTodas: CLASSES.every((c) => skinDaClasse(c.id, 'casco-ouro').id === 'casco-ouro'),
+      idInvalidoCaiNoEquipado: skinDaClasse('sniper', 'nao-existe').id
+    };
+  })()`, contexto);
+  assert.equal(dados.unicos, dados.total, 'nenhum id de cosmético repetido');
+  assert.equal(dados.gratisPorVitrine, 4, 'uma opção grátis por vitrine');
+  assert.ok(dados.gratisSaoOsIniciais, 'o que é grátis já vem desbloqueado');
+  assert.deepEqual(Array.from(dados.vidas), [2, 4, 2, 2, 3], 'a vida das classes não mudou');
+  assert.ok(dados.mesmoCascoParaTodas, 'a cor vale para as cinco classes');
+  assert.equal(dados.idInvalidoCaiNoEquipado, 'casco-original');
+  for (const campo of dados.campos) {
+    assert.ok(!['dano', 'vidaMax', 'velocidade', 'cadencia', 'pontos'].includes(campo),
+      'cosmético não pode carregar atributo: ' + campo);
+  }
+});
+
+test('moeda cai de todo inimigo e o preço pede várias partidas', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.onda = 1;
+    const comum = Jogo.moedasDe(new Inimigo('corredor', 100, 100, 1, false));
+    const elite = Jogo.moedasDe(new Inimigo('corredor', 100, 100, 1, true));
+    Jogo.onda = 50;
+    const tarde = Jogo.moedasDe(new Inimigo('torreta', 100, 100, 1, false));
+    return {
+      comum, elite, tarde,
+      maisCaro: Math.max(...CASCOS.concat(TIROS, ACESSORIOS, EMOJIS).map((i) => i.preco))
+    };
+  })()`, mundo);
+  assert.ok(dados.comum >= 1, 'inimigo nenhum sai sem moeda');
+  assert.ok(dados.elite > dados.comum, 'elite paga mais');
+  assert.ok(dados.tarde > dados.comum, 'onda alta paga mais');
+  assert.ok(dados.maisCaro >= 10000, 'o item topo de linha continua sendo meta de longo prazo');
 });
 
 test('dificuldade infinita cresce devagar e sem parar', () => {
@@ -128,7 +172,7 @@ test('dificuldade infinita cresce devagar e sem parar', () => {
 
 test('elite é bem mais duro que o comum do mesmo tipo', () => {
   const mundo = vm.createContext({ console, Math });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -175,7 +219,7 @@ test('melhoria repetida perde peso e o teto de cópias é no máximo 4', () => {
 
 test('INVOCADOR enfraquecido nasce com dois drones e só ele recebe a melhoria de drone', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -199,7 +243,7 @@ test('INVOCADOR enfraquecido nasce com dois drones e só ele recebe a melhoria d
 
 test('possessão exige 35% de vida e 100 px, preserva progresso e expulsa a alma no fim', () => {
   const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -233,7 +277,7 @@ test('possessão exige 35% de vida e 100 px, preserva progresso e expulsa a alma
 
 test('inimigos tratam corpo possuído como aliado e miram outro jogador no cooperativo', () => {
   const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -253,7 +297,7 @@ test('inimigos tratam corpo possuído como aliado e miram outro jogador no coope
 
 test('busca de alvo não cria lista temporária por inimigo', () => {
   const mundo = vm.createContext({ console, Math });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -267,7 +311,7 @@ test('busca de alvo não cria lista temporária por inimigo', () => {
 
 test('coletável continua seguindo jogador possuído e boss não ataca sem alvo hostil', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -290,7 +334,7 @@ test('coletável continua seguindo jogador possuído e boss não ataca sem alvo 
 
 test('corpo destruído absorve a morte e devolve a alma viva no mesmo lugar', () => {
   const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -478,7 +522,7 @@ function mundoCoop() {
     },
     UI: { mostrarTela() {}, atualizarHUD() {}, montarEquipe() {}, mostrarFinal() {}, atualizarEspera() {}, aviso() {} }
   });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js', 'src/coop.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js', 'src/coop.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), ctx, { filename: arquivo });
   }
   return ctx;
@@ -753,7 +797,7 @@ test('boss é de 5 em 5 até a 40 e de 10 em 10 depois', () => {
 
 test('escudo da couraça tem vida própria e quebra', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -776,7 +820,7 @@ test('escudo da couraça tem vida própria e quebra', () => {
 
 test('bala do drone é um tiro do jogador: mesmo dano, crítico e melhorias', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -850,7 +894,7 @@ test('placar cai no banco quando nenhum servidor responde, e lembra disso', asyn
 
 test('o CEIFADOR é invencível por regra: nem build máxima derruba a barra', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
@@ -885,7 +929,7 @@ test('o CEIFADOR é invencível por regra: nem build máxima derruba a barra', (
 
 test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   vm.runInContext('var UI = { aviso() {}, mostrarBarraBoss() {}, atualizarBarraBoss() {}, montarEquipe() {} };', mundo);
@@ -928,7 +972,7 @@ test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => 
 
 test('a carta de melhoria espera o letreiro do boss terminar', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   vm.runInContext(`var UI = { el: { classeNome: {}, onda: {}, buffs: {} }, aviso() {}, mostrarBarraBoss() {},
@@ -971,7 +1015,7 @@ test('a carta de melhoria espera o letreiro do boss terminar', () => {
 
 test('boss morto leva junto a barra e os tiros dele', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   vm.runInContext(`var escondeu = 0;

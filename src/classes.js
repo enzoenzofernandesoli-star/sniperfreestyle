@@ -133,37 +133,15 @@ const CLASSES = [
   }
 ];
 
-// Variantes cosméticas: não alteram atributos nem pontuação.
-const SKINS = {
-  sniper: [
-    { id: 'original', nome: 'Original', cor: '#31e0ff', cor2: '#0b7fa8' },
-    { id: 'polar', nome: 'Polar', cor: '#e6fbff', cor2: '#5289a9' },
-    { id: 'solar', nome: 'Solar', cor: '#ff9f43', cor2: '#87371c' }
-  ],
-  guardiao: [
-    { id: 'original', nome: 'Original', cor: '#ffc93c', cor2: '#a8730b' },
-    { id: 'ferro', nome: 'Ferro', cor: '#c7d5e0', cor2: '#52677b' },
-    { id: 'jade', nome: 'Jade', cor: '#65f0ad', cor2: '#1c7658' }
-  ],
-  espectro: [
-    { id: 'original', nome: 'Original', cor: '#ff4d6d', cor2: '#8a0f31' },
-    { id: 'veneno', nome: 'Veneno', cor: '#b6ff49', cor2: '#4d7916' },
-    { id: 'sombra', nome: 'Sombra', cor: '#b28aff', cor2: '#4c2b77' }
-  ],
-  arcano: [
-    { id: 'original', nome: 'Original', cor: '#b06dff', cor2: '#5a1fa8' },
-    { id: 'aurora', nome: 'Aurora', cor: '#6cf5e9', cor2: '#225c79' },
-    { id: 'rubi', nome: 'Rubi', cor: '#ff6588', cor2: '#87284f' }
-  ],
-  invocador: [
-    { id: 'original', nome: 'Original', cor: '#7cf2a0', cor2: '#1d6b45' },
-    { id: 'enxofre', nome: 'Enxofre', cor: '#ffe14d', cor2: '#7a6410' },
-    { id: 'abissal', nome: 'Abissal', cor: '#6db6ff', cor2: '#1c3f70' }
-  ]
-};
-
+// A cor da nave não pertence mais à classe: ela é um item da loja, comprado
+// com moeda e válido para as cinco. `skinDaClasse` continua existindo com a
+// mesma assinatura porque o cooperativo ainda fala em "skin" no protocolo.
 function skinDaClasse(classeId, skinId) {
-  return SKINS[classeId].find((skin) => skin.id === skinId) || SKINS[classeId][0];
+  if (skinId) {
+    const pedido = CASCOS.find((c) => c.id === skinId);
+    if (pedido) return pedido;
+  }
+  return Cosmeticos.casco();
 }
 
 function classePorId(id) {

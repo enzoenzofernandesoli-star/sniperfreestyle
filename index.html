@@ -52,6 +52,7 @@
         <span class="rotulo">PONTOS</span>
         <b id="pontos">0</b>
         <span id="multi" class="multi">x1</span>
+        <span class="hud-moedas"><i class="moeda-mini"></i><b id="moedasHud">0</b></span>
       </div>
     </div>
 
@@ -104,16 +105,18 @@
     <div class="menu-caixa">
       <p class="tag-topo">ARENA NEON · TWIN-STICK ROGUELITE</p>
       <h1 class="titulo">SNIPER<span>FREESTYLE</span></h1>
-      <p class="subtitulo">5 classes · 15 skins · 12 tipos de inimigo · 8 bosses com fases · 22 melhorias · 40 ondas</p>
+      <p class="subtitulo">5 classes · lojinha de cosméticos · 12 tipos de inimigo · 14 bosses com fases · 22 melhorias · 100 ondas</p>
       <div class="menu-botoes">
         <button id="btJogar" class="bt principal">JOGAR</button>
         <button id="btCriarSala" class="bt">CRIAR SALA</button>
         <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
         <button id="btComoJogar" class="bt">COMO JOGAR</button>
+        <button id="btLoja" class="bt">LOJINHA</button>
         <button id="btRecordes" class="bt">RECORDES</button>
         <button id="btConfig" class="bt">AJUSTES</button>
       </div>
       <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
+      <p class="moeda-linha"><i class="moeda-mini"></i><b id="moedasMenu">0</b> MOEDAS</p>
       <p id="salaStatus" class="sala-status" role="status" aria-live="polite"></p>
       <p class="creditos">Feito por <b>LODCH</b></p>
     </div>
@@ -123,7 +126,7 @@
   <section class="tela" data-tela="classes">
     <div class="cabecalho-tela">
       <h2>ESCOLHA SUA CLASSE</h2>
-      <p>Cada classe muda arma, mobilidade, defesa e ultimate. Escolha uma skin visual antes de jogar.</p>
+      <p>Cada classe muda arma, mobilidade, defesa e ultimate. A aparência agora é sua, não da classe: escolha na LOJINHA.</p>
     </div>
 
     <div class="caixa-nome">
@@ -133,6 +136,22 @@
     </div>
     <div id="gradeClasses" class="grade-classes"></div>
     <p class="dica-arraste">◂ ARRASTE PARA VER AS 5 CLASSES ▸</p>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
+  <!-- LOJINHA -->
+  <section class="tela" data-tela="loja">
+    <div class="cabecalho-tela">
+      <h2>LOJINHA</h2>
+      <p>Moeda cai de todo inimigo que você mata. Aqui ela vira cor de nave, cor de tiro, acessório e emoji — nada disso muda atributo, é só aparência.</p>
+    </div>
+
+    <div class="loja-topo">
+      <div class="loja-carteira"><i class="moeda-mini grande"></i><b id="lojaSaldo">0</b><span>MOEDAS</span></div>
+      <div id="lojaAbas" class="loja-abas" role="group" aria-label="Seções da loja"></div>
+    </div>
+    <p id="lojaAviso" class="loja-aviso" role="status" aria-live="polite"></p>
+    <div id="lojaGrade" class="loja-grade"></div>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 
@@ -320,6 +339,7 @@
 <script src="src/nucleo.js"></script>
 <script src="src/placar-config.js"></script>
 <script src="src/placar.js"></script>
+<script src="src/loja.js"></script>
 <script src="src/classes.js"></script>
 <script src="src/entidades.js"></script>
 <script src="src/jogo.js"></script>

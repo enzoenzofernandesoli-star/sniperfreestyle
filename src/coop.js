@@ -406,6 +406,8 @@ const Coop = {
   empacotarJogador(id, j) {
     return {
       id, classeId: j.classe.id, skinId: j.skin.id, nome: j.nome || '',
+      // Enfeite comprado na loja: dois ids curtos, e o convidado desenha igual.
+      acessorio: j.acessorio || '', emoji: j.emoji || '',
       x: Coop.numero(j.x), y: Coop.numero(j.y), vx: Coop.numero(j.vx), vy: Coop.numero(j.vy),
       a: Coop.numero(j.angulo), vida: Coop.numero(j.vida), nivel: j.nivel,
       xp: Math.round(j.xp), xpProximo: j.xpProximo, attr: j.attr,
@@ -592,6 +594,11 @@ const Coop = {
 
   absorverJogador(j, d) {
     j.nome = d.nome || j.nome;
+    // Cosmético do dono, não do meu navegador: cada nave na tela usa o que
+    // quem a controla comprou.
+    if (typeof d.acessorio === 'string') j.acessorio = d.acessorio;
+    if (typeof d.emoji === 'string') j.emoji = d.emoji;
+    if (d.skinId && j.skin.id !== d.skinId) j.skin = skinDaClasse(d.classeId || j.classe.id, d.skinId);
     j.vx = d.vx; j.vy = d.vy;
     j.vida = d.vida; j.nivel = d.nivel; j.xp = d.xp; j.xpProximo = d.xpProximo;
     j.attr = d.attr; j.melhorias = d.melhorias || {};

@@ -10,8 +10,11 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
   o boss final, que fica fora do rodízio.
 - **Teto de 6 corações.** Nenhuma classe, melhoria ou cura passa disso
   (`Jogador.VIDA_MAXIMA`), então nenhuma build vira esponja.
-- 3 skins por classe (12 variantes). Escolha antes de jogar; a preferência fica
-  neste navegador. Skins mudam o visual do personagem, não seus atributos.
+- **Lojinha.** Aparência não pertence mais à classe: cor da nave, cor do tiro,
+  acessório e emoji são itens comprados com moeda e valem para as cinco classes.
+  Nada na loja mexe em atributo, dano ou pontuação. A moeda cai de todo inimigo
+  morto, o saldo fica neste navegador e comprar moeda com dinheiro de verdade é
+  um botão que ainda avisa que não está no ar.
 - Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
   e só treme e dá zoom, nunca acompanha o jogador. O CSS encolhe o canvas para
   caber na tela, então o espaço de fuga cresceu sem ninguém sair do quadro. No
@@ -358,6 +361,7 @@ src/nucleo.js       Mat, Config, Camera, Recordes, Input, Som, Particulas, Texto
 src/placar.js       Perfil (nome) e Placar (envio e leitura do placar mundial)
 src/placar-config.js  endereço do placar — o único arquivo a mexer pra ligar/desligar
 api/placar.js       função da Vercel: valida a run e grava no Postgres do Neon
+src/loja.js         Carteira (moedas), catálogo de cosméticos e a tela da lojinha
 src/classes.js      CLASSES[] e MELHORIAS[] (dados puros — mexa aqui pra balancear)
 src/entidades.js    Jogador, Projetil, Inimigo, Boss, Coletavel
 src/jogo.js         estado, loop, ondas, colisões, efeitos de tela, render da arena
@@ -497,6 +501,8 @@ deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
 | Escala de vida por onda | `src/jogo.js` → `multiplicadorVida()` |
 | Progressão até a onda 100 | `src/jogo.js` → `TOTAL_ONDAS`, curvas de onda e `spawnarBoss()` |
 | Curva de XP (frequência das melhorias) | `src/entidades.js` → `xpProximo` (`50` e `1.38`) |
+| Quanto de moeda o inimigo larga | `src/jogo.js` → `moedasDe()` e o bolo do boss em `bossDerrotado()` |
+| Preço dos cosméticos | `src/loja.js` → `CASCOS`, `TIROS`, `ACESSORIOS`, `EMOJIS` |
 
 Medido no pior caso (onda 19, 34 inimigos, 300 projéteis): **0,14 ms de lógica e 0,27 ms de
 render por quadro** — sobra folga de 60× no orçamento de 16,6 ms.

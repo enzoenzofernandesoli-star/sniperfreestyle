@@ -243,7 +243,7 @@ const Som = {
     const tipo = cfg.tipo || 'square';
     const dur = cfg.dur || 0.12;
     const vol = cfg.vol || 0.3;
-    const t = Som.ctx.currentTime;
+    const t = Som.ctx.currentTime + (cfg.atraso || 0);
     const osc = Som.ctx.createOscillator();
     const g = Som.ctx.createGain();
     osc.type = tipo;
@@ -333,6 +333,12 @@ const Som = {
       setTimeout(() => Som._tom({ freq: f, freqFinal: f * 0.4, tipo: 'sawtooth', dur: 0.6, vol: 0.22 }), i * 160));
   },
   clique() { Som._tom({ freq: 620, tipo: 'square', dur: 0.04, vol: 0.07 }); },
+  erro() { Som._tom({ freq: 200, freqFinal: 120, tipo: 'sawtooth', dur: 0.18, vol: 0.1 }); },
+  // Tilintar de moeda: duas notas curtas e altas, uma logo depois da outra.
+  moeda() {
+    Som._tom({ freq: 1180, tipo: 'triangle', dur: 0.06, vol: 0.09 });
+    Som._tom({ freq: 1760, tipo: 'triangle', dur: 0.1, vol: 0.07, atraso: 0.05 });
+  },
   gameOver() {
     [392, 330, 262, 196].forEach((f, i) =>
       setTimeout(() => Som._tom({ freq: f, freqFinal: f * 0.7, tipo: 'triangle', dur: 0.5, vol: 0.18 }), i * 240));

@@ -2,10 +2,12 @@
    ENTIDADES.JS — Jogador, Projétil, Inimigos, Bosses, Coletáveis.
    =========================================================================== */
 
-// Só os projéteis disparados pelo jogador usam esta paleta.
-const CORES_TIRO = Object.freeze({
-  jogador: '#dcff46', critico: '#ffffff'
-});
+// Só os projéteis disparados pelo jogador usam esta paleta, e quem a define é
+// o item de tiro equipado na loja. Tiro de inimigo e de boss não passa por aqui.
+const CORES_TIRO = {
+  get jogador() { return Cosmeticos.tiro().jogador; },
+  get critico() { return Cosmeticos.tiro().critico; }
+};
 
 /* =============================== JOGADOR ================================ */
 class Jogador {
@@ -15,6 +17,8 @@ class Jogador {
   constructor(classeId, skinId) {
     this.classe = classePorId(classeId);
     this.skin = skinDaClasse(classeId, skinId);
+    this.acessorio = Cosmeticos.acessorio();
+    this.emoji = Cosmeticos.emoji();
     this.attr = Object.assign({}, this.classe.atributos);
 
     this.x = Jogo.LARGURA / 2;
@@ -664,6 +668,14 @@ class Jogador {
     }
   }
 
+  // A loja pode trocar a aparência com o jogo já rodando; isso relê a carteira
+  // sem tocar em nada de atributo.
+  recarregarVisual() {
+    this.skin = skinDaClasse(this.classe.id, null);
+    this.acessorio = Cosmeticos.acessorio();
+    this.emoji = Cosmeticos.emoji();
+  }
+
   aplicarMelhoria(m) {
     this.melhorias[m.id] = (this.melhorias[m.id] || 0) + 1;
     m.aplicar(this);
@@ -673,8 +685,9 @@ class Jogador {
 
   /* ----------------------------- Desenho ----------------------------- */
   desenhar(ctx) {
-    const cor = this.skin.cor;
-    const cor2 = this.skin.cor2;
+    const tons = Cosmeticos.tons(this.skin);
+    const cor = tons.cor;
+    const cor2 = tons.cor2;
     if (this.corpoPossuido) {
       this.desenharPossuido(ctx);
       return;
@@ -698,9 +711,9 @@ class Jogador {
         ctx.translate(eco.x - this.x, eco.y - this.y);
         ctx.rotate(eco.a);
         ctx.globalAlpha = p * 0.55;
-        ctx.strokeStyle = this.skin.cor;
+        ctx.strokeStyle = cor;
         ctx.lineWidth = 2;
-        ctx.shadowBlur = Jogo.modoLeve ? 0 : 18; ctx.shadowColor = this.skin.cor;
+        ctx.shadowBlur = Jogo.modoLeve ? 0 : 18; ctx.shadowColor = cor;
         ctx.beginPath();
         ctx.moveTo(this.raio * 1.1, 0);
         ctx.lineTo(-this.raio * 0.8, this.raio * 0.8);
@@ -718,8 +731,8 @@ class Jogador {
       ctx.translate(l.x - this.x, l.y - this.y);
       ctx.rotate(l.mira);
       ctx.globalAlpha = l.temporario ? 0.75 : 1;
-      ctx.fillStyle = this.skin.cor2;
-      ctx.strokeStyle = this.skin.cor;
+      ctx.fillStyle = cor2;
+      ctx.strokeStyle = cor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(9, 0); ctx.lineTo(-6, 6); ctx.lineTo(-3, 0); ctx.lineTo(-6, -6);
@@ -779,7 +792,22 @@ class Jogador {
     ctx.beginPath();
     ctx.arc(0, 0, 5, 0, Mat.TAU);
     ctx.fill();
+
+    // acessório da loja: acompanha a mira junto com o casco
+    desenharAcessorio(ctx, this.acessorio, this.raio, cor, cor2, this.angulo);
     ctx.restore();
+
+    // emoji: fica em pé acima da nave, sem girar com ela
+    if (this.emoji) {
+      ctx.save();
+      ctx.font = '22px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = piscando ? 0.4 : 1;
+      const alto = ACESSORIOS_ALTOS.indexOf(this.acessorio) !== -1;
+      ctx.fillText(this.emoji, this.x, this.y - this.raio * (alto ? 4.1 : 2.4) + Math.sin(Jogo.tempo * 3) * 3);
+      ctx.restore();
+    }
 
     // escudo
     if (this.escudoAtivo) {
@@ -2343,6 +2371,7 @@ class Boss {
 /* ============================= COLETÁVEIS =============================== */
 const TIPOS_COLETAVEL = {
   xp: { cor: '#8fe3ff', raio: 6, brilho: 14 },
+  moeda: { cor: '#ffd34d', raio: 9, brilho: 18 },
   vida: { cor: '#ff4d6d', raio: 12, brilho: 22, icone: '❤' },
   bomba: { cor: '#ffd34d', raio: 12, brilho: 22, icone: '✹' },
   ima: { cor: '#b06dff', raio: 12, brilho: 22, icone: '◈' },
@@ -2358,7 +2387,7 @@ class Coletavel {
     this.valor = valor || 1;
     this.vx = Mat.aleatorio(-70, 70);
     this.vy = Mat.aleatorio(-70, 70);
-    this.vida = tipo === 'xp' ? 18 : 22;
+    this.vida = (tipo === 'xp' || tipo === 'moeda') ? 18 : 22;
     this.fase = Math.random() * Mat.TAU;
     this.vivo = true;
   }
@@ -2369,7 +2398,7 @@ class Coletavel {
     const j = Jogo.jogadorMaisProximo(this.x, this.y, false);
     if (!j) return;
     const d = Mat.distancia(this.x, this.y, j.x, j.y);
-    const raioIma = this.tipo === 'xp' ? j.attr.ima : 90;
+    const raioIma = (this.tipo === 'xp' || this.tipo === 'moeda') ? j.attr.ima : 90;
     if (d < raioIma || Jogo.imaGlobal > 0) {
       const a = Mat.anguloEntre(this.x, this.y, j.x, j.y);
       const forca = Jogo.imaGlobal > 0 ? 900 : Mat.misturar(700, 180, d / raioIma);
@@ -2397,6 +2426,12 @@ class Coletavel {
       Particulas.emitir({ x: this.x, y: this.y, vida: 0.3, tam: 5, cor: this.def.cor, brilho: 16, atrito: 0.9 });
       return;
     }
+    if (this.tipo === 'moeda') {
+      Carteira.ganhar(this.valor);
+      Som.moeda();
+      Particulas.emitir({ x: this.x, y: this.y, vida: 0.35, tam: 4, cor: this.def.cor, brilho: 18, atrito: 0.9 });
+      return;
+    }
     Som.pegar();
     Particulas.anel(this.x, this.y, this.def.cor, 40, 18);
     if (this.tipo === 'vida') { j.curar(1); }
@@ -2413,6 +2448,28 @@ class Coletavel {
     ctx.translate(this.x, this.y + flutua);
     ctx.shadowBlur = this.def.brilho; ctx.shadowColor = this.def.cor;
     ctx.fillStyle = this.def.cor;
+    if (this.tipo === 'moeda') {
+      // Gira de verdade: a largura encolhe e volta, como moeda rodando de pé.
+      const giro = Math.cos(Jogo.tempo * 4 + this.fase);
+      ctx.scale(Math.max(0.12, Math.abs(giro)), 1);
+      ctx.beginPath();
+      ctx.arc(0, 0, this.def.raio, 0, Mat.TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#8a6100';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, this.def.raio * 0.58, 0, Mat.TAU);
+      ctx.stroke();
+      ctx.fillStyle = '#8a6100';
+      ctx.font = '900 10px Rajdhani, Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', 0, 1);
+      ctx.restore();
+      return;
+    }
     if (this.tipo === 'xp') {
       ctx.rotate(Jogo.tempo * 3 + this.fase);
       ctx.beginPath();

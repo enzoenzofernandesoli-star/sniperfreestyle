@@ -38,6 +38,8 @@ const UI = {
       avisoNome: g('avisoNome'),
       statusPlacar: g('statusPlacar'),
       recordeMenu: g('recordeMenu'),
+      moedasMenu: g('moedasMenu'),
+      moedasHud: g('moedasHud'),
       buffs: g('buffs'),
       toqueDash: g('btToqueDash'),
       toqueEscudo: g('btToqueEscudo'),
@@ -51,6 +53,7 @@ const UI = {
       salaAviso: g('salaAviso')
     };
 
+    Loja.iniciar();
     UI.montarClasses();
     UI.montarConfig();
     UI.montarNome();
@@ -65,6 +68,7 @@ const UI = {
     UI.ligarSala();
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
+    g('btLoja').onclick = () => { Som.clique(); Loja.abrirAba(Loja.aba); UI.mostrarTela('loja'); };
     g('btRecordes').onclick = () => { Som.clique(); UI.montarRecordes(); UI.montarMundial(); UI.mostrarTela('recordes'); };
 
     document.querySelectorAll('[data-voltar]').forEach((b) => {
@@ -119,6 +123,14 @@ const UI = {
 
     UI.mostrarTela('menu');
     UI.el.recordeMenu.textContent = Recordes.melhor().toLocaleString('pt-BR');
+    UI.atualizarMoedas();
+  },
+
+  // Um lugar só para o saldo: menu e HUD leem da mesma carteira.
+  atualizarMoedas() {
+    const texto = Carteira.moedas.toLocaleString('pt-BR');
+    if (UI.el.moedasMenu) UI.el.moedasMenu.textContent = texto;
+    if (UI.el.moedasHud) UI.el.moedasHud.textContent = texto;
   },
 
   /* ------------------------------- Telas ------------------------------ */
@@ -129,6 +141,7 @@ const UI = {
     if (nome === 'menu') {
       UI.esconderBarraBoss();
       UI.el.recordeMenu.textContent = Recordes.melhor().toLocaleString('pt-BR');
+      UI.atualizarMoedas();
     }
   },
 
@@ -151,8 +164,6 @@ const UI = {
 
   montarClasses() {
     UI.el.gradeClasses.innerHTML = '';
-    const escolhas = {};
-    try { Object.assign(escolhas, JSON.parse(localStorage.getItem('sniper.skins') || '{}')); } catch (e) { /* armazenamento indisponível */ }
     CLASSES.forEach((c, i) => {
       const card = document.createElement('div');
       card.className = 'cartao-classe';
@@ -171,38 +182,20 @@ const UI = {
         '<ul class="cc-lista">' + c.forcas.map((f) => '<li class="bom">+ ' + f + '</li>').join('') +
         c.fraquezas.map((f) => '<li class="ruim">− ' + f + '</li>').join('') + '</ul>' +
         '<div class="cc-ult"><b>' + c.ult.nome + '</b><span>' + c.ult.descricao + '</span></div>' +
-        '<div class="cc-skins" role="group" aria-label="Skin de ' + c.nome + '"></div>' +
+        '<button type="button" class="cc-loja">🛒 MUDAR APARÊNCIA NA LOJINHA</button>' +
         '<button type="button" class="cc-jogar">JOGAR COM ' + c.nome + ' ▸</button>';
-      const escolher = (skinId) => {
-        escolhas[c.id] = skinId;
-        try { localStorage.setItem('sniper.skins', JSON.stringify(escolhas)); } catch (e) { /* armazenamento indisponível */ }
-        card.querySelectorAll('.cc-skin').forEach((botao) => {
-          botao.setAttribute('aria-pressed', String(botao.dataset.skin === skinId));
-        });
-      };
-      const grupo = card.querySelector('.cc-skins');
-      SKINS[c.id].forEach((skin) => {
-        const botao = document.createElement('button');
-        botao.type = 'button';
-        botao.className = 'cc-skin';
-        botao.dataset.skin = skin.id;
-        botao.style.setProperty('--skin', skin.cor);
-        botao.textContent = skin.nome;
-        botao.onclick = () => escolher(skin.id);
-        grupo.appendChild(botao);
-      });
-      escolher(skinDaClasse(c.id, escolhas[c.id]).id);
+      card.querySelector('.cc-loja').onclick = () => { Som.clique(); Loja.abrirAba(Loja.aba); UI.mostrarTela('loja'); };
       card.querySelector('.cc-jogar').onclick = () => {
         Som.clique();
         Som.destravar();
         UI.el.classeNome.textContent = c.nome;
         // Na sala a classe só é anotada: quem dá a largada é o anfitrião.
         if (Coop.intencao === 'sala') {
-          Coop.escolherClasse(c.id, escolhas[c.id]);
+          Coop.escolherClasse(c.id, Carteira.equipado.casco);
           UI.mostrarTela('sala');
           return;
         }
-        Jogo.novoJogo(c.id, escolhas[c.id]);
+        Jogo.novoJogo(c.id, Carteira.equipado.casco);
       };
       UI.el.gradeClasses.appendChild(card);
     });
