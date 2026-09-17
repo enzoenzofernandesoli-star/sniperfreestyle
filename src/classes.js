@@ -79,7 +79,7 @@ const CLASSES = [
     forcas: ['5 projéteis de 13 de dano por tiro', 'Dash corta quem encostar', 'Cura 2,5% da vida a cada abate', 'CARNIFICINA praticamente zera a arena'],
     fraquezas: ['Só 2 corações', 'Alcance curtíssimo: 360 px', 'Errou a distância, morreu'],
     somTiro: 'shotgun',
-    ult: { nome: 'CARNIFICINA', descricao: '5 s intangível cortando num raio enorme, 40% mais rápido, e cada abate estende a matança.' },
+    ult: { nome: 'CARNIFICINA', descricao: 'O mundo entra em câmera lenta e só você não. 5 s intangível, foice de 175 px, ecos que cortam sozinhos, onda a cada abate e estouro final do tamanho da chacina.' },
     atributos: {
       vidaMax: 2, velocidade: 430, cadencia: 0.32, dano: 13, projeteis: 5,
       espalhamento: 0.5, balaVel: 1100, balaRaio: 5, perfuracao: 1, ricochete: 0,

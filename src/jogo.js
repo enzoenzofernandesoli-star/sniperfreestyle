@@ -355,6 +355,13 @@ const Jogo = {
     if (j.ultAtiva > 0 && j.classe.id === 'espectro') {
       j.ultAtiva = Math.min(9, j.ultAtiva + 0.35);
       j.invulneravel = Math.max(j.invulneravel, j.ultAtiva);
+      j.abatesNaUlt = (j.abatesNaUlt || 0) + 1;
+      // Reação em cadeia: cada morte estoura uma onda pequena que pode matar o
+      // vizinho, que estoura outra. É o que faz a multidão desabar junto.
+      Jogo.ondasChoque.push({
+        x: e.x, y: e.y, raio: 6, raioMax: 190, dano: j.attr.dano * 2.5,
+        cor: j.classe.cor, atingidos: new Set(), empurrao: 420
+      });
     }
     if (j.vampirismo > 0 && Mat.chance(j.vampirismo)) j.curar(0.5);
     // a remoção do array acontece no laço principal (flag .vivo), nunca aqui:
@@ -554,6 +561,13 @@ const Jogo = {
 
     const dt = dtReal * escala;
     Jogo.dtReal = dtReal;   // quem precisa de tempo de relógio, e não de jogo
+
+    // CARNIFICINA: o mundo anda em câmera lenta e só o ESPECTRO corre no tempo
+    // normal. É o que transforma a ult num corredor de abate em vez de um
+    // buff de dano — e é por isso que `dtMundo` existe separado de `dt`.
+    const dono = Jogo.jogador;
+    Jogo.emCarnificina = !!(dono && dono.ultAtiva > 0 && dono.classe.id === 'espectro');
+    const dtMundo = Jogo.emCarnificina ? dt * 0.45 : dt;
     Jogo.tempo += dt;
     Jogo.tempoJogo += dtReal;
     Jogo.imaGlobal = Math.max(0, Jogo.imaGlobal - dtReal);
@@ -612,17 +626,17 @@ const Jogo = {
     // entidades
     for (let i = Jogo.inimigos.length - 1; i >= 0; i--) {
       const e = Jogo.inimigos[i];
-      e.atualizar(dt);
+      e.atualizar(dtMundo);
       if (!e.vivo) Jogo.inimigos.splice(i, 1);
     }
     if (Jogo.boss) {
-      Jogo.boss.atualizar(dt);
+      Jogo.boss.atualizar(dtMundo);
     }
 
     // projéteis + colisões
     for (let i = Jogo.projeteis.length - 1; i >= 0; i--) {
       const b = Jogo.projeteis[i];
-      b.atualizar(dt);
+      b.atualizar(dtMundo);
       if (!b.vivo) { Jogo.projeteis.splice(i, 1); continue; }
 
       if (b.dono === 'jogador') {

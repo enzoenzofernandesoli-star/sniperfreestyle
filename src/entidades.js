@@ -327,6 +327,9 @@ class Jogador {
     if (this.ultAtiva > 0) {
       this.ultAtiva -= dt;
       this.tickUlt(dt);
+      // Fim da CARNIFICINA: tudo que foi cortado volta de uma vez, num estouro
+      // do tamanho da carnificina que o jogador fez.
+      if (this.ultAtiva <= 0 && this.classe.id === 'espectro') this.estourarCarnificina();
     }
 
     // regeneração
@@ -458,6 +461,55 @@ class Jogador {
     Som.dash();
   }
 
+  // Ecos da CARNIFICINA: cópias do ESPECTRO que ficam para trás e continuam
+  // cortando por conta própria. Cada passo do jogador deixa um, e o eco vale
+  // metade do corte — atravessar a multidão em linha reta vira um corredor de
+  // lâminas que continua matando depois que ele já passou.
+  // O troco da CARNIFICINA: quanto mais gente caiu durante a ult, maior o
+  // estouro que fecha a conta. Vazia, é um empurrão; cheia, limpa a tela.
+  estourarCarnificina() {
+    const abates = this.abatesNaUlt || 0;
+    const raio = Mat.limitar(320 + abates * 45, 320, 1100);
+    Jogo.ondasChoque.push({
+      x: this.x, y: this.y, raio: 10, raioMax: raio,
+      dano: this.attr.dano * (4 + abates * 1.2), cor: this.classe.cor,
+      atingidos: new Set(), empurrao: 1100, limpaTiros: true
+    });
+    Jogo.flashTela(0.5, this.classe.cor);
+    Camera.bater(20 + Math.min(20, abates));
+    Particulas.anel(this.x, this.y, this.classe.cor, raio * 0.35, 40);
+    Som.ultimate();
+    if (abates > 0) Textos.criar(this.x, this.y - 40, abates + ' CORTADOS', this.classe.cor, 26);
+    this.abatesNaUlt = 0;
+    this.ecos = [];
+  }
+
+  atualizarEcos(dt) {
+    if (!this.ecos) this.ecos = [];
+    this.tempoEco = (this.tempoEco || 0) - dt;
+    if (this.tempoEco <= 0 && this.ecos.length < 14) {
+      this.tempoEco = 0.09;
+      this.ecos.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.75, vidaMax: 0.75, golpe: 0 });
+    }
+    for (let i = this.ecos.length - 1; i >= 0; i--) {
+      const eco = this.ecos[i];
+      eco.vida -= dt;
+      if (eco.vida <= 0) { this.ecos.splice(i, 1); continue; }
+      eco.golpe -= dt;
+      if (eco.golpe > 0) continue;
+      eco.golpe = 0.22;
+      for (const alvo of Jogo.inimigos) {
+        if (Mat.distancia(eco.x, eco.y, alvo.x, alvo.y) < alvo.raio + 90) {
+          Jogo.danificarInimigo(alvo, this.attr.dano * 3, false, eco.x, eco.y);
+        }
+      }
+      const b = Jogo.boss;
+      if (b && b.vivo && Mat.distancia(eco.x, eco.y, b.x, b.y) < b.raio + 90) {
+        b.receberDano(this.attr.dano * 3, false, eco.x, eco.y);
+      }
+    }
+  }
+
   cortarNoDash() {
     // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão: vale
     // dez vezes o tiro e volta no mesmo alvo quase quatro vezes mais rápido.
@@ -526,6 +578,8 @@ class Jogador {
       // ela só rende se o jogador atravessar a arena colado nos inimigos.
       this.ultAtiva = 5;
       this.invulneravel = Math.max(this.invulneravel, 5);
+      this.abatesNaUlt = 0;
+      this.ecos = [];
       Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 620,
         dano: this.attr.dano * 4, cor: this.classe.cor, atingidos: new Set(),
         empurrao: 900, limpaTiros: true });
@@ -546,6 +600,7 @@ class Jogador {
   tickUlt(dt) {
     if (this.classe.id === 'espectro') {
       this.cortarNoDash();
+      this.atualizarEcos(dt);
       if (Mat.chance(0.4)) {
         Particulas.emitir({ x: this.x + Mat.aleatorio(-18, 18), y: this.y + Mat.aleatorio(-18, 18), vida: 0.3, tam: 6, cor: '#ff4d6d', brilho: 18, atrito: 0.86 });
       }
@@ -634,6 +689,28 @@ class Jogador {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+
+    // ecos da CARNIFICINA, desenhados atrás de tudo do jogador
+    if (this.ecos && this.ecos.length) {
+      for (const eco of this.ecos) {
+        const p = Mat.limitar(eco.vida / eco.vidaMax, 0, 1);
+        ctx.save();
+        ctx.translate(eco.x - this.x, eco.y - this.y);
+        ctx.rotate(eco.a);
+        ctx.globalAlpha = p * 0.55;
+        ctx.strokeStyle = this.skin.cor;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = Jogo.modoLeve ? 0 : 18; ctx.shadowColor = this.skin.cor;
+        ctx.beginPath();
+        ctx.moveTo(this.raio * 1.1, 0);
+        ctx.lineTo(-this.raio * 0.8, this.raio * 0.8);
+        ctx.lineTo(-this.raio * 0.4, 0);
+        ctx.lineTo(-this.raio * 0.8, -this.raio * 0.8);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     // drones
     for (const l of this.lacaios) {
