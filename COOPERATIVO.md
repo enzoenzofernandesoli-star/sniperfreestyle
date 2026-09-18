@@ -52,7 +52,7 @@ servidor não sabe quem está na sala além das conexões que precisa encaminhar
 | `pronto {classe, skin}` | convidado → anfitrião | escolheu classe |
 | `lobby {lista}` | anfitrião → convidados | painel da sala |
 | `comecou` | anfitrião → convidados | largada |
-| `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s; inclui possessão |
+| `controle` / `estado` | convidado ↔ anfitrião | comando a 30/s e snapshot a 20/s |
 
 ## Onde as salas moram
 
@@ -91,13 +91,9 @@ saídas:
 - Salas privadas por código de convite escolhido pelo anfitrião, 2 a 4 pessoas.
 - Cada um escolhe classe e skin; todos veem as mesmas ondas, inimigos, bosses,
   projéteis e coletáveis, com os mesmos números.
-- Possessão continua autoritativa no anfitrião. Convidado envia `possessao`/`especial`;
-  snapshot devolve tipo, vida, raio, velocidade e tempo do corpo. Previsão local só
-  move a aparência recebida — nunca decide entrada, saída, dano ou ataque.
-- Corpo possuído sai da lista de alvos hostis. Inimigos e boss miram outro jogador
-  não possuído; se todos estiverem disfarçados, seguram movimento e ataque.
-- Seleção de alvo não materializa listas temporárias; isso evita travadas no anfitrião
-  quando muitos inimigos recalculam a facção durante a possessão.
+- A possessão foi removida do jogo em 18/09/2026: `corpoPossuido` não existe mais no pacote,
+  e o campo `possessao` saiu do comando do convidado. A tecla `E` virou atalho da ultimate,
+  que já era autoritativa no anfitrião.
 - Comando do convidado (movimento, mira, tiro, dash, escudo, ult) sobe a 30/s; o
   anfitrião valida faixa e frequência antes de usar (`Coop.validarControle`).
 - Snapshot a 20/s, ~1,9 KB numa partida de 4 inimigos. Não trafega o que o convidado

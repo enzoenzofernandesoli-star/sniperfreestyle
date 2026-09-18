@@ -12,6 +12,7 @@ Repositório: `https://github.com/enzoenzofernandesoli-star/sniperfreestyle`
 |---|---|
 | `LEIA-ME.md` | Sempre. Arquitetura, controles, classes, bosses e a tabela "Onde balancear" |
 | `COOPERATIVO.md` | Qualquer coisa de sala, online, multiplayer ou snapshot |
+| `src/versao.js` | Publicar versão, mexer no histórico ou na temporada do ranking |
 | `GOOGLE-PLAY.md` | Publicação Android, PWA, ícones, política |
 
 O roteiro de trabalho e os próximos passos ficam no Segundo Cérebro, em
@@ -27,6 +28,24 @@ npm test           # 16 testes (node --test), incluindo WebSocket real
 
 Sala cooperativa na mão: abrir `http://localhost:8123` em duas abas, CRIAR SALA numa,
 ENTRAR NA SALA na outra com o código de 8 dígitos.
+
+## Regras que já foram decididas (não desfaça sem pedir)
+
+- **Possessão não existe mais.** Foi removida em 18/09/2026 a pedido do Enzo. A tecla `E` é
+  atalho da ultimate. Reintroduzir exige refazer o "corpo é aliado" na busca de alvo do
+  cooperativo.
+- **Emoji da loja É o corpo do jogador**, não um adesivo acima da nave. Com emoji equipado a
+  nave não é desenhada; cano da arma, disco de cor e acessório continuam.
+- **Temporada do ranking sai de `src/versao.js`**: a temporada é o número de entradas em
+  `ATUALIZACOES`. Acrescentar uma entrada zera o placar mundial e o local. Não crie botão de
+  zerar placar.
+- **O ESPECTADOR** (`secreto: true`) é invencível por regra: `receberDano` devolve sem tocar
+  na barra. Não "conserte" isso, não dê vida balanceada a ele e não o coloque no rodízio.
+  Quem o chama é `Jogo.abrirSegredo()`, depois do CEIFADOR cair — e a vitória das 100 ondas é
+  registrada antes dele aparecer.
+- **Partida encerrada não se reescreve**: `derrota()` sai fora se o estado já é `gameover` ou
+  `vitoria`. Sem isso, a segunda chamada no mesmo quadro trocava o final do segredo por um
+  GAME OVER comum.
 
 ## Convenções
 

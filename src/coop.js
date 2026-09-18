@@ -362,7 +362,7 @@ const Coop = {
     const c = bruto && typeof bruto === 'object' ? bruto : {};
     const eixo = (v) => Mat.limitar(Number(v) || 0, -1, 1);
     const coord = (v, max) => Mat.limitar(Number(v) || 0, -max, max * 2);
-    const pulsos = { Space: c.dash === true, KeyQ: c.especial === true, KeyE: c.possessao === true, ShiftLeft: c.ult === true };
+    const pulsos = { Space: c.dash === true, KeyQ: c.especial === true, ShiftLeft: c.ult === true };
     return {
       mira: { x: eixo(c.miraX), y: eixo(c.miraY), ativo: c.miraAtiva === true },
       modoToque: c.toque === true,
@@ -379,7 +379,6 @@ const Coop = {
     // pulsos só acontecem em um quadro: acumula até caber no próximo envio
     if (Input.apertou('Space')) Coop.pulsosPendentes.dash = true;
     if (Input.apertou('KeyQ') || Input.apertou('CapsLock')) Coop.pulsosPendentes.especial = true;
-    if (Input.apertou('KeyE')) Coop.pulsosPendentes.possessao = true;
     if (Input.apertou('ShiftLeft') || Input.botaoDireito) Coop.pulsosPendentes.ult = true;
 
     const agora = performance.now();
@@ -392,7 +391,6 @@ const Coop = {
       tiro: Input.atirando(),
       dash: !!Coop.pulsosPendentes.dash,
       especial: !!Coop.pulsosPendentes.especial,
-      possessao: !!Coop.pulsosPendentes.possessao,
       ult: !!Coop.pulsosPendentes.ult
     } });
     Coop.pulsosPendentes = {};
@@ -419,13 +417,7 @@ const Coop = {
       orbes: j.orbes.map((o) => ({ angulo: Coop.numero(o.angulo), distancia: o.distancia, raio: o.raio, cooldown: 0 })),
       // Drone é entidade do anfitrião: o convidado só recebe onde desenhar.
       lacaios: j.lacaios.map((l) => ({ x: Coop.numero(l.x), y: Coop.numero(l.y), mira: Coop.numero(l.mira), temporario: !!l.temporario })),
-      corpoPossuido: j.corpoPossuido ? {
-        tipo: j.corpoPossuido.tipo, elite: !!j.corpoPossuido.elite,
-        vidaMax: Coop.numero(j.corpoPossuido.vidaMax), almaVida: Coop.numero(j.corpoPossuido.almaVida),
-        tempo: Coop.numero(j.corpoPossuido.tempo), especial: Coop.numero(j.corpoPossuido.especial),
-        velocidade: Coop.numero(j.corpoPossuido.velocidade)
-      } : null,
-      raio: Coop.numero(j.raio), possessaoMax: j.possessaoMax
+      raio: Coop.numero(j.raio)
     };
   },
   empacotarInimigo(e) {
@@ -608,9 +600,7 @@ const Coop = {
     j.invulneravel = d.invulneravel; j.frenesi = d.frenesi; j.recuo = d.recuo;
     j.orbes = d.orbes || [];
     j.lacaios = (d.lacaios || []).map((l) => ({ x: l.x, y: l.y, mira: l.mira, angulo: 0, recarga: 99, temporario: l.temporario, restante: 99 }));
-    j.corpoPossuido = d.corpoPossuido || null;
     j.raio = d.raio || 16;
-    j.possessaoMax = d.possessaoMax || 12.5;
     if (!j.rastro) j.rastro = [];
   },
   absorverSimples(e, d) {

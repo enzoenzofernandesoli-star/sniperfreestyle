@@ -65,8 +65,7 @@
       <div class="habilidades">
         <div class="hab" id="habDash"><span class="tecla">ESPAÇO</span><span class="nome">DASH</span></div>
         <div class="hab" id="habEscudo"><span class="tecla">Q</span><span class="nome">ESCUDO</span></div>
-        <div class="hab possessao" id="habPossessao"><span class="tecla">E</span><span class="nome">POSSUIR</span></div>
-        <div class="hab" id="habUlt"><span class="tecla">SHIFT</span><span class="nome">ULTIMATE</span></div>
+        <div class="hab" id="habUlt"><span class="tecla">E / SHIFT</span><span class="nome">ULTIMATE</span></div>
       </div>
 
       <div class="rodape-info">
@@ -87,7 +86,6 @@
       <div class="fila-habilidades">
         <button id="btToqueDash" class="bt-toque hab-toque" data-hab="dash">»</button>
         <button id="btToqueEscudo" class="bt-toque hab-toque" data-hab="escudo">⛨</button>
-        <button id="btToquePossessao" class="bt-toque hab-toque possessao" data-hab="possessao">Ψ</button>
         <button id="btToqueUlt" class="bt-toque hab-toque" data-hab="ult">★</button>
       </div>
       <div class="fila-tiro">
@@ -114,6 +112,7 @@
         <button id="btLoja" class="bt">LOJINHA</button>
         <button id="btRecordes" class="bt">RECORDES</button>
         <button id="btConfig" class="bt">AJUSTES</button>
+        <button id="btAtualizar" class="bt">ATUALIZAR<span id="seloVersao" class="selo-versao"></span></button>
       </div>
       <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
       <p class="moeda-linha"><i class="moeda-mini"></i><b id="moedasMenu">0</b> MOEDAS</p>
@@ -258,6 +257,24 @@
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 
+  <!-- ATUALIZAÇÕES -->
+  <section class="tela" data-tela="atualizacoes">
+    <div class="cabecalho-tela">
+      <h2>ATUALIZAÇÕES</h2>
+      <p>Versão <b id="versaoAtual">—</b> · temporada <b id="temporadaAtual">—</b> do ranking</p>
+    </div>
+
+    <div class="painel">
+      <div class="atu-acao">
+        <button id="btBuscarAtualizacao" class="bt principal">BUSCAR ATUALIZAÇÃO AGORA</button>
+        <p class="atu-nota">Limpa o que está guardado no aparelho e recarrega do servidor. Sua carteira, seus cosméticos e seu nome continuam onde estão.</p>
+      </div>
+      <p class="atu-nota temporada">Cada atualização abre uma <b>temporada nova</b>: o ranking mundial e o daqui recomeçam do zero, e a pontuação da temporada passada fica no histórico.</p>
+      <div id="listaAtualizacoes" class="atu-lista"></div>
+    </div>
+    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
+  </section>
+
   <!-- AJUSTES -->
   <section class="tela" data-tela="config">
     <div class="cabecalho-tela"><h2>AJUSTES</h2></div>
@@ -336,6 +353,7 @@
   </div>
 </div>
 
+<script src="src/versao.js"></script>
 <script src="src/nucleo.js"></script>
 <script src="src/placar-config.js"></script>
 <script src="src/placar.js"></script>

@@ -20,7 +20,6 @@ const UI = {
       classeNome: g('classeNome'),
       habDash: g('habDash'),
       habEscudo: g('habEscudo'),
-      habPossessao: g('habPossessao'),
       habUlt: g('habUlt'),
       bossBarra: g('bossBarra'),
       bossNome: g('bossNome'),
@@ -38,12 +37,15 @@ const UI = {
       avisoNome: g('avisoNome'),
       statusPlacar: g('statusPlacar'),
       recordeMenu: g('recordeMenu'),
+      seloVersao: g('seloVersao'),
+      versaoAtual: g('versaoAtual'),
+      temporadaAtual: g('temporadaAtual'),
+      listaAtualizacoes: g('listaAtualizacoes'),
       moedasMenu: g('moedasMenu'),
       moedasHud: g('moedasHud'),
       buffs: g('buffs'),
       toqueDash: g('btToqueDash'),
       toqueEscudo: g('btToqueEscudo'),
-      toquePossessao: g('btToquePossessao'),
       toqueUlt: g('btToqueUlt'),
       listaMelhoriasAtivas: g('listaMelhoriasAtivas'),
       salaEquipe: g('salaEquipe'),
@@ -60,6 +62,7 @@ const UI = {
     UI.montarAbas();
     Toque.iniciar();
     UI.montarRecordes();
+    UI.marcarVersao();
 
     g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
     g('btCriarSala').onclick = () => { Som.clique(); UI.abrirSala('criar'); };
@@ -68,6 +71,13 @@ const UI = {
     UI.ligarSala();
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
+    g('btAtualizar').onclick = () => { Som.clique(); UI.montarAtualizacoes(); UI.mostrarTela('atualizacoes'); };
+    g('btBuscarAtualizacao').onclick = (e) => {
+      Som.clique();
+      e.currentTarget.textContent = 'BUSCANDO…';
+      e.currentTarget.disabled = true;
+      JOGO.atualizarAgora();
+    };
     g('btLoja').onclick = () => { Som.clique(); Loja.abrirAba(Loja.aba); UI.mostrarTela('loja'); };
     g('btRecordes').onclick = () => { Som.clique(); UI.montarRecordes(); UI.montarMundial(); UI.mostrarTela('recordes'); };
 
@@ -333,11 +343,12 @@ const UI = {
       return;
     }
     if (!linhas.length) {
-      caixa.innerHTML = '<p class="vazio">Ninguém pontuou ainda. Seja o primeiro.</p>';
+      caixa.innerHTML = UI.linhaTemporada() +
+        '<p class="vazio">Ninguém pontuou nesta temporada ainda. Seja o primeiro.</p>';
       return;
     }
     const meu = Perfil.exibir();
-    caixa.innerHTML =
+    caixa.innerHTML = UI.linhaTemporada() +
       '<table class="tabela"><thead><tr><th>#</th><th>NOME</th><th>PONTOS</th><th>CLASSE</th><th>ONDA</th><th></th></tr></thead><tbody>' +
       linhas.map((r, i) => {
         const eu = r.nome === meu ? ' class="eu"' : '';
@@ -354,13 +365,53 @@ const UI = {
       .replace(/\u0022/g, '&quot;').replace(/\u0027/g, '&#39;');
   },
 
+  /* Acende o selo verde no botão ATUALIZAR quando a versão mudou desde a
+     última vez que este navegador abriu o jogo. */
+  marcarVersao() {
+    if (typeof JOGO === 'undefined' || !UI.el.seloVersao) return;
+    const situacao = JOGO.situacao();
+    UI.el.seloVersao.textContent = 'NOVO';
+    UI.el.seloVersao.classList.toggle('aceso', situacao === 'nova');
+  },
+
+  montarAtualizacoes() {
+    if (typeof JOGO === 'undefined') return;
+    UI.el.versaoAtual.textContent = JOGO.versao;
+    UI.el.temporadaAtual.textContent = JOGO.temporada;
+    UI.el.listaAtualizacoes.innerHTML = ATUALIZACOES.map((a, i) =>
+      '<div class="atu-item' + (i === 0 ? ' agora' : '') + '">' +
+        '<div class="atu-cabeca">' +
+          '<span class="atu-versao">' + UI.escapar(a.versao) + '</span>' +
+          '<span class="atu-titulo">' + UI.escapar(a.titulo) + '</span>' +
+          (i === 0 ? '<span class="atu-agora">VOCÊ ESTÁ AQUI</span>' : '') +
+          '<span class="atu-data">' + UI.escapar(a.data) + '</span>' +
+        '</div>' +
+        '<ul class="atu-itens">' + a.itens.map((t) => '<li>' + UI.escapar(t) + '</li>').join('') + '</ul>' +
+      '</div>'
+    ).join('');
+    // Ver a lista conta como ter tomado conhecimento: o selo apaga.
+    JOGO.anotarVersao();
+    UI.marcarVersao();
+  },
+
+  // Cabeçalho comum das duas abas: diz de que temporada é a lista.
+  linhaTemporada() {
+    if (typeof JOGO === 'undefined') return '';
+    return '<p class="temporada-linha">TEMPORADA <b>' + JOGO.temporada +
+      '</b> · o ranking recomeça em cada atualização do jogo</p>';
+  },
+
   montarRecordes() {
     const lista = Recordes.lista;
     if (!lista.length) {
-      UI.el.listaRecordes.innerHTML = '<p class="vazio">Nenhuma partida registrada ainda.</p>';
+      UI.el.listaRecordes.innerHTML = UI.linhaTemporada() +
+        '<p class="vazio">Nenhuma partida nesta temporada ainda.' +
+        (Recordes.melhorDeTodas() > 0
+          ? '<br>Seu melhor de todas as temporadas: <b>' + Recordes.melhorDeTodas().toLocaleString('pt-BR') + '</b>.'
+          : '') + '</p>';
       return;
     }
-    UI.el.listaRecordes.innerHTML =
+    UI.el.listaRecordes.innerHTML = UI.linhaTemporada() +
       '<table class="tabela"><thead><tr><th>#</th><th>NOME</th><th>PONTOS</th><th>CLASSE</th><th>ONDA</th><th>TEMPO</th><th></th></tr></thead><tbody>' +
       lista.map((r, i) =>
         '<tr><td>' + (i + 1) + '</td><td class="nome">' + UI.escapar(r.nome || 'ANÔNIMO') +
@@ -396,18 +447,27 @@ const UI = {
   },
 
   /* ------------------------------- Final ------------------------------ */
-  mostrarFinal(venceu) {
+  mostrarFinal(venceu, segredo) {
     const j = Jogo.jogador;
-    UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
-    UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
-    UI.el.finalSub.textContent = venceu
-      ? 'As 100 ondas caíram. Você derrubou o CEIFADOR ABSOLUTO.'
-      : 'Caiu na onda ' + Jogo.onda + '. Tenta superar esse recorde.';
+    if (segredo) {
+      UI.el.finalTitulo.textContent = 'VOCÊ VIU';
+      UI.el.finalTitulo.className = 'segredo';
+      UI.el.finalSub.textContent = 'As 100 ondas caíram, o CEIFADOR caiu, e então apareceu ' +
+        'algo que não estava no jogo. O ESPECTADOR não tem barra para zerar: ele é imortal por ' +
+        'regra, não por dificuldade. Ninguém vence essa luta — e sua vitória das 100 ondas já ' +
+        'está registrada no placar.';
+    } else {
+      UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
+      UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
+      UI.el.finalSub.textContent = venceu
+        ? 'As 100 ondas caíram. Você derrubou o CEIFADOR ABSOLUTO.'
+        : 'Caiu na onda ' + Jogo.onda + '. Tenta superar esse recorde.';
+    }
 
     const linhas = [
       ['PONTOS', Math.round(Jogo.pontos).toLocaleString('pt-BR')],
       ['CLASSE', j.classe.nome],
-      ['ONDA', Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
+      ['ONDA', segredo ? '100 + ???' : Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
       ['NÍVEL', j.nivel],
       ['ABATES', Jogo.estat.abates],
       ['BOSSES', Jogo.estat.bosses],
@@ -614,7 +674,7 @@ const UI = {
     if (!j) return;
 
     // corações (suportam fração) — só reconstrói o DOM quando o total muda
-    const max = j.corpoPossuido ? 10 : Math.ceil(j.attr.vidaMax);
+    const max = Math.ceil(j.attr.vidaMax);
     if (UI._maxCoracoes !== max) {
       UI._maxCoracoes = max;
       let html = '';
@@ -623,14 +683,15 @@ const UI = {
       UI._coracoes = UI.el.coracoes.querySelectorAll('.coracao');
     }
     for (let i = 0; i < UI._coracoes.length; i++) {
-      const preenchimento = j.corpoPossuido
-        ? Mat.limitar(j.vida / j.corpoPossuido.vidaMax * max - i, 0, 1)
-        : Mat.limitar(j.vida - i, 0, 1);
+      const preenchimento = Mat.limitar(j.vida - i, 0, 1);
       UI._coracoes[i].style.setProperty('--p', preenchimento * 100 + '%');
     }
 
     UI.el.pontos.textContent = Math.round(Jogo.pontos).toLocaleString('pt-BR');
-    UI.el.onda.textContent = Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
+    // No segredo não existe contagem de onda: a corrida já terminou.
+    UI.el.onda.textContent = Jogo.segredo && Jogo.segredo.fase
+      ? '???'
+      : Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
     UI.el.nivel.textContent = j.nivel;
     UI.el.barraXP.style.width = Mat.limitar(j.xp / j.xpProximo, 0, 1) * 100 + '%';
     UI.el.fps.textContent = Jogo.fps;
@@ -640,26 +701,15 @@ const UI = {
     UI.el.multi.className = 'multi' + (m >= 6 ? ' fogo' : m >= 3 ? ' quente' : '');
 
     const pDash = j.dashCarga / j.attr.dashRecarga;
-    const pEscudo = j.corpoPossuido
-      ? 1 - j.corpoPossuido.especial / 3.2
-      : j.escudoAtivo ? 1 : j.escudoCarga / j.attr.escudoRecarga;
+    const pEscudo = j.escudoAtivo ? 1 : j.escudoCarga / j.attr.escudoRecarga;
     const pUlt = j.ultCarga / j.attr.ultRecarga;
-    const alvoPossessao = !j.corpoPossuido && j.alvoPossessao();
-    const pPossessao = j.corpoPossuido ? j.corpoPossuido.tempo / j.possessaoMax : alvoPossessao ? 1 : 0;
     UI.pintarHabilidade(UI.el.habDash, pDash, j.dashRestante > 0);
-    UI.pintarHabilidade(UI.el.habEscudo, pEscudo, j.corpoPossuido ? false : j.escudoAtivo);
+    UI.pintarHabilidade(UI.el.habEscudo, pEscudo, j.escudoAtivo);
     UI.pintarHabilidade(UI.el.habUlt, pUlt, j.ultAtiva > 0);
-    UI.pintarHabilidade(UI.el.habPossessao, pPossessao, !!j.corpoPossuido);
     UI.pintarHabilidade(UI.el.toqueDash, pDash, j.dashRestante > 0);
-    UI.pintarHabilidade(UI.el.toqueEscudo, pEscudo, j.corpoPossuido ? false : j.escudoAtivo);
+    UI.pintarHabilidade(UI.el.toqueEscudo, pEscudo, j.escudoAtivo);
     UI.pintarHabilidade(UI.el.toqueUlt, pUlt, j.ultAtiva > 0);
-    UI.pintarHabilidade(UI.el.toquePossessao, pPossessao, !!j.corpoPossuido);
-    if (UI.el.habPossessao) UI.el.habPossessao.querySelector('.nome').textContent = j.corpoPossuido ? 'ABANDONAR' : alvoPossessao ? 'POSSUIR AGORA' : 'POSSUIR';
-    UI.el.habEscudo.querySelector('.nome').textContent = j.corpoPossuido ? 'ESPECIAL' : 'ESCUDO';
-    UI.el.toqueEscudo.textContent = j.corpoPossuido ? '✦' : '⛨';
-    UI.el.classeNome.textContent = j.corpoPossuido
-      ? TIPOS_INIMIGO[j.corpoPossuido.tipo].nome + ' · ' + j.classe.nome
-      : j.classe.nome;
+    UI.el.classeNome.textContent = j.classe.nome;
 
     // buffs temporários
     const buffs = [];
@@ -667,7 +717,6 @@ const UI = {
     if (Jogo.imaGlobal > 0) buffs.push('<span class="buff roxo">◈ ÍMÃ ' + Jogo.imaGlobal.toFixed(1) + 's</span>');
     if (j.escudoAtivo) buffs.push('<span class="buff amarelo">⛨ ESCUDO ' + j.escudoRestante.toFixed(1) + 's</span>');
     if (j.ultAtiva > 0) buffs.push('<span class="buff vermelho">★ ULT ' + j.ultAtiva.toFixed(1) + 's</span>');
-    if (j.corpoPossuido) buffs.push('<span class="buff roxo">Ψ ' + TIPOS_INIMIGO[j.corpoPossuido.tipo].nome + ' ' + j.corpoPossuido.tempo.toFixed(1) + 's</span>');
     UI.el.buffs.innerHTML = buffs.join('');
     UI.atualizarEspera();
   },
@@ -686,13 +735,16 @@ const UI = {
     UI.el.bossNome.textContent = boss.def.nome;
     // Quem regenera avisa na cara: é para o jogador entender que a barra volta
     // por regra do jogo, não por bug.
-    UI.el.bossTitulo.textContent = boss.def.regenera
-      ? boss.def.titulo + ' · REGENERAÇÃO ABSOLUTA'
-      : boss.def.titulo;
+    UI.el.bossTitulo.textContent = boss.def.invencivel
+      ? boss.def.titulo + ' · IMORTAL'
+      : boss.def.regenera
+        ? boss.def.titulo + ' · REGENERAÇÃO ABSOLUTA'
+        : boss.def.titulo;
     UI.el.bossBarra.style.setProperty('--cor-boss', boss.def.cor);
   },
   atualizarBarraBoss(boss) {
-    UI.el.bossFill.style.width = (boss.porcentagem * 100) + '%';
+    // Barra do invencível não se move: mostrar ela andando seria mentira.
+    UI.el.bossFill.style.width = boss.def.invencivel ? '100%' : (boss.porcentagem * 100) + '%';
     UI.el.bossBarra.dataset.fase = (boss.faseIndice + 1) + '/' + boss.def.fases.length;
   },
   esconderBarraBoss() { UI.el.bossBarra.classList.remove('ativa'); },
@@ -732,7 +784,7 @@ const Toque = {
     tiro.addEventListener('lostpointercapture', soltarTiro);
 
     // botões de habilidade viram um pulso de tecla
-    const mapa = { dash: 'Space', escudo: 'KeyQ', possessao: 'KeyE', ult: 'ShiftLeft' };
+    const mapa = { dash: 'Space', escudo: 'KeyQ', ult: 'ShiftLeft' };
     document.querySelectorAll('.hab-toque').forEach((b) => {
       b.addEventListener('pointerdown', (e) => {
         Som.destravar();

@@ -89,8 +89,7 @@ Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependê
 | Atirar | clique esquerdo (segurar) |
 | Dash (invencível por instantes) | `ESPAÇO` |
 | Escudo / especial do corpo | `Q` (ou `CAPS LOCK`) |
-| Possuir / abandonar corpo | `E` |
-| Ultimate | `SHIFT` ou clique direito |
+| Ultimate | `E`, `SHIFT` ou clique direito |
 | Pausar | `P` ou `ESC` |
 | Escolher melhoria | `1` `2` `3` |
 
@@ -104,7 +103,7 @@ Automático / Sempre visíveis / Nunca — dá pra forçar no PC pra testar).
 | Joystick esquerdo (**MOVER**) | anda em 360° |
 | Joystick direito (**MIRAR**) | mira na direção do dedo e **atira sozinho** enquanto arrasta |
 | Botão **ATIRAR** | dispara com **mira automática** no inimigo mais próximo |
-| Botões `»` `⛨` `Ψ` `★` | dash, escudo/especial, possessão e ultimate — cada um mostra estado/recarga |
+| Botões `»` `⛨` `★` | dash, escudo e ultimate — cada um mostra a própria recarga |
 | `❚❚` no centro de baixo | pausa |
 
 Sem joystick de mira e sem dedo no ATIRAR, a mira automática já segue o inimigo mais próximo —
@@ -128,23 +127,32 @@ na mesma cadência dele, com tiro teleguiado. Durante a LEGIÃO a tropa atira 20
 mais rápido. A melhoria **MAIS UM NA TROPA** (+1 drone, até 2 vezes) só aparece
 para ele — melhoria com `exige` não polui o sorteio das outras classes.
 
-## Possessão
+## Emoji é o corpo, não enfeite
 
-- Inimigo precisa estar vivo, abaixo de **35% da vida** e a até **100 px**.
-- Contorno roxo e `E` aparecem quando o alvo está disponível.
-- `E` consome o corpo sem contar abate, XP ou drop. Alma mantém pontuação, nível,
-  melhorias, onda, multiplicador e identidade cooperativa.
-- Durante **12,5 s**, jogador usa vida restante, velocidade, tamanho, colisão,
-  aparência e tiro do inimigo. `Q` usa especial derivado do comportamento: investida,
-  teleporte ou descarga radial. Melhorias permanentes ainda escalam o dano.
-- Barra roxa sobre o corpo mostra tempo; barra inferior mostra vida do corpo.
-- `E`, tempo esgotado ou destruição expulsam a alma no mesmo local. Vida original
-  volta; destruição concede **1,4 s** de invulnerabilidade para escapar.
-- Durante a possessão, inimigos e boss consideram o corpo um aliado e não o atacam.
-  No cooperativo, passam a mirar outro jogador que não esteja possuído.
-- Busca de alvo percorre jogadores diretamente, sem criar arrays por inimigo/quadro.
-  Rastro invisível da alma também fica suspenso durante a possessão para evitar pausas
-  de coleta de lixo em ondas cheias.
+Comprar um emoji na LOJINHA troca o **corpo** do jogador: a nave deixa de ser desenhada e
+quem anda pela arena é o emoji, em pé, do tamanho da nave. Antes ele flutuava acima do casco
+como adesivo — agora é você.
+
+O que continua sendo desenhado por baixo:
+
+- **o cano da arma**, girando com a mira. Sem ele não se lê para onde se está atirando, e isso
+  é informação de jogo, não enfeite;
+- **um disco na cor do casco**, para o emoji não flutuar no vazio e para a cor comprada
+  continuar valendo alguma coisa;
+- **o acessório** (chifre, coroa, auréola), que acompanha a mira igual antes.
+
+Escudo, aura de ultimate e rastro não mudam. O emoji não altera raio, hitbox nem atributo:
+`raio` segue 16 para todo mundo, com ou sem emoji.
+
+## A POSSESSÃO foi removida
+
+Existia uma mecânica de possuir inimigo com vida baixa apertando `E`. Ela saiu em 18/09/2026,
+por pedido — junto com tudo que ela arrastava: `corpoPossuido`, o cálculo de facção do inimigo,
+o campo no pacote do cooperativo, os dois botões no HUD e os cinco testes dela.
+
+A tecla `E` ficou livre e virou **atalho da ultimate**, ao lado de `SHIFT`. Não reintroduza a
+possessão sem refazer os invariantes do cooperativo: era ela que exigia o "corpo é aliado" na
+busca de alvo.
 
 ## Inimigos
 
@@ -644,3 +652,62 @@ O jogo agora é instalável e roda offline:
 
 A avaliação completa para a loja — bloqueios, custos, textos prontos, respostas do formulário
 de Segurança de Dados e da classificação de conteúdo — está em **[GOOGLE-PLAY.md](GOOGLE-PLAY.md)**.
+
+---
+
+## Atualizações, temporada de ranking e O SEGREDO (18/09/2026)
+
+### Botão ATUALIZAR
+
+No menu. Abre a tela com **todo o histórico de versões** (`src/versao.js`) e um botão que
+busca atualização de verdade: desregistra o service worker, joga fora todo o cache e recarrega
+do servidor com parâmetro anti-cache. Carteira, cosméticos e nome não são tocados.
+
+Um selo verde **NOVO** acende no botão quando a versão mudou desde a última vez que aquele
+navegador abriu o jogo. Ver a lista apaga o selo.
+
+### Temporada: atualizar zera o ranking
+
+`ATUALIZACOES` em `src/versao.js` é a fonte da verdade: **a temporada é o número de entradas
+da lista**. Acrescentar uma entrada — que é o que significa publicar — vira temporada nova, e
+o placar recomeça vazio no mundial e no local. Não existe botão de zerar placar: quem zera é
+a versão.
+
+- **Mundial:** coluna `temporada` na tabela (migração `004_placar_temporada.sql`), enviada e
+  filtrada nos três caminhos do placar (API do site, servidor de reserva e Data API do Neon).
+  Linha de temporada antiga não é apagada, só deixa de ser lida.
+- **Local:** `Recordes.historico` guarda tudo; `Recordes.lista` mostra só a temporada atual.
+  `Recordes.melhorDeTodas()` continua devolvendo o melhor de todas as temporadas, e a tela
+  mostra isso quando a temporada nova ainda está vazia.
+- As 118 runs que existiam quando a coluna foi criada ficaram como **T1**. A temporada atual
+  é a **T4**, então o mundial começou do zero na cara do jogador — era o pedido.
+
+### O SEGREDO
+
+**Spoiler.** Derrubar o CEIFADOR ABSOLUTO na onda 100 não mostra mais a tela de vitória.
+
+1. A vitória é **registrada primeiro** (`Jogo.abrirSegredo` chama `registrarPartida(true)`):
+   quem fez 100 ondas ganhou, e o placar guarda isso antes de qualquer coisa.
+2. A arena é esvaziada, a tela estoura em branco e `Jogo.dimensao` vira `'vazio'` — outro
+   fundo inteiro (`desenharFundoVazio`): sem grade neon, com anéis nascendo do centro, raios
+   girando devagar e moldura branca. Custa 0,10 ms por quadro.
+3. Quatro segundos de cinemática (`atualizarSegredo`), com dois letreiros, e ele materializa
+   no centro: **O ESPECTADOR — "Esteve aqui desde a onda 1"**.
+4. Ele é **invencível por regra, não por número**: `receberDano` devolve sem tocar na barra
+   quando `def.invencivel`. Não existe build, crítico, TRAÇANTE, soma de dano por segundo ou
+   ordem de melhoria que faça a barra descer — ela nem tem número para descer. A barra fica
+   em 100% e o título diz `IMORTAL`, porque barra andando seria mentira.
+5. As fases dele avançam por **tempo** (`fasesPorTempo: 18`), não por vida — vida que não cai
+   nunca trocaria de fase. A cada 18 segundos ele fica pior, até a quarta fase, que é
+   `todosOsLados` + `espiral` + `parede` + `laser` + `chuva` + `cruz` + `minas` a cada 0,22 s.
+6. Morrer para ele **não é derrota**: `Jogo.fimDoSegredo` mostra a tela **VOCÊ VIU**, em
+   branco frio, e a onda aparece como `100 + ???`. A pontuação não é registrada de novo.
+
+`ONDA` no HUD mostra `???` durante o segredo, e ele está fora do rodízio de bosses
+(`BOSSES.filter(b => !b.final && !b.secreto)`) — nenhuma onda normal pode chamá-lo.
+
+### Preços da lojinha
+
+Tudo de 2 a 3 vezes mais caro. O mais barato saiu de 350 para 800 moedas; o topo da vitrine
+(casco Prisma) de 12.000 para 30.000. A moeda que cai do inimigo não mudou: o item bonito
+passou a custar várias partidas de propósito.

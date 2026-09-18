@@ -15,8 +15,9 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(40)', contexto), true);
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(100)', contexto), true);
   const dados = vm.runInContext(`(() => {
-    const rodizio = BOSSES.filter((b) => !b.final);
+    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
     const finais = BOSSES.filter((b) => b.final);
+    const secretos = BOSSES.filter((b) => b.secreto);
     // mesma conta que Jogo.spawnarBoss faz
     const naOnda = (o) => (o >= Jogo.TOTAL_ONDAS)
       ? finais[0].id
@@ -24,7 +25,8 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
     return { rodizio: rodizio.length, finais: finais.map((b) => b.id),
       onda40: naOnda(40), onda50: naOnda(50), onda90: naOnda(90), onda100: naOnda(100),
       nomes: rodizio.map((b) => b.id),
-      vidaFinal: finais[0].vida, tiroFinal: finais[0].velocidadeTiro };
+      vidaFinal: finais[0].vida, tiroFinal: finais[0].velocidadeTiro,
+      secretos: secretos.map((b) => b.id) };
   })()`, contexto);
   assert.equal(dados.rodizio, 13, 'um boss diferente para cada encontro até a onda 90');
   assert.deepEqual(Array.from(dados.finais), ['ceifador'], 'só um boss final');
@@ -34,6 +36,118 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
   assert.equal(dados.onda100, 'ceifador', 'a onda 100 é sempre o CEIFADOR');
   assert.equal(new Set(Array.from(dados.nomes)).size, 13, 'nenhum boss repetido no rodízio');
   assert.ok(dados.vidaFinal >= 9000 && dados.tiroFinal > 2, 'o final tem mais vida e bala mais rápida');
+  assert.deepEqual(Array.from(dados.secretos), ['espectador'], 'o segredo existe e é um só');
+});
+
+test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por tempo', () => {
+  // Coop entra como esboço: a run desta simulação não vai para placar nenhum.
+  const mundo = vm.createContext({ console, Math, setTimeout,
+    Coop: { ativo: () => true },
+    UI: {
+      aviso() {}, mostrarBarraBoss() {}, esconderBarraBoss() {}, atualizarBarraBoss() {},
+      mostrarFinal() {}
+    } });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Particulas.iniciar();
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.onda = Jogo.TOTAL_ONDAS;
+
+    // Nenhuma onda normal chama o secreto: ele não está no rodízio.
+    const rodizio = [];
+    for (let o = 5; o <= 90; o += 5) {
+      if (!Jogo.ehOndaDeBoss(o)) continue;
+      Jogo.onda = o; Jogo.boss = null; Jogo.spawnarBoss();
+      rodizio.push(Jogo.boss.def.id);
+    }
+    const apareceuNoRodizio = rodizio.indexOf('espectador') !== -1;
+
+    // O CEIFADOR cair abre o segredo em vez de encerrar a corrida.
+    Jogo.onda = Jogo.TOTAL_ONDAS; Jogo.boss = null; Jogo.spawnarBoss();
+    const final = Jogo.boss;
+    Jogo.bossDerrotado(final);
+    const abriu = Jogo.segredo.fase;
+    const dimensao = Jogo.dimensao;
+
+    // A cinemática termina e ele entra na arena.
+    for (let i = 0; i < 300; i++) Jogo.atualizarSegredo(1 / 60);
+    const faseDepoisDaCinematica = Jogo.segredo.fase;
+    const boss = Jogo.boss;
+    boss.entrando = 0;
+
+    // Dano nenhum passa: build máxima, crítico, ultimate, o que for.
+    const vidaAntes = boss.vida;
+    for (let i = 0; i < 400; i++) boss.receberDano(999999, true, boss.x, boss.y);
+    const vidaDepois = boss.vida;
+
+    // Fase avança por tempo, não por vida.
+    boss.tempoVivo = 0; boss.atualizarFase();
+    const fase0 = boss.faseIndice;
+    boss.tempoVivo = boss.def.fasesPorTempo * 3; boss.atualizarFase();
+    const faseTarde = boss.faseIndice;
+
+    // Morrer aqui não é derrota: é o fim da história. E a morte chega por vários
+    // caminhos no mesmo quadro: chamar de novo não pode virar GAME OVER.
+    Jogo.jogador.vida = 0;
+    Jogo.derrota();
+    Jogo.derrota();
+    Jogo.derrota();
+    return { apareceuNoRodizio, abriu, faseDepoisDaCinematica, dimensao, id: boss.def.id,
+      vidaAntes, vidaDepois, porcentagem: boss.porcentagem, fase0, faseTarde,
+      estado: Jogo.estado };
+  })()`, mundo);
+
+  assert.equal(dados.apareceuNoRodizio, false, 'o secreto não pode cair em onda normal');
+  assert.equal(dados.abriu, 'abertura', 'derrubar o CEIFADOR começa pela cinemática');
+  assert.equal(dados.faseDepoisDaCinematica, 'luta', 'e a cinemática entrega a luta');
+  assert.equal(dados.dimensao, 'vazio', 'o segredo muda a dimensão da arena');
+  assert.equal(dados.id, 'espectador');
+  assert.equal(dados.vidaDepois, dados.vidaAntes, 'nenhum dano entra: a barra não se move');
+  assert.equal(dados.porcentagem, 1, 'a barra fica cheia por definição');
+  assert.equal(dados.fase0, 0);
+  assert.ok(dados.faseTarde > dados.fase0, 'a fase avança por tempo de luta');
+  assert.equal(dados.estado, 'vitoria', 'cair para ele não apaga a vitória das 100 ondas');
+});
+
+test('cada atualização abre temporada nova e o recorde local segue a temporada', () => {
+  const guardado = {};
+  const mundo = vm.createContext({ console, Math, localStorage: {
+    getItem: (k) => (k in guardado ? guardado[k] : null),
+    setItem: (k, v) => { guardado[k] = String(v); },
+    removeItem: (k) => { delete guardado[k]; }
+  } });
+  for (const arquivo of ['src/versao.js', 'src/nucleo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    const temporadaAgora = JOGO.temporada;
+    const versoes = ATUALIZACOES.map((a) => a.versao);
+
+    Recordes.carregar();
+    Recordes.registrar({ nome: 'EU', pontos: 500, classe: 'SNIPER', onda: 7 });
+    const listaAgora = Recordes.lista.length;
+    const marcada = Recordes.lista[0].temporada;
+
+    // Publicar uma atualização é acrescentar uma entrada: temporada nova.
+    ATUALIZACOES.unshift({ versao: '9.9.9', data: 'amanhã', titulo: 'Teste', itens: ['nada'] });
+    const temporadaDepois = JOGO.temporada;
+    Recordes.carregar();
+    const listaDepois = Recordes.lista.length;
+    const historico = Recordes.historico.length;
+    const melhorDeTodas = Recordes.melhorDeTodas();
+    return { temporadaAgora, temporadaDepois, versoes, listaAgora, marcada,
+      listaDepois, historico, melhorDeTodas };
+  })()`, mundo);
+
+  assert.equal(dados.temporadaAgora, 'T' + dados.versoes.length);
+  assert.notEqual(dados.temporadaDepois, dados.temporadaAgora, 'atualizar troca a temporada');
+  assert.equal(dados.listaAgora, 1);
+  assert.equal(dados.marcada, dados.temporadaAgora, 'a run nasce marcada com a temporada');
+  assert.equal(dados.listaDepois, 0, 'temporada nova começa com o placar local vazio');
+  assert.equal(dados.historico, 1, 'a run antiga não é apagada, só sai da tela');
+  assert.equal(dados.melhorDeTodas, 500, 'o melhor de todas as temporadas continua acessível');
 });
 
 test('coração tem teto de 6, venha de onde vier', () => {
@@ -241,58 +355,27 @@ test('INVOCADOR enfraquecido nasce com dois drones e só ele recebe a melhoria d
   assert.equal(dados.temEstilhaco, false, 'estilhaço ao matar saiu do jogo');
 });
 
-test('possessão exige 35% de vida e 100 px, preserva progresso e expulsa a alma no fim', () => {
+test('inimigo mira o jogador mais perto e ignora quem já caiu', () => {
   const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
-    Particulas.iniciar();
-    Jogo.onda = 12; Jogo.pontos = 777; Jogo.multiplicador = 4;
-    const j = Jogo.jogador = new Jogador('sniper', 'original');
-    j.x = 500; j.y = 500; j.vida = 1.5; j.nivel = 6; j.melhorias.dano = 2;
-    const longe = new Inimigo('bruto', 601, 500, 1, false);
-    longe.vida = longe.vidaMax * 0.34;
-    const cheio = new Inimigo('atirador', 580, 500, 1, false);
-    cheio.vida = cheio.vidaMax * 0.36;
-    Jogo.inimigos = [longe, cheio];
-    const bloqueado = j.alternarPossessao();
-    longe.x = 600;
-    const entrou = j.alternarPossessao();
-    const durante = { tipo: j.corpoPossuido.tipo, vida: j.vida, raio: j.raio,
-      pontos: Jogo.pontos, nivel: j.nivel, melhoria: j.melhorias.dano, alvoConsumido: !longe.vivo };
-    j.atualizarPossessao(12.6);
-    return { bloqueado, entrou, durante, depois: { possuido: !!j.corpoPossuido, vida: j.vida,
-      raio: j.raio, pontos: Jogo.pontos, onda: Jogo.onda, multi: Jogo.multiplicador } };
+    const perto = Jogo.jogador = new Jogador('sniper', 'original');
+    perto.x = 100; perto.y = 100;
+    const longe = new Jogador('guardiao', 'original');
+    longe.x = 900; longe.y = 500;
+    Jogo.outros.set('longe', longe);
+    const escolheuPerto = Jogo.alvoJogador(110, 100) === perto;
+    perto.vida = 0;                       // caiu: deixa de ser alvo
+    const trocouParaLonge = Jogo.alvoJogador(110, 100) === longe;
+    longe.vida = 0;                       // equipe inteira no chão
+    const semAlvo = Jogo.alvoJogador(110, 100);
+    return { escolheuPerto, trocouParaLonge, semAlvo: semAlvo === null };
   })()`, mundo);
-  assert.equal(dados.bloqueado, false, '101 px não alcança e inimigo com 36% não serve');
-  assert.equal(dados.entrou, true);
-  assert.equal(dados.durante.tipo, 'bruto');
-  assert.equal(dados.durante.alvoConsumido, true, 'corpo sai da lista sem virar abate');
-  assert.ok(dados.durante.raio > 16);
-  assert.deepEqual([dados.durante.pontos, dados.durante.nivel, dados.durante.melhoria], [777, 6, 2]);
-  assert.deepEqual([dados.depois.possuido, dados.depois.vida, dados.depois.raio], [false, 1.5, 16]);
-  assert.deepEqual([dados.depois.pontos, dados.depois.onda, dados.depois.multi], [777, 12, 4]);
-});
-
-test('inimigos tratam corpo possuído como aliado e miram outro jogador no cooperativo', () => {
-  const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
-  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
-    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
-  }
-  const dados = vm.runInContext(`(() => {
-    const disfarcado = Jogo.jogador = new Jogador('sniper', 'original');
-    disfarcado.x = 100; disfarcado.y = 100;
-    disfarcado.corpoPossuido = { tipo: 'corredor', tempo: 10, vidaMax: 10, velocidade: 100 };
-    const sozinho = Jogo.alvoJogador(110, 100);
-    const colega = new Jogador('guardiao', 'original');
-    colega.x = 900; colega.y = 500;
-    Jogo.outros.set('colega', colega);
-    const emEquipe = Jogo.alvoJogador(110, 100);
-    return { sozinho: sozinho === null, mirouColega: emEquipe === colega };
-  })()`, mundo);
-  assert.equal(dados.sozinho, true, 'sozinho possuído não recebe alvo');
-  assert.equal(dados.mirouColega, true, 'inimigo troca a mira para jogador não possuído');
+  assert.equal(dados.escolheuPerto, true, 'inimigo vai no jogador mais próximo');
+  assert.equal(dados.trocouParaLonge, true, 'jogador caído não segura a mira');
+  assert.equal(dados.semAlvo, true, 'sem ninguém vivo não existe alvo');
 });
 
 test('busca de alvo não cria lista temporária por inimigo', () => {
@@ -301,15 +384,15 @@ test('busca de alvo não cria lista temporária por inimigo', () => {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
-    Jogo.jogador = { x: 10, y: 10, vida: 1, corpoPossuido: {} };
-    Jogo.outros = new Map([['livre', { x: 80, y: 20, vida: 1, corpoPossuido: null }]]);
+    Jogo.jogador = { x: 10, y: 10, vida: 0 };   // caído: não é alvo
+    Jogo.outros = new Map([['livre', { x: 80, y: 20, vida: 1 }]]);
     Jogo.jogadores = () => { throw new Error('alocação no caminho quente'); };
     return Jogo.alvoJogador(0, 0) === Jogo.outros.get('livre');
   })()`, mundo);
   assert.equal(dados, true);
 });
 
-test('coletável continua seguindo jogador possuído e boss não ataca sem alvo hostil', () => {
+test('coletável vai até o jogador e boss sem ninguém vivo não atira', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -317,63 +400,42 @@ test('coletável continua seguindo jogador possuído e boss não ataca sem alvo 
   const dados = vm.runInContext(`(() => {
     Jogo.onda = 5; Particulas.iniciar();
     const j = Jogo.jogador = new Jogador('sniper', 'original');
-    j.corpoPossuido = { tipo: 'corredor', tempo: 10, vidaMax: 10, velocidade: 100 };
     const xpAntes = j.xp;
     const xp = new Coletavel('xp', j.x + 20, j.y, 2);
     xp.atualizar(1 / 60);
+    const coletado = j.xp > xpAntes;
+    const velocidadeXp = Math.hypot(xp.vx, xp.vy);
+
+    // Sem jogador vivo o boss não tem para onde atirar: nada é criado.
+    j.vida = 0;
+    Jogo.projeteis.length = 0;
     const boss = new Boss(BOSSES[0], 5);
     boss.entrando = 0; boss.telegrafo = 0; boss.recarga = 0;
     boss.atualizar(1 / 60);
     boss.executarAtaque('anel');
-    return { xpColetado: j.xp > xpAntes, velocidadeXp: Math.hypot(xp.vx, xp.vy), tiros: Jogo.projeteis.length };
+    return { coletado, velocidadeXp, tiros: Jogo.projeteis.length };
   })()`, mundo);
-  assert.equal(dados.xpColetado, true);
+  assert.equal(dados.coletado, true);
   assert.ok(Number.isFinite(dados.velocidadeXp));
-  assert.equal(dados.tiros, 0);
+  assert.equal(dados.tiros, 0, 'boss sem alvo hostil não gasta bala');
 });
 
-test('corpo destruído absorve a morte e devolve a alma viva no mesmo lugar', () => {
-  const mundo = vm.createContext({ console, Math, setTimeout, UI: { aviso() {} } });
-  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
-    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
-  }
-  const dados = vm.runInContext(`(() => {
-    Particulas.iniciar(); Jogo.onda = 8;
-    const j = Jogo.jogador = new Jogador('guardiao', 'original');
-    j.x = 400; j.y = 300; j.vida = 2.5;
-    const e = new Inimigo('corredor', 450, 300, 1, false); e.vida = 0.2; Jogo.inimigos = [e];
-    j.alternarPossessao(); const x = j.x, y = j.y;
-    j.invulneravel = 0; j.receberDano(2, 0, 0);
-    return { possuido: !!j.corpoPossuido, vida: j.vida, x: j.x, y: j.y, origem: [x, y], inv: j.invulneravel };
-  })()`, mundo);
-  assert.equal(dados.possuido, false);
-  assert.equal(dados.vida, 2.5);
-  assert.deepEqual([dados.x, dados.y], Array.from(dados.origem));
-  assert.ok(dados.inv >= 1.4, 'alma volta com janela curta para escapar');
-});
-
-test('corpo possuído usa ataque, especial e atravessa snapshot do cooperativo', () => {
+test('snapshot do cooperativo preserva aparência, nome e raio do colega', () => {
   const ctx = mundoCoop();
   const dados = vm.runInContext(`(() => {
     Particulas.iniciar(); Jogo.onda = 12;
     const j = Jogo.jogador = new Jogador('arcano', 'original');
-    const e = new Inimigo('torreta', j.x + 60, j.y, 1, false);
-    e.vida = e.vidaMax * 0.2; Jogo.inimigos = [e];
-    j.alternarPossessao();
-    const antes = Jogo.projeteis.length;
-    j.atirarPossuido();
-    j.usarEspecialPossuido({ eixoX: () => 0, eixoY: () => 0 });
+    j.nome = 'COLEGA'; j.emoji = '🐐'; j.acessorio = 'acessorio-coroa';
     const pacote = Coop.empacotarJogador('eu', j);
-    const copia = new Jogador('arcano', 'original');
+    const copia = new Jogador('sniper', 'original');
     Coop.absorverJogador(copia, pacote);
-    return { tiros: Jogo.projeteis.length - antes, tipo: copia.corpoPossuido.tipo,
-      tempo: copia.corpoPossuido.tempo, raio: copia.raio, especial: copia.corpoPossuido.especial };
+    return { nome: copia.nome, emoji: copia.emoji, acessorio: copia.acessorio,
+      raio: copia.raio };
   })()`, ctx);
-  assert.ok(dados.tiros >= 6, 'torreta herda rajada básica e especial radial');
-  assert.equal(dados.tipo, 'torreta');
-  assert.ok(dados.tempo > 12 && dados.tempo <= 12.5);
-  assert.ok(dados.raio > 16);
-  assert.ok(dados.especial > 3);
+  assert.equal(dados.nome, 'COLEGA');
+  assert.equal(dados.emoji, '🐐', 'emoji viaja no pacote: é o corpo do jogador agora');
+  assert.equal(dados.acessorio, 'acessorio-coroa');
+  assert.equal(dados.raio, 16);
 });
 
 test('pool de partículas devolve o índice e não varre tudo quando enche', () => {
@@ -532,10 +594,10 @@ test('controle recebido do convidado é limitado à faixa válida', () => {
   const ctx = mundoCoop();
   const r = vm.runInContext(`(() => {
     const c = Coop.validarControle({ x: 9, y: -9, miraX: 5, miraY: 5, miraAtiva: true,
-      mouseX: 999999, mouseY: -999999, tiro: true, dash: true, especial: false, possessao: true, ult: true });
+      mouseX: 999999, mouseY: -999999, tiro: true, dash: true, especial: false, ult: true });
     return { x: c.eixoX(), y: c.eixoY(), miraX: c.mira.x, mouseX: c.mouseX, mouseY: c.mouseY,
       tiro: c.atirando(), dash: c.apertou('Space'), especial: c.apertou('KeyQ'),
-      possessao: c.apertou('KeyE'), ult: c.apertou('ShiftLeft') };
+      ult: c.apertou('ShiftLeft') };
   })()`, ctx);
   assert.equal(r.x, 1);
   assert.equal(r.y, -1);
@@ -545,7 +607,6 @@ test('controle recebido do convidado é limitado à faixa válida', () => {
   assert.equal(r.tiro, true);
   assert.equal(r.dash, true);
   assert.equal(r.especial, false);
-  assert.equal(r.possessao, true);
   assert.equal(r.ult, true);
 });
 test('lixo no lugar do controle não derruba o anfitrião', () => {

@@ -61,6 +61,10 @@ const Placar = {
     return !!PLACAR_CONFIG.url;
   },
 
+  /* Temporada do ranking. Vem de versao.js: atualizar o jogo abre temporada
+     nova e o placar recomeça. Sem versao.js carregado, cai em T1 e nada quebra. */
+  temporada() { return typeof JOGO !== 'undefined' ? JOGO.temporada : 'T1'; },
+
   _endereco(consulta) {
     return Placar._base().replace(/\/+$/, '') + (consulta || '');
   },
@@ -100,7 +104,8 @@ const Placar = {
             nivel: entrada.nivel,
             tempo: entrada.tempo,
             abates: entrada.abates,
-            venceu: entrada.venceu
+            venceu: entrada.venceu,
+            temporada: Placar.temporada()
           })
         });
         if (resposta.ok) return true;
@@ -154,6 +159,7 @@ const Placar = {
     if (!token) return null;
     const campos = 'nome,pontos,classe,onda,venceu,criado_em';
     const endereco = cfg.tabela + '?select=' + campos
+      + '&temporada=eq.' + encodeURIComponent(Placar.temporada())
       + '&order=pontos.desc,criado_em.asc&limit=' + PLACAR_CONFIG.limite;
     const resposta = await fetch(endereco, { headers: { Authorization: 'Bearer ' + token } });
     if (!resposta.ok) return null;
@@ -175,7 +181,8 @@ const Placar = {
       body: JSON.stringify({
         nome: entrada.nome, pontos: entrada.pontos, classe: entrada.classe,
         onda: entrada.onda, nivel: entrada.nivel, tempo: entrada.tempo,
-        abates: entrada.abates, venceu: entrada.venceu === true
+        abates: entrada.abates, venceu: entrada.venceu === true,
+        temporada: Placar.temporada()
       })
     });
     return resposta.ok;
@@ -227,7 +234,8 @@ const Placar = {
   async _lerServidor() {
     for (const tentativa of [0, 1]) {
       try {
-        const resposta = await fetch(Placar._endereco('?limite=' + PLACAR_CONFIG.limite));
+        const resposta = await fetch(Placar._endereco('?limite=' + PLACAR_CONFIG.limite
+          + '&temporada=' + encodeURIComponent(Placar.temporada())));
         if (resposta.ok) {
           const linhas = await resposta.json();
           if (Array.isArray(linhas)) return linhas;

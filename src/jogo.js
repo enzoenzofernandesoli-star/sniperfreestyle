@@ -32,23 +32,23 @@ const Jogo = {
   seq: 0,
   proximoId() { return ++Jogo.seq; },   // identidade estável para o cooperativo
   jogadores() { return [Jogo.jogador, ...Jogo.outros.values()].filter((j) => j && j.vida > 0); },
-  jogadorMaisProximo(x, y, ignorarPossuidos) {
+  jogadorMaisProximo(x, y) {
     let alvo = null, distancia = Infinity;
     const local = Jogo.jogador;
-    if (local && local.vida > 0 && (!ignorarPossuidos || !local.corpoPossuido)) {
+    if (local && local.vida > 0) {
       alvo = local;
       distancia = Mat.distanciaQ(x, y, local.x, local.y);
     }
     // Caminho quente: chamado por cada inimigo. Iterar o Map diretamente evita
-    // criar dois arrays temporários por inimigo e por quadro durante possessão.
+    // criar dois arrays temporários por inimigo e por quadro.
     for (const j of Jogo.outros.values()) {
-      if (!j || j.vida <= 0 || ignorarPossuidos && j.corpoPossuido) continue;
+      if (!j || j.vida <= 0) continue;
       const d = Mat.distanciaQ(x, y, j.x, j.y);
       if (d < distancia) { alvo = j; distancia = d; }
     }
     return alvo;
   },
-  alvoJogador(x, y) { return Jogo.jogadorMaisProximo(x, y, true); },
+  alvoJogador(x, y) { return Jogo.jogadorMaisProximo(x, y); },
   inimigos: [],
   projeteis: [],
   coletaveis: [],
@@ -70,6 +70,11 @@ const Jogo = {
   multiplicador: 1,
   filaDeMelhorias: 0,
   imaGlobal: 0,
+
+  // Dimensão da arena: 'normal' é o neon de sempre; 'vazio' é onde O
+  // ESPECTADOR mora, e só ele leva o jogador para lá.
+  dimensao: 'normal',
+  segredo: { fase: null, tempo: 0, marco: 0 },
 
   flash: { alpha: 0, cor: '#fff' },
   festa67: null,        // o 67 gigante que aparece a cada boss derrubado
@@ -123,6 +128,8 @@ const Jogo = {
     Jogo.tempoJogo = 0;
     Jogo.intervaloHUD = 0;
     Jogo.estat = { abates: 0, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 0 };
+    Jogo.dimensao = 'normal';
+    Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
     Jogo.estado = 'jogando';
     Som.intensidade = 0;
     Jogo.prepararOnda();
@@ -231,7 +238,7 @@ const Jogo = {
   spawnarBoss() {
     // O último da lista é o boss final: ele só aparece na onda 100 e fica de
     // fora do rodízio das ondas múltiplas de 5.
-    const rodizio = BOSSES.filter((b) => !b.final);
+    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
     const final = Jogo.onda >= Jogo.TOTAL_ONDAS;
     const encontro = Jogo.encontroDeBoss(Jogo.onda) - 1;
     const def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
@@ -249,7 +256,8 @@ const Jogo = {
     UI.mostrarBarraBoss(Jogo.boss);
   },
 
-  bossDerrotado() {
+  bossDerrotado(boss) {
+    const eraFinal = !!(boss && boss.def && boss.def.final);
     Jogo.estat.bosses++;
     Jogo.pontos += 1500 * Jogo.onda;
     UI.esconderBarraBoss();
@@ -275,8 +283,85 @@ const Jogo = {
         Jogo.boss.x + Math.cos(a) * 70, Jogo.boss.y + Math.sin(a) * 70, bolo));
     }
     Jogo.boss = null;
+    // Cair o CEIFADOR não acaba o jogo: acaba a parte que estava no jogo.
+    if (eraFinal && !Jogo.segredo.fase) { Jogo.abrirSegredo(); return; }
     Jogo.filaDeMelhorias += 1;
     Jogo.terminarOnda();
+  },
+
+  /* --------------------------- O SEGREDO ----------------------------- */
+  /* A vitória da onda 100 é registrada AQUI, antes de qualquer coisa: o
+     jogador ganhou a corrida e o placar tem que guardar isso. O que vem depois
+     é epílogo, e o epílogo não pode ser vencido. */
+  abrirSegredo() {
+    Jogo.registrarPartida(true);
+    Jogo.segredo = { fase: 'abertura', tempo: 0, marco: 0 };
+    Jogo.filaDeMelhorias = 0;
+    Jogo.ondaLimpa = false;
+    Jogo.intervaloOnda = 0;
+    Jogo.dimensao = 'vazio';
+    // A arena é esvaziada: nada da corrida antiga atravessa para o outro lado.
+    Jogo.inimigos.length = 0;
+    Jogo.projeteis.length = 0;
+    Jogo.coletaveis.length = 0;
+    Jogo.ondasChoque.length = 0;
+    Jogo.raios.length = 0;
+    Jogo.singularidades.length = 0;
+    UI.esconderBarraBoss();
+    Camera.bater(44);
+    Camera.pulsar(1.14);
+    Jogo.flashTela(1, '#ffffff');
+    Jogo.pararTempo(0.9);
+    Som.intensidade = 1;
+    Som.segredo();
+    Jogo.aviso('');
+  },
+
+  // Cinemática de quatro segundos: silêncio, aviso, nome, e ele aparece.
+  atualizarSegredo(dtReal) {
+    const seg = Jogo.segredo;
+    seg.tempo += dtReal;
+    if (seg.fase !== 'abertura') return;
+
+    if (seg.marco === 0 && seg.tempo > 1.1) {
+      seg.marco = 1;
+      Jogo.aviso('ISSO NÃO ESTAVA NO JOGO');
+      Camera.bater(10);
+      Som.segredo();
+    } else if (seg.marco === 1 && seg.tempo > 2.6) {
+      seg.marco = 2;
+      Jogo.aviso('ELE ASSISTIU TUDO');
+      Jogo.flashTela(0.5, '#ffffff');
+    } else if (seg.marco === 2 && seg.tempo > 4.2) {
+      seg.marco = 3;
+      seg.fase = 'luta';
+      const def = BOSSES.find((b) => b.secreto);
+      Jogo.boss = new Boss(def, Jogo.TOTAL_ONDAS);
+      // Ele não desce do topo como os outros: materializa no meio da arena,
+      // que é de onde o fundo desta dimensão está olhando.
+      Jogo.boss.x = Jogo.LARGURA / 2;
+      Jogo.boss.y = Jogo.ALTURA / 2;
+      Jogo.boss.baseY = Jogo.ALTURA / 2;
+      Jogo.boss.entrando = 0;
+      Jogo.flashTela(0.9, '#ffffff');
+      Camera.bater(30);
+      Som.bossEntra();
+      Jogo.aviso(def.nome);
+      UI.mostrarBarraBoss(Jogo.boss);
+    }
+  },
+
+  /* Morrer para O ESPECTADOR não é derrota: a corrida já foi ganha antes dele
+     aparecer. É só o fim da história — e a pontuação não é registrada de novo. */
+  fimDoSegredo() {
+    if (Jogo.estado === 'gameover' || Jogo.estado === 'vitoria') return;
+    Jogo.estado = 'vitoria';
+    Jogo.segredo.fase = 'fim';
+    Som.gameOver();
+    Camera.bater(30);
+    Jogo.flashTela(0.9, '#ffffff');
+    if (Jogo.jogador) Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, '#f4f6ff', 60, 620, 1.2, 6);
+    UI.mostrarFinal(true, true);
   },
 
   terminarOnda() {
@@ -534,7 +619,6 @@ const Jogo = {
   aplicarRaioBoss(x, y, angulo, cor) {
     const dx = Math.cos(angulo), dy = Math.sin(angulo);
     for (const j of Jogo.jogadores()) {
-      if (j.corpoPossuido) continue;
       const t = (j.x - x) * dx + (j.y - y) * dy;
       if (t < 0) continue;
       const px = x + dx * t, py = y + dy * t;
@@ -615,8 +699,11 @@ const Jogo = {
       if (Jogo.comboTimer <= 0) { Jogo.combo = 0; Jogo.multiplicador = 1; }
     }
 
-    // spawn / ritmo da onda
-    if (Jogo.intervaloOnda > 0) {
+    // Durante o segredo a campanha para: sem onda, sem spawn, sem contagem.
+    // Quem atualiza o boss continua sendo o laço de entidades, logo abaixo.
+    if (Jogo.segredo.fase) {
+      Jogo.atualizarSegredo(dtReal);
+    } else if (Jogo.intervaloOnda > 0) {
       Jogo.intervaloOnda -= dtReal;
       if (Jogo.festa67) Jogo.intervaloOnda = Math.max(Jogo.intervaloOnda, 0.4);
       if (Jogo.intervaloOnda <= 0 && Jogo.ondaLimpa) {
@@ -707,7 +794,6 @@ const Jogo = {
       } else {
         let consumido = false;
         for (const j of Jogo.jogadores()) {
-        if (j.corpoPossuido) continue;
         const d = Mat.distancia(b.x, b.y, j.x, j.y);
         // escudo do guardião reflete
         if (j.escudoAtivo && d < j.raio * 2.1 + b.raio) {
@@ -859,7 +945,11 @@ const Jogo = {
     UI.mostrarTela(null);
   },
   derrota() {
-    if (Jogo.estado === 'gameover') return;
+    if (Jogo.segredo.fase === 'luta') { Jogo.fimDoSegredo(); return; }
+    // A morte chega por mais de um caminho no mesmo quadro (dano, laço de
+    // jogadores, colisão). Partida já encerrada não pode ser reescrita — era
+    // isso que trocava o final do segredo por um GAME OVER comum.
+    if (Jogo.estado === 'gameover' || Jogo.estado === 'vitoria') return;
     Jogo.estado = 'gameover';
     Som.gameOver();
     Camera.bater(30);
@@ -1035,6 +1125,7 @@ const Jogo = {
   },
 
   desenharFundo(ctx) {
+    if (Jogo.dimensao === 'vazio') { Jogo.desenharFundoVazio(ctx); return; }
     // gradiente de base
     const g = ctx.createLinearGradient(0, 0, 0, Jogo.ALTURA);
     g.addColorStop(0, '#0a0d18');
@@ -1083,6 +1174,66 @@ const Jogo = {
       ctx.lineTo(cx, cy + c * sy);
       ctx.stroke();
     }
+    ctx.restore();
+  },
+
+  /* A dimensão do ESPECTADOR. Nada de grade neon: aqui o chão é um olho. Anéis
+     que nascem no centro e crescem, raios girando devagar, e uma moldura branca
+     sem os cantos de mira — este lugar não é uma arena, é um lugar onde se
+     assiste. Custa três gradientes e ~20 linhas por quadro. */
+  desenharFundoVazio(ctx) {
+    const t = Jogo.tempo;
+    const cx = Jogo.LARGURA / 2, cy = Jogo.ALTURA / 2;
+
+    ctx.fillStyle = '#04040a';
+    ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+
+    // pupila: clarão branco que respira no centro
+    const respiro = 0.10 + Math.sin(t * 0.9) * 0.035;
+    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, Jogo.LARGURA * 0.62);
+    g.addColorStop(0, 'rgba(244,246,255,' + respiro.toFixed(3) + ')');
+    g.addColorStop(0.45, 'rgba(120,130,190,.05)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+
+    // anéis nascendo do centro
+    ctx.save();
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const p = ((t * 0.16) + i / 6) % 1;
+      const raio = p * Jogo.LARGURA * 0.78;
+      ctx.globalAlpha = (1 - p) * 0.22;
+      ctx.strokeStyle = '#f4f6ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, raio, 0, Mat.TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // raios: doze, girando devagar, como a íris
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.06);
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#f4f6ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = (Mat.TAU / 12) * i;
+      ctx.moveTo(Math.cos(a) * 90, Math.sin(a) * 90);
+      ctx.lineTo(Math.cos(a) * Jogo.LARGURA, Math.sin(a) * Jogo.LARGURA);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // moldura branca, sem cantos de mira
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244,246,255,.5)';
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 30;
+    ctx.shadowColor = '#f4f6ff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(2, 2, Jogo.LARGURA - 4, Jogo.ALTURA - 4);
     ctx.restore();
   },
 

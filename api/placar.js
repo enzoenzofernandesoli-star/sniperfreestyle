@@ -27,6 +27,9 @@ if (!CONEXAO) {
 }
 
 const CLASSES = ['SNIPER', 'GUARDIÃO', 'ESPECTRO', 'ARCANO', 'INVOCADOR'];
+// Temporada do ranking: 'T' e até três dígitos. Quem não manda entra em T1,
+// que é onde ficou tudo que foi jogado antes desta regra existir.
+const TEMPORADA_VALIDA = /^T[0-9]{1,3}$/;
 const PROIBIDAS = ['VIADO', 'PUTA', 'CARALHO', 'BUCETA', 'PORRA', 'FDP', 'MACACO', 'NAZI', 'HITLER'];
 
 function limparNome(valor) {
@@ -67,12 +70,24 @@ module.exports = async function (req, res) {
   if (req.method === 'GET') {
     const limite = inteiro((req.query && req.query.limite) || 25, 1, 50) || 25;
     try {
-      const linhas = await sql`
-        select nome, pontos, classe, onda, venceu, criado_em
-        from public.placar_sobrecarga
-        order by pontos desc, criado_em asc
-        limit ${limite}
-      `;
+      const pedida = String((req.query && req.query.temporada) || '');
+      const temporada = TEMPORADA_VALIDA.test(pedida) ? pedida : null;
+      // Sem temporada na consulta o ranking vem inteiro: cliente antigo
+      // continua funcionando, só sem o corte por temporada.
+      const linhas = temporada
+        ? await sql`
+            select nome, pontos, classe, onda, venceu, criado_em
+            from public.placar_sobrecarga
+            where temporada = ${temporada}
+            order by pontos desc, criado_em asc
+            limit ${limite}
+          `
+        : await sql`
+            select nome, pontos, classe, onda, venceu, criado_em
+            from public.placar_sobrecarga
+            order by pontos desc, criado_em asc
+            limit ${limite}
+          `;
       res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=60');
       res.status(200).json(linhas);
     } catch (e) {
@@ -128,11 +143,13 @@ module.exports = async function (req, res) {
       `;
       if (repetido.length) { res.status(200).json({ ok: true, repetido: true }); return; }
 
+      const bruta = String(corpo.temporada || '');
+      const temporada = TEMPORADA_VALIDA.test(bruta) ? bruta : 'T1';
       await sql`
         insert into public.placar_sobrecarga
-          (nome, pontos, classe, onda, nivel, tempo, abates, venceu)
+          (nome, pontos, classe, onda, nivel, tempo, abates, venceu, temporada)
         values
-          (${nome}, ${pontos}, ${classe}, ${onda}, ${nivel}, ${tempo}, ${abates}, ${venceu})
+          (${nome}, ${pontos}, ${classe}, ${onda}, ${nivel}, ${tempo}, ${abates}, ${venceu}, ${temporada})
       `;
       res.status(201).json({ ok: true, nome: nome });
     } catch (e) {

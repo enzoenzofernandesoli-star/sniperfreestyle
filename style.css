@@ -312,13 +312,6 @@ body.em-jogo #hud { display: flex; }
 .hab.pronto { border-color: var(--cor-classe); box-shadow: 0 0 22px rgba(49, 224, 255, .28) inset, 0 0 18px rgba(49, 224, 255, .18); }
 .hab.pronto .tecla, .hab.pronto .nome { color: #fff; }
 .hab.ativo { transform: translateY(-3px) scale(1.04); border-color: #fff; box-shadow: 0 0 26px rgba(255, 255, 255, .35); }
-.hab.possessao.pronto,
-.bt-toque.possessao.pronto {
-  border-color: #b06dff;
-  box-shadow: 0 0 22px rgba(176, 109, 255, .34) inset, 0 0 18px rgba(176, 109, 255, .26);
-}
-.hab.possessao.pronto .tecla,
-.hab.possessao.pronto .nome { color: #f0d7ff; }
 
 .rodape-info { text-align: right; font-size: clamp(9px, .78vw, 12px); letter-spacing: .12em; color: var(--tinta-fraca); }
 .rodape-info b { color: var(--tinta); }
@@ -1288,3 +1281,71 @@ body.toque #btPausar {
   .loja-carteira b { font-size: 15px; }
   .loja-aba { min-height: 34px; padding: 5px 10px; font-size: 9px; }
 }
+
+/* ------------------- Atualizações e selo de versão nova ------------------ */
+.selo-versao {
+  display: none;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--verde);
+  color: #04121a;
+  font-size: 9px;
+  letter-spacing: .1em;
+  vertical-align: middle;
+}
+.selo-versao.aceso { display: inline-block; }
+
+.atu-acao { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.atu-nota { font-size: clamp(10px, .9vw, 13px); color: var(--tinta-fraca); line-height: 1.4; }
+.atu-nota.temporada {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--ciano);
+  background: rgba(49, 224, 255, .07);
+  text-align: left;
+}
+.atu-nota b { color: var(--tinta); }
+
+.atu-lista { display: grid; gap: 14px; margin-top: 14px; }
+.atu-item { border-top: 1px solid var(--borda); padding-top: 12px; }
+.atu-item:first-child { border-top: 0; padding-top: 0; }
+.atu-cabeca { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.atu-versao {
+  font-family: Orbitron, sans-serif;
+  font-size: clamp(12px, 1.1vw, 16px);
+  letter-spacing: .08em;
+  color: var(--ciano);
+}
+.atu-item.agora .atu-versao { color: var(--verde); }
+.atu-titulo { font-size: clamp(11px, 1vw, 14px); letter-spacing: .06em; color: var(--tinta); }
+.atu-data { font-size: 10px; letter-spacing: .14em; color: var(--tinta-fraca); margin-left: auto; }
+.atu-agora {
+  padding: 1px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--verde);
+  color: var(--verde);
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+.atu-itens { list-style: none; display: grid; gap: 4px; margin-top: 7px; }
+.atu-itens li { position: relative; padding-left: 14px; font-size: clamp(10px, .92vw, 13px); color: #c3d3e4; line-height: 1.4; }
+.atu-itens li::before { content: '▸'; position: absolute; left: 0; color: var(--ciano); }
+
+.temporada-linha { font-size: clamp(9px, .85vw, 12px); letter-spacing: .1em; color: var(--tinta-fraca); text-align: center; }
+.temporada-linha b { color: var(--ciano); }
+
+@media (max-height: 560px) {
+  .atu-lista { gap: 9px; margin-top: 9px; }
+  .atu-item { padding-top: 8px; }
+  .atu-itens li { font-size: 10px; }
+  .atu-nota.temporada { margin-top: 8px; padding: 6px 9px; }
+}
+
+/* O final do segredo: branco frio, sem o verde de vitória nem o vermelho de derrota. */
+#finalTitulo.segredo {
+  color: #f4f6ff;
+  text-shadow: 0 0 36px rgba(244, 246, 255, .6);
+  animation: piscaEspectador 3.4s ease-in-out infinite;
+}
+@keyframes piscaEspectador { 50% { opacity: .78; } }

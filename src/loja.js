@@ -62,72 +62,73 @@ const Carteira = {
 };
 
 /* ------------------------------- Catálogo -------------------------------- */
-/* Preço alto de propósito: o item bonito tem que custar várias partidas.     */
+/* Preço alto de propósito: nada aqui sai em uma partida. O barato pede umas   */
+/* três runs boas; o topo da vitrine é meta de temporada, não de tarde.        */
 
 const CASCOS = [
   { id: 'casco-original', nome: 'Original', preco: 0, cor: '#31e0ff', cor2: '#0b7fa8' },
-  { id: 'casco-polar', nome: 'Polar', preco: 400, cor: '#e6fbff', cor2: '#5289a9' },
-  { id: 'casco-jade', nome: 'Jade', preco: 550, cor: '#65f0ad', cor2: '#1c7658' },
-  { id: 'casco-solar', nome: 'Solar', preco: 550, cor: '#ff9f43', cor2: '#87371c' },
-  { id: 'casco-veneno', nome: 'Veneno', preco: 800, cor: '#b6ff49', cor2: '#4d7916' },
-  { id: 'casco-rubi', nome: 'Rubi', preco: 950, cor: '#ff6588', cor2: '#87284f' },
-  { id: 'casco-sombra', nome: 'Sombra', preco: 1200, cor: '#b28aff', cor2: '#4c2b77' },
-  { id: 'casco-abissal', nome: 'Abissal', preco: 1500, cor: '#6db6ff', cor2: '#1c3f70' },
-  { id: 'casco-enxofre', nome: 'Enxofre', preco: 1800, cor: '#ffe14d', cor2: '#7a6410' },
-  { id: 'casco-aurora', nome: 'Aurora', preco: 2400, cor: '#6cf5e9', cor2: '#225c79' },
-  { id: 'casco-magma', nome: 'Magma', preco: 3200, cor: '#ff5324', cor2: '#6b1200' },
-  { id: 'casco-void', nome: 'Vazio', preco: 4200, cor: '#20122e', cor2: '#7a3cff' },
-  { id: 'casco-ouro', nome: 'Ouro Puro', preco: 6500, cor: '#ffd34d', cor2: '#8a6100' },
-  { id: 'casco-prisma', nome: 'Prisma', preco: 12000, cor: '#ff6cd4', cor2: '#6cf5e9', vivo: true }
+  { id: 'casco-polar', nome: 'Polar', preco: 900, cor: '#e6fbff', cor2: '#5289a9' },
+  { id: 'casco-jade', nome: 'Jade', preco: 1200, cor: '#65f0ad', cor2: '#1c7658' },
+  { id: 'casco-solar', nome: 'Solar', preco: 1200, cor: '#ff9f43', cor2: '#87371c' },
+  { id: 'casco-veneno', nome: 'Veneno', preco: 1800, cor: '#b6ff49', cor2: '#4d7916' },
+  { id: 'casco-rubi', nome: 'Rubi', preco: 2200, cor: '#ff6588', cor2: '#87284f' },
+  { id: 'casco-sombra', nome: 'Sombra', preco: 2800, cor: '#b28aff', cor2: '#4c2b77' },
+  { id: 'casco-abissal', nome: 'Abissal', preco: 3500, cor: '#6db6ff', cor2: '#1c3f70' },
+  { id: 'casco-enxofre', nome: 'Enxofre', preco: 4200, cor: '#ffe14d', cor2: '#7a6410' },
+  { id: 'casco-aurora', nome: 'Aurora', preco: 5600, cor: '#6cf5e9', cor2: '#225c79' },
+  { id: 'casco-magma', nome: 'Magma', preco: 7500, cor: '#ff5324', cor2: '#6b1200' },
+  { id: 'casco-void', nome: 'Vazio', preco: 10000, cor: '#20122e', cor2: '#7a3cff' },
+  { id: 'casco-ouro', nome: 'Ouro Puro', preco: 16000, cor: '#ffd34d', cor2: '#8a6100' },
+  { id: 'casco-prisma', nome: 'Prisma', preco: 30000, cor: '#ff6cd4', cor2: '#6cf5e9', vivo: true }
 ];
 
 const TIROS = [
   { id: 'tiro-lima', nome: 'Lima', preco: 0, cor: '#dcff46', critico: '#ffffff' },
-  { id: 'tiro-gelo', nome: 'Gelo', preco: 450, cor: '#9be8ff', critico: '#ffffff' },
-  { id: 'tiro-sangue', nome: 'Sangue', preco: 600, cor: '#ff5470', critico: '#ffd9df' },
-  { id: 'tiro-ametista', nome: 'Ametista', preco: 800, cor: '#c98bff', critico: '#ffffff' },
-  { id: 'tiro-brasa', nome: 'Brasa', preco: 1000, cor: '#ff9224', critico: '#fff0b0' },
-  { id: 'tiro-esmeralda', nome: 'Esmeralda', preco: 1400, cor: '#4dffa3', critico: '#e6fff2' },
-  { id: 'tiro-choque', nome: 'Choque', preco: 2000, cor: '#7cd4ff', critico: '#fbff00' },
-  { id: 'tiro-rosa', nome: 'Rosa Neon', preco: 2600, cor: '#ff5ce1', critico: '#ffffff' },
-  { id: 'tiro-ouro', nome: 'Ouro', preco: 4500, cor: '#ffd34d', critico: '#fff6cf' },
-  { id: 'tiro-breu', nome: 'Breu', preco: 7000, cor: '#2b1a45', critico: '#b06dff' },
-  { id: 'tiro-prisma', nome: 'Prisma', preco: 11000, cor: '#ffffff', critico: '#ffffff', vivo: true }
+  { id: 'tiro-gelo', nome: 'Gelo', preco: 1000, cor: '#9be8ff', critico: '#ffffff' },
+  { id: 'tiro-sangue', nome: 'Sangue', preco: 1400, cor: '#ff5470', critico: '#ffd9df' },
+  { id: 'tiro-ametista', nome: 'Ametista', preco: 1800, cor: '#c98bff', critico: '#ffffff' },
+  { id: 'tiro-brasa', nome: 'Brasa', preco: 2400, cor: '#ff9224', critico: '#fff0b0' },
+  { id: 'tiro-esmeralda', nome: 'Esmeralda', preco: 3200, cor: '#4dffa3', critico: '#e6fff2' },
+  { id: 'tiro-choque', nome: 'Choque', preco: 4800, cor: '#7cd4ff', critico: '#fbff00' },
+  { id: 'tiro-rosa', nome: 'Rosa Neon', preco: 6200, cor: '#ff5ce1', critico: '#ffffff' },
+  { id: 'tiro-ouro', nome: 'Ouro', preco: 11000, cor: '#ffd34d', critico: '#fff6cf' },
+  { id: 'tiro-breu', nome: 'Breu', preco: 17000, cor: '#2b1a45', critico: '#b06dff' },
+  { id: 'tiro-prisma', nome: 'Prisma', preco: 27000, cor: '#ffffff', critico: '#ffffff', vivo: true }
 ];
 
 const ACESSORIOS = [
   { id: 'acessorio-nenhum', nome: 'Nenhum', preco: 0 },
-  { id: 'acessorio-antena', nome: 'Antena', preco: 500 },
-  { id: 'acessorio-chifres', nome: 'Chifres', preco: 900 },
-  { id: 'acessorio-capa', nome: 'Capa', preco: 1300 },
-  { id: 'acessorio-cartola', nome: 'Cartola', preco: 1700 },
-  { id: 'acessorio-aureola', nome: 'Auréola', preco: 2200 },
-  { id: 'acessorio-asas', nome: 'Asas', preco: 3000 },
-  { id: 'acessorio-coroa', nome: 'Coroa', preco: 4000 },
-  { id: 'acessorio-orbe', nome: 'Orbe Guardião', preco: 5500 }
+  { id: 'acessorio-antena', nome: 'Antena', preco: 1100 },
+  { id: 'acessorio-chifres', nome: 'Chifres', preco: 2000 },
+  { id: 'acessorio-capa', nome: 'Capa', preco: 3000 },
+  { id: 'acessorio-cartola', nome: 'Cartola', preco: 4000 },
+  { id: 'acessorio-aureola', nome: 'Auréola', preco: 5200 },
+  { id: 'acessorio-asas', nome: 'Asas', preco: 7200 },
+  { id: 'acessorio-coroa', nome: 'Coroa', preco: 10000 },
+  { id: 'acessorio-orbe', nome: 'Orbe Guardião', preco: 14000 }
 ];
 
 const EMOJIS = [
   { id: 'emoji-nenhum', nome: 'Nenhum', preco: 0, glifo: '' },
-  { id: 'emoji-cocô', nome: 'Cocô', preco: 350, glifo: '💩' },
-  { id: 'emoji-oculos', nome: 'De Boa', preco: 500, glifo: '😎' },
-  { id: 'emoji-fogo', nome: 'Fogo', preco: 650, glifo: '🔥' },
-  { id: 'emoji-caveira', nome: 'Caveira', preco: 750, glifo: '💀' },
-  { id: 'emoji-cowboy', nome: 'Cowboy', preco: 800, glifo: '🤠' },
-  { id: 'emoji-palhaco', nome: 'Palhaço', preco: 900, glifo: '🤡' },
-  { id: 'emoji-raio', nome: 'Raio', preco: 950, glifo: '⚡' },
-  { id: 'emoji-et', nome: 'ET', preco: 1100, glifo: '👽' },
-  { id: 'emoji-pizza', nome: 'Pizza', preco: 1200, glifo: '🍕' },
-  { id: 'emoji-gelado', nome: 'Congelante', preco: 1400, glifo: '🥶' },
-  { id: 'emoji-tubarao', nome: 'Tubarão', preco: 1600, glifo: '🦈' },
-  { id: 'emoji-diabo', nome: 'Diabinho', preco: 1800, glifo: '😈' },
-  { id: 'emoji-foguete', nome: 'Foguete', preco: 2000, glifo: '🚀' },
-  { id: 'emoji-cerebro', nome: 'Cérebro', preco: 2300, glifo: '🧠' },
-  { id: 'emoji-robo', nome: 'Robô', preco: 2600, glifo: '🤖' },
-  { id: 'emoji-arcoiris', nome: 'Arco-íris', preco: 3000, glifo: '🌈' },
-  { id: 'emoji-coroa', nome: 'Coroa', preco: 3600, glifo: '👑' },
-  { id: 'emoji-diamante', nome: 'Diamante', preco: 5000, glifo: '💎' },
-  { id: 'emoji-goat', nome: 'GOAT', preco: 9000, glifo: '🐐' }
+  { id: 'emoji-cocô', nome: 'Cocô', preco: 800, glifo: '💩' },
+  { id: 'emoji-oculos', nome: 'De Boa', preco: 1200, glifo: '😎' },
+  { id: 'emoji-fogo', nome: 'Fogo', preco: 1500, glifo: '🔥' },
+  { id: 'emoji-caveira', nome: 'Caveira', preco: 1800, glifo: '💀' },
+  { id: 'emoji-cowboy', nome: 'Cowboy', preco: 2000, glifo: '🤠' },
+  { id: 'emoji-palhaco', nome: 'Palhaço', preco: 2200, glifo: '🤡' },
+  { id: 'emoji-raio', nome: 'Raio', preco: 2400, glifo: '⚡' },
+  { id: 'emoji-et', nome: 'ET', preco: 2700, glifo: '👽' },
+  { id: 'emoji-pizza', nome: 'Pizza', preco: 3000, glifo: '🍕' },
+  { id: 'emoji-gelado', nome: 'Congelante', preco: 3400, glifo: '🥶' },
+  { id: 'emoji-tubarao', nome: 'Tubarão', preco: 4000, glifo: '🦈' },
+  { id: 'emoji-diabo', nome: 'Diabinho', preco: 4500, glifo: '😈' },
+  { id: 'emoji-foguete', nome: 'Foguete', preco: 5000, glifo: '🚀' },
+  { id: 'emoji-cerebro', nome: 'Cérebro', preco: 5800, glifo: '🧠' },
+  { id: 'emoji-robo', nome: 'Robô', preco: 6500, glifo: '🤖' },
+  { id: 'emoji-arcoiris', nome: 'Arco-íris', preco: 7500, glifo: '🌈' },
+  { id: 'emoji-coroa', nome: 'Coroa', preco: 9000, glifo: '👑' },
+  { id: 'emoji-diamante', nome: 'Diamante', preco: 12500, glifo: '💎' },
+  { id: 'emoji-goat', nome: 'GOAT', preco: 22000, glifo: '🐐' }
 ];
 
 const VITRINES = [

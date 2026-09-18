@@ -57,9 +57,6 @@ class Jogador {
     this.rastro = [];
     this.recuo = 0;
     this.nome = '';            // apelido mostrado no cooperativo
-    this.corpoPossuido = null;
-    this.possessaoMax = 12.5;
-    this.possessaoAnimacao = 0;
   }
 
   sincronizarOrbes() {
@@ -143,119 +140,8 @@ class Jogador {
 
   get intangivel() { return this.invulneravel > 0 || this.dashRestante > 0 || this.ultAtiva > 0 && this.classe.id === 'espectro'; }
 
-  alvoPossessao() {
-    let alvo = null, menorQ = 100 * 100;
-    for (const e of Jogo.inimigos) {
-      if (!e.vivo || e.vida <= 0 || e.vida / e.vidaMax >= 0.35) continue;
-      const d = Mat.distanciaQ(this.x, this.y, e.x, e.y);
-      if (d <= menorQ) { alvo = e; menorQ = d; }
-    }
-    return alvo;
-  }
-
-  alternarPossessao() {
-    if (this.corpoPossuido) { this.expulsarAlma(false); return true; }
-    const alvo = this.alvoPossessao();
-    if (!alvo) return false;
-
-    const origemX = this.x, origemY = this.y;
-    this.corpoPossuido = {
-      tipo: alvo.tipo, elite: alvo.elite, vidaMax: alvo.vidaMax,
-      almaVida: this.vida, tempo: this.possessaoMax, especial: 0,
-      velocidade: alvo.velocidade
-    };
-    this.x = alvo.x; this.y = alvo.y;
-    this.vx = alvo.vx; this.vy = alvo.vy;
-    this.vida = Math.max(0.1, alvo.vida);
-    this.raio = alvo.raio;
-    alvo.vivo = false; // consumido sem pontuação, XP, drop ou contagem de abate
-    this.possessaoAnimacao = 0.38;
-    this.invulneravel = Math.max(this.invulneravel, 0.35);
-    Particulas.anel(this.x, this.y, '#b06dff', this.raio + 30, 30);
-    // Alma cruza o espaço entre os dois corpos. Emissão única: nada é criado
-    // dentro do loop quente de desenho.
-    for (let i = 0; i <= 12; i++) {
-      const p = i / 12;
-      Particulas.emitir({ x: Mat.misturar(origemX, this.x, p), y: Mat.misturar(origemY, this.y, p),
-        vida: 0.22 + p * 0.2, tam: 4 + p * 4, cor: '#b06dff', brilho: 24, atrito: 0.9 });
-    }
-    Jogo.aviso('CORPO POSSUÍDO — E PARA SAIR');
-    return true;
-  }
-
-  expulsarAlma(destruido) {
-    const corpo = this.corpoPossuido;
-    if (!corpo) return;
-    this.corpoPossuido = null;
-    this.vida = Math.max(0.1, corpo.almaVida);
-    this.raio = 16;
-    this.vx *= 0.25; this.vy *= 0.25;
-    this.invulneravel = Math.max(this.invulneravel, destruido ? 1.4 : 0.65);
-    this.possessaoAnimacao = 0.38;
-    Particulas.explosao(this.x, this.y, '#b06dff', 24, 330, 0.55, 5);
-    Particulas.anel(this.x, this.y, '#ffffff', 45, 18);
-    Jogo.aviso(destruido ? 'CORPO DESTRUÍDO — ALMA EXPULSA' : 'CORPO ABANDONADO');
-  }
-
-  atualizarPossessao(dt) {
-    if (!this.corpoPossuido) return;
-    const corpo = this.corpoPossuido;
-    corpo.tempo -= dt;
-    corpo.especial = Math.max(0, corpo.especial - dt);
-    this.possessaoAnimacao = Math.max(0, this.possessaoAnimacao - dt);
-    if (corpo.tempo <= 0) this.expulsarAlma(false);
-  }
-
-  atirarPossuido() {
-    const corpo = this.corpoPossuido;
-    if (!corpo) return;
-    const t = TIPOS_INIMIGO[corpo.tipo];
-    const comportamento = t.comportamento;
-    const rajada = comportamento === 'orbitar' || comportamento === 'rajada' ? 3 : comportamento === 'espiral' ? 2 : 1;
-    this.recargaTiro = Math.max(0.16, (t.recarga || 0.62) * (rajada > 1 ? 0.38 : 0.55));
-    for (let i = 0; i < rajada; i++) {
-      const desvio = rajada === 1 ? 0 : (i - (rajada - 1) / 2) * 0.24;
-      Jogo.projeteis.push(new Projetil({
-        x: this.x + Math.cos(this.angulo) * (this.raio + 8), y: this.y + Math.sin(this.angulo) * (this.raio + 8),
-        angulo: this.angulo + desvio, velocidade: t.projetilVel || 760,
-        raio: Math.max(4, this.raio * 0.16), dano: Math.max(12, this.attr.dano * 0.72),
-        dono: 'jogador', cor: t.cor, perfuracao: comportamento === 'perseguir' ? 1 : 0,
-        ricochete: comportamento === 'zigue' ? 1 : 0, homing: comportamento === 'piscar' ? 0.45 : 0
-      }));
-    }
-    Particulas.faisca(this.x, this.y, this.angulo, t.cor);
-    Som.tiro(this.classe.somTiro);
-  }
-
-  usarEspecialPossuido(controles) {
-    const corpo = this.corpoPossuido;
-    if (!corpo || corpo.especial > 0) return;
-    const t = TIPOS_INIMIGO[corpo.tipo];
-    const c = t.comportamento;
-    corpo.especial = 3.2;
-    if (c === 'investir' || c === 'kamikaze' || c === 'perseguir') {
-      const ex = controles.eixoX(), ey = controles.eixoY();
-      const a = ex || ey ? Math.atan2(ey, ex) : this.angulo;
-      this.dashRestante = 0.24; this.dashVX = Math.cos(a) * 1250; this.dashVY = Math.sin(a) * 1250;
-      this.invulneravel = Math.max(this.invulneravel, 0.3);
-    } else if (c === 'piscar') {
-      this.x = Mat.limitar(this.x + Math.cos(this.angulo) * 210, this.raio, Jogo.LARGURA - this.raio);
-      this.y = Mat.limitar(this.y + Math.sin(this.angulo) * 210, this.raio, Jogo.ALTURA - this.raio);
-      Particulas.anel(this.x, this.y, t.cor, 38, 16);
-    } else {
-      const n = c === 'espiral' ? 12 : c === 'rajada' || c === 'orbitar' ? 8 : 6;
-      for (let i = 0; i < n; i++) {
-        Jogo.projeteis.push(new Projetil({ x: this.x, y: this.y, angulo: this.angulo + Mat.TAU * i / n,
-          velocidade: t.projetilVel || 640, raio: 5, dano: Math.max(9, this.attr.dano * 0.5),
-          dono: 'jogador', cor: t.cor, perfuracao: 0, ricochete: 0, homing: 0 }));
-      }
-    }
-    Particulas.anel(this.x, this.y, t.cor, this.raio + 36, 20);
-  }
-
   /* --------------------------- Atualização --------------------------- */
   atualizar(dt, controles = Input) {
-    this.atualizarPossessao(dt);
     // mira: joystick de mira > mira automática (toque) > mouse
     const forcaMira = Math.hypot(controles.mira.x, controles.mira.y);
     let alvo;
@@ -275,11 +161,9 @@ class Jogador {
     // A CARNIFICINA também dá pernas: sem isso o ESPECTRO não alcança ninguém
     // durante os cinco segundos em que o corte vale seis vezes o tiro.
     const corrida = (this.ultAtiva > 0 && this.classe.id === 'espectro') ? 1.4 : 1;
-    const velocidadeAtual = (this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade) * corrida;
-    const zigue = this.corpoPossuido && TIPOS_INIMIGO[this.corpoPossuido.tipo].comportamento === 'zigue'
-      ? Math.sin(Jogo.tempo * 8) * 0.28 : 0;
-    const alvoVX = ((ex / mag) - (ey / mag) * zigue) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
-    const alvoVY = ((ey / mag) + (ex / mag) * zigue) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
+    const velocidadeAtual = this.attr.velocidade * corrida;
+    const alvoVX = (ex / mag) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
+    const alvoVY = (ey / mag) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
 
     if (this.dashRestante > 0) {
       this.dashRestante -= dt;
@@ -303,17 +187,11 @@ class Jogador {
     this.x = Mat.limitar(this.x, m, Jogo.LARGURA - m);
     this.y = Mat.limitar(this.y, m, Jogo.ALTURA - m);
 
-    // Corpo possuído não desenha rastro da alma. Antes ele ainda alocava um
-    // objeto por quadro invisível, causando pausas de coleta de lixo.
-    if (this.corpoPossuido) {
-      if (this.rastro.length) this.rastro.length = 0;
-    } else {
-      this.rastro.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.22 });
-      if (this.rastro.length > 14) this.rastro.shift();
-      for (let i = this.rastro.length - 1; i >= 0; i--) {
-        this.rastro[i].vida -= dt;
-        if (this.rastro[i].vida <= 0) this.rastro.splice(i, 1);
-      }
+    this.rastro.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.22 });
+    if (this.rastro.length > 14) this.rastro.shift();
+    for (let i = this.rastro.length - 1; i >= 0; i--) {
+      this.rastro[i].vida -= dt;
+      if (this.rastro[i].vida <= 0) this.rastro.splice(i, 1);
     }
 
     // temporizadores
@@ -337,11 +215,11 @@ class Jogador {
     }
 
     // regeneração
-    if (!this.corpoPossuido && this.attr.regen > 0 && this.vida < this.attr.vidaMax) {
+    if (this.attr.regen > 0 && this.vida < this.attr.vidaMax) {
       this.vida = Math.min(this.attr.vidaMax, this.vida + this.attr.regen * dt);
     }
 
-    if (!this.corpoPossuido) this.atualizarLacaios(dt);
+    this.atualizarLacaios(dt);
 
     // orbes orbitais
     for (const o of this.orbes) {
@@ -365,15 +243,12 @@ class Jogador {
     }
 
     // ações
-    if (controles.atirando() && this.recargaTiro <= 0) {
-      if (this.corpoPossuido) this.atirarPossuido(); else this.atirar();
-    }
+    if (controles.atirando() && this.recargaTiro <= 0) this.atirar();
     if (controles.apertou('Space')) this.dash(controles);
-    if (controles.apertou('KeyQ') || controles.apertou('CapsLock')) {
-      if (this.corpoPossuido) this.usarEspecialPossuido(controles); else this.ativarEscudo();
-    }
-    if (controles.apertou('KeyE')) this.alternarPossessao();
-    if (controles.apertou('ShiftLeft') || controles.botaoDireito) this.ativarUlt();
+    if (controles.apertou('KeyQ') || controles.apertou('CapsLock')) this.ativarEscudo();
+    // E e SHIFT fazem a mesma coisa: a ultimate. O E ficou livre quando a
+    // possessão saiu, e quem já tinha o dedo nele não perde a mão.
+    if (controles.apertou('KeyE') || controles.apertou('ShiftLeft') || controles.botaoDireito) this.ativarUlt();
   }
 
   /* ------------------- Previsão local (cooperativo) ------------------ */
@@ -396,7 +271,7 @@ class Jogador {
 
     const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey);
-    const velocidade = this.corpoPossuido ? this.corpoPossuido.velocidade : this.attr.velocidade;
+    const velocidade = this.attr.velocidade;
     this.vx = Mat.suave(this.vx, mag > 0 ? (ex / mag) * velocidade : 0, 12, dt);
     this.vy = Mat.suave(this.vy, mag > 0 ? (ey / mag) * velocidade : 0, 12, dt);
     this.x += this.vx * dt;
@@ -613,18 +488,6 @@ class Jogador {
 
   /* ------------------------------ Dano ------------------------------- */
   receberDano(quantidade, fonteX, fonteY) {
-    if (this.corpoPossuido) {
-      const t = TIPOS_INIMIGO[this.corpoPossuido.tipo];
-      // COURAÇA conserva o escudo frontal. BRUTO/TORRETA conservam resistência.
-      if (t.escudoFrontal && fonteX !== undefined) {
-        const frente = Math.abs(Mat.normalizarAngulo(Mat.anguloEntre(this.x, this.y, fonteX, fonteY) - this.angulo));
-        if (frente < 0.9) {
-          Particulas.anel(this.x, this.y, '#dfe9f5', this.raio + 10, 10);
-          return false;
-        }
-      }
-      if (t.resiste) quantidade *= t.resiste;
-    }
     if (this.escudoAtivo) {
       Particulas.anel(this.x, this.y, '#ffd34d', 30, 12);
       return false;
@@ -642,8 +505,7 @@ class Jogador {
       this.vx += Math.cos(a) * 320;
       this.vy += Math.sin(a) * 320;
     }
-    if (this.vida <= 0 && this.corpoPossuido) this.expulsarAlma(true);
-    else if (this.vida <= 0 && Jogo.jogadores().length === 0) Jogo.derrota();
+    if (this.vida <= 0 && Jogo.jogadores().length === 0) Jogo.derrota();
     return true;
   }
 
@@ -688,10 +550,6 @@ class Jogador {
     const tons = Cosmeticos.tons(this.skin);
     const cor = tons.cor;
     const cor2 = tons.cor2;
-    if (this.corpoPossuido) {
-      this.desenharPossuido(ctx);
-      return;
-    }
     // rastro
     for (const r of this.rastro) {
       const a = Mat.limitar(r.vida / 0.22, 0, 1) * 0.25;
@@ -763,49 +621,66 @@ class Jogador {
     const piscando = this.invulneravel > 0 && Math.floor(this.invulneravel * 16) % 2 === 0;
     ctx.globalAlpha = piscando ? 0.4 : 1;
 
-    // arma
+    // arma: fica mesmo com emoji equipado, senão não se lê pra onde se mira
     ctx.shadowBlur = 18; ctx.shadowColor = cor;
     ctx.fillStyle = '#e9f6ff';
     ctx.fillRect(this.raio - 2 - this.recuo, -4, 22, 8);
     ctx.fillStyle = cor2;
     ctx.fillRect(this.raio + 12 - this.recuo, -6, 7, 12);
 
-    // corpo: losango com núcleo
-    ctx.beginPath();
-    ctx.moveTo(this.raio + 4, 0);
-    ctx.lineTo(-2, -this.raio);
-    ctx.lineTo(-this.raio, 0);
-    ctx.lineTo(-2, this.raio);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(-this.raio, 0, this.raio, 0);
-    grad.addColorStop(0, cor2);
-    grad.addColorStop(1, cor);
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#f2fbff';
-    ctx.stroke();
+    // Com emoji equipado, o emoji É o jogador: a nave não é desenhada. Fica só
+    // um disco na cor do casco por baixo, pra o emoji não flutuar no vazio e
+    // pra a cor comprada continuar valendo alguma coisa.
+    if (this.emoji) {
+      ctx.rotate(-this.angulo);
+      ctx.shadowBlur = Jogo.modoLeve ? 0 : 26; ctx.shadowColor = cor;
+      const disco = ctx.createRadialGradient(0, 0, 2, 0, 0, this.raio * 1.12);
+      disco.addColorStop(0, cor);
+      disco.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = (piscando ? 0.4 : 1) * 0.5;
+      ctx.fillStyle = disco;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.raio * 1.12, 0, Mat.TAU);
+      ctx.fill();
+      ctx.globalAlpha = piscando ? 0.4 : 1;
+      ctx.rotate(this.angulo);
+    } else {
+      // corpo: losango com núcleo
+      ctx.beginPath();
+      ctx.moveTo(this.raio + 4, 0);
+      ctx.lineTo(-2, -this.raio);
+      ctx.lineTo(-this.raio, 0);
+      ctx.lineTo(-2, this.raio);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(-this.raio, 0, this.raio, 0);
+      grad.addColorStop(0, cor2);
+      grad.addColorStop(1, cor);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f2fbff';
+      ctx.stroke();
 
-    // núcleo
-    ctx.shadowBlur = 26;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(0, 0, 5, 0, Mat.TAU);
-    ctx.fill();
+      // núcleo
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 5, 0, Mat.TAU);
+      ctx.fill();
+    }
 
     // acessório da loja: acompanha a mira junto com o casco
     desenharAcessorio(ctx, this.acessorio, this.raio, cor, cor2, this.angulo);
     ctx.restore();
 
-    // emoji: fica em pé acima da nave, sem girar com ela
+    // O emoji em si vai por cima e em pé — emoji de cabeça pra baixo não se lê.
     if (this.emoji) {
       ctx.save();
-      ctx.font = '22px Arial';
+      ctx.font = Math.round(this.raio * 2.5) + 'px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.globalAlpha = piscando ? 0.4 : 1;
-      const alto = ACESSORIOS_ALTOS.indexOf(this.acessorio) !== -1;
-      ctx.fillText(this.emoji, this.x, this.y - this.raio * (alto ? 4.1 : 2.4) + Math.sin(Jogo.tempo * 3) * 3);
+      ctx.fillText(this.emoji, this.x, this.y + this.raio * 0.06);
       ctx.restore();
     }
 
@@ -841,41 +716,6 @@ class Jogador {
     ctx.globalAlpha = 1;
   }
 
-  desenharPossuido(ctx) {
-    const corpo = this.corpoPossuido;
-    const t = TIPOS_INIMIGO[corpo.tipo];
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angulo);
-    ctx.shadowBlur = Jogo.modoLeve ? 0 : 28; ctx.shadowColor = '#b06dff';
-    ctx.beginPath();
-    for (let i = 0; i < t.lados; i++) {
-      const a = Mat.TAU * i / t.lados;
-      ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * this.raio, Math.sin(a) * this.raio);
-    }
-    ctx.closePath();
-    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, this.raio);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, t.cor); g.addColorStop(1, t.cor2);
-    ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = 4; ctx.strokeStyle = '#b06dff'; ctx.stroke();
-    ctx.rotate(-this.angulo + Jogo.tempo * 2.4);
-    ctx.globalAlpha = 0.75;
-    ctx.strokeStyle = '#e0b4ff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, this.raio + 9 + Math.sin(Jogo.tempo * 7) * 3, 0, Mat.TAU); ctx.stroke();
-    ctx.restore();
-
-    const p = Mat.limitar(corpo.tempo / this.possessaoMax, 0, 1);
-    const largura = Math.max(56, this.raio * 2.4);
-    ctx.fillStyle = 'rgba(8,0,18,.78)';
-    ctx.fillRect(this.x - largura / 2, this.y - this.raio - 20, largura, 7);
-    ctx.fillStyle = '#b06dff';
-    ctx.fillRect(this.x - largura / 2, this.y - this.raio - 20, largura * p, 7);
-    const vida = Mat.limitar(this.vida / corpo.vidaMax, 0, 1);
-    ctx.fillStyle = 'rgba(8,0,18,.78)';
-    ctx.fillRect(this.x - largura / 2, this.y + this.raio + 13, largura, 6);
-    ctx.fillStyle = vida > 0.5 ? '#5cff9d' : vida > 0.25 ? '#ffd34d' : '#ff4d6d';
-    ctx.fillRect(this.x - largura / 2, this.y + this.raio + 13, largura * vida, 6);
-  }
 }
 
 /* ============================== PROJÉTIL ================================ */
@@ -1333,7 +1173,6 @@ class Inimigo {
     Camera.bater(9);
     Som.morteInimigo();
     for (const j of Jogo.jogadores()) {
-      if (j.corpoPossuido) continue;
       if (Mat.distancia(this.x, this.y, j.x, j.y) < this.def.raioExplosao + j.raio) {
         j.receberDano(this.def.dano, this.x, this.y);
       }
@@ -1480,19 +1319,6 @@ class Inimigo {
       ctx.strokeRect(this.x - largura / 2, y, largura, 5);
     }
 
-    // Convite contextual. Só o jogador local vê; em cooperativo cada tela
-    // calcula o próprio alcance, sem criar estado de jogo no convidado.
-    const j = Jogo.jogador;
-    if (j && !j.corpoPossuido && this.vivo && this.vida > 0 && this.vida / this.vidaMax < 0.35
-      && Mat.distancia(j.x, j.y, this.x, this.y) <= 100) {
-      ctx.save();
-      ctx.strokeStyle = '#b06dff'; ctx.lineWidth = 4;
-      ctx.shadowBlur = Jogo.modoLeve ? 0 : 28; ctx.shadowColor = '#b06dff';
-      ctx.beginPath(); ctx.arc(this.x, this.y, this.raio + 12 + Math.sin(Jogo.tempo * 8) * 3, 0, Mat.TAU); ctx.stroke();
-      ctx.fillStyle = '#f0d7ff'; ctx.font = 'bold 18px Orbitron, sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('E', this.x, this.y - this.raio - 24);
-      ctx.restore();
-    }
   }
 }
 
@@ -1656,6 +1482,30 @@ const BOSSES = [
       { movimento: 'caotico', velocidade: 440, ataques: ['cruz', 'laser', 'minas', 'chuva'], recarga: 0.4 },
       { movimento: 'cerco', velocidade: 2.5, ataques: ['espiral', 'parede', 'cacador', 'laser', 'anel', 'chuva'], recarga: 0.3 }
     ]
+  },
+
+  /* ----------------------------- O SEGREDO -------------------------------
+     Não existe onda para ele. `secreto: true` tira ele do rodízio e da onda
+     100: quem o chama é Jogo.abrirSegredo(), depois do CEIFADOR cair.
+
+     `invencivel` não é dificuldade, é regra: receberDano devolve sem tocar na
+     barra. Não há build, crítico, ultimate ou bug de dano que mude isso, e a
+     barra não desce um pixel porque não existe número para descer.
+
+     As fases dele passam por TEMPO (`fasesPorTempo`), não por vida — vida que
+     não cai nunca trocaria de fase. A cada 18 segundos ele fica pior.
+     ---------------------------------------------------------------------- */
+  {
+    id: 'espectador', nome: 'O ESPECTADOR', titulo: 'Esteve aqui desde a onda 1',
+    secreto: true, invencivel: true, fasesPorTempo: 18,
+    velocidadeTiro: 1.5, volumeExtra: 1.5,
+    cor: '#f4f6ff', cor2: '#05050a', raio: 118, vida: 1, lados: 12,
+    fases: [
+      { movimento: 'teleporte', velocidade: 240, ataques: ['precisao', 'anel'], recarga: 1.1 },
+      { movimento: 'emboscada', velocidade: 300, ataques: ['precisao', 'espiral', 'cruz'], recarga: 0.7 },
+      { movimento: 'emboscada', velocidade: 380, ataques: ['espiral', 'parede', 'laser', 'cacador'], recarga: 0.45 },
+      { movimento: 'caotico', velocidade: 520, ataques: ['todosOsLados', 'espiral', 'parede', 'laser', 'chuva', 'cruz', 'minas'], recarga: 0.22 }
+    ]
   }
 ];
 
@@ -1750,7 +1600,11 @@ class Boss {
 
   atualizarFase() {
     const total = this.def.fases.length;
-    const idx = Mat.limitar(total - 1 - Math.floor(this.porcentagem * total), 0, total - 1);
+    // Barra que não desce não troca de fase: quem tem vida intocável avança
+    // por tempo de luta.
+    const idx = this.def.fasesPorTempo
+      ? Mat.limitar(Math.floor(this.tempoVivo / this.def.fasesPorTempo), 0, total - 1)
+      : Mat.limitar(total - 1 - Math.floor(this.porcentagem * total), 0, total - 1);
     if (idx !== this.faseIndice) {
       this.faseIndice = idx;
       this.fase = this.def.fases[idx];
@@ -2190,6 +2044,16 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
+    // Invencível de verdade: a barra não existe para ser reduzida. Nem o
+    // TRAÇANTE, nem crítico somado, nem dano por segundo — nada entra aqui.
+    if (this.def.invencivel) {
+      this.absorveu = 0.3;
+      if (fx !== undefined && Mat.chance(0.12)) {
+        Textos.criar(fx, fy, 'IMUNE', '#f4f6ff', 15);
+        Particulas.faisca(fx, fy, Math.random() * Mat.TAU, '#f4f6ff');
+      }
+      return;
+    }
     if (this.imune > 0) {
       this.absorveu = 0.3;
       if (fx !== undefined && Mat.chance(0.3)) Particulas.faisca(fx, fy, Math.random() * Mat.TAU, '#8fe3ff');

@@ -101,20 +101,53 @@ const Camera = {
 };
 
 /* ------------------------------- Recordes ------------------------------- */
+/* O recorde local também é por temporada. A lista guardada continua inteira —
+   run de temporada antiga não é apagada, só sai da tela —, e `lista` mostra
+   apenas a temporada de agora. Run sem temporada é de antes desta regra e
+   entra como T1. */
 const Recordes = {
-  lista: [],
+  lista: [],          // só a temporada atual, já ordenada
+  historico: [],      // tudo que existe no aparelho, de todas as temporadas
+  temporada() { return typeof JOGO !== 'undefined' ? JOGO.temporada : 'T1'; },
+
   carregar() {
-    try { Recordes.lista = JSON.parse(localStorage.getItem('sniper.recordes') || '[]'); }
-    catch (e) { Recordes.lista = []; }
+    let bruto = [];
+    try { bruto = JSON.parse(localStorage.getItem('sniper.recordes') || '[]'); }
+    catch (e) { bruto = []; }
+    Recordes.historico = Array.isArray(bruto) ? bruto : [];
+    Recordes.recortarTemporada();
   },
+
+  recortarTemporada() {
+    const atual = Recordes.temporada();
+    Recordes.lista = Recordes.historico
+      .filter((r) => (r.temporada || 'T1') === atual)
+      .sort((a, b) => b.pontos - a.pontos)
+      .slice(0, 8);
+  },
+
   registrar(entrada) {
-    Recordes.lista.push(entrada);
-    Recordes.lista.sort((a, b) => b.pontos - a.pontos);
-    Recordes.lista = Recordes.lista.slice(0, 8);
-    try { localStorage.setItem('sniper.recordes', JSON.stringify(Recordes.lista)); }
+    entrada.temporada = Recordes.temporada();
+    Recordes.historico.push(entrada);
+    // Teto de armazenamento: 8 por temporada bastam para a tela, e o resto do
+    // histórico não precisa crescer sem fim no localStorage.
+    const porTemporada = {};
+    Recordes.historico = Recordes.historico
+      .sort((a, b) => b.pontos - a.pontos)
+      .filter((r) => {
+        const t = r.temporada || 'T1';
+        porTemporada[t] = (porTemporada[t] || 0) + 1;
+        return porTemporada[t] <= 8;
+      });
+    Recordes.recortarTemporada();
+    try { localStorage.setItem('sniper.recordes', JSON.stringify(Recordes.historico)); }
     catch (e) { /* ignora */ }
   },
-  melhor() { return Recordes.lista.length ? Recordes.lista[0].pontos : 0; }
+
+  melhor() { return Recordes.lista.length ? Recordes.lista[0].pontos : 0; },
+  melhorDeTodas() {
+    return Recordes.historico.reduce((m, r) => Math.max(m, r.pontos || 0), 0);
+  }
 };
 
 /* --------------------------------- Input -------------------------------- */
@@ -323,6 +356,16 @@ const Som = {
     [523, 659, 784, 1046].forEach((f, i) =>
       setTimeout(() => Som._tom({ freq: f, tipo: 'triangle', dur: 0.2, vol: 0.16 }), i * 80));
   },
+  /* O som do segredo: duas senóides desafinadas em um semitom. O batimento
+     entre elas é o desconforto — não é acorde, é erro. Some um sino agudo
+     caindo e um ruído grave por baixo. */
+  segredo() {
+    Som._tom({ freq: 58, freqFinal: 42, tipo: 'sine', dur: 2.6, vol: 0.3 });
+    Som._tom({ freq: 61.5, freqFinal: 44, tipo: 'sine', dur: 2.6, vol: 0.26 });
+    Som._tom({ freq: 1860, freqFinal: 130, tipo: 'triangle', dur: 1.9, vol: 0.1 });
+    Som._ruido({ dur: 2.2, vol: 0.16, corte: 320 });
+  },
+
   bossEntra() {
     [110, 104, 98, 87].forEach((f, i) =>
       setTimeout(() => Som._tom({ freq: f, freqFinal: f * 0.5, tipo: 'sawtooth', dur: 0.5, vol: 0.24 }), i * 190));

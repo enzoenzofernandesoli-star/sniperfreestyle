@@ -11,13 +11,14 @@
    Pra publicar uma versão nova basta subir o VERSAO: o cache antigo é apagado.
    =========================================================================== */
 
-const VERSAO = 'sniper-freestyle-v44';
+const VERSAO = 'sniper-freestyle-v45';
 
 const CASCO = [
   './',
   './index.html',
   './style.css',
   './manifest.webmanifest',
+  './src/versao.js',
   './src/nucleo.js',
   './src/placar-config.js',
   './src/placar.js',
