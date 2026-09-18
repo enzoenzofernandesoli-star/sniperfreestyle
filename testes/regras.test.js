@@ -590,6 +590,81 @@ function mundoCoop() {
   return ctx;
 }
 
+test('placar por temporada: a API grava a que recebe e lê só a pedida', async () => {
+  const Module = require('node:module');
+  const carregar = Module._load;
+  const consultas = [];
+  Module._load = function (pedido, pai, principal) {
+    if (pedido === '@neondatabase/serverless') {
+      return { neon: () => (partes, ...valores) => {
+        consultas.push({ texto: partes.join('?'), valores });
+        return Promise.resolve([]);
+      } };
+    }
+    return carregar.call(this, pedido, pai, principal);
+  };
+  // Dois cuidados para este teste não depender de ordem nem de ambiente:
+  // limpar o cache do require (senão vem o módulo que outro teste já carregou,
+  // preso ao stub dele) e garantir DATABASE_URL (senão a API responde 503 em
+  // máquina sem api/conexao-local.js).
+  const urlAntes = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgresql://teste:teste@localhost/neondb';
+  delete require.cache[require.resolve(path.join(raiz, 'api/placar.js'))];
+  let api;
+  try { api = require(path.join(raiz, 'api/placar.js')); }
+  finally {
+    Module._load = carregar;
+    delete require.cache[require.resolve(path.join(raiz, 'api/placar.js'))];
+    if (urlAntes === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = urlAntes;
+  }
+
+  const chamar = async (pedido) => {
+    const resposta = {
+      codigo: 0,
+      setHeader() {},
+      status(codigo) { this.codigo = codigo; return this; },
+      json(corpo) { this.corpo = corpo; return this; }
+    };
+    await api(pedido, resposta);
+    return resposta;
+  };
+
+  const run = (temporada) => ({ method: 'POST', body: {
+    nome: 'TESTE', pontos: 1000, classe: 'SNIPER', onda: 10,
+    nivel: 1, tempo: 60, abates: 5, venceu: false, temporada
+  } });
+
+  // GRAVAÇÃO: a temporada recebida vai para a coluna; lixo cai em T1.
+  consultas.length = 0;
+  assert.equal((await chamar(run('T7'))).codigo, 201);
+  const gravou = consultas[consultas.length - 1];
+  assert.ok(gravou.texto.includes('temporada'), 'a coluna entra no insert');
+  assert.ok(gravou.valores.includes('T7'), 'grava a temporada que o jogo mandou');
+
+  consultas.length = 0;
+  await chamar(run('bagunça'));
+  assert.ok(consultas[consultas.length - 1].valores.includes('T1'),
+    'temporada fora do formato cai em T1, não derruba a gravação');
+
+  consultas.length = 0;
+  await chamar(run(undefined));
+  assert.ok(consultas[consultas.length - 1].valores.includes('T1'),
+    'cliente antigo, sem o campo, continua entrando como T1');
+
+  // LEITURA: com temporada filtra; sem temporada devolve o ranking inteiro.
+  consultas.length = 0;
+  assert.equal((await chamar({ method: 'GET', query: { temporada: 'T4', limite: '10' } })).codigo, 200);
+  const comFiltro = consultas[consultas.length - 1];
+  assert.ok(comFiltro.texto.includes('where temporada ='), 'a consulta corta pela temporada');
+  assert.ok(comFiltro.valores.includes('T4'));
+
+  consultas.length = 0;
+  await chamar({ method: 'GET', query: {} });
+  assert.ok(!consultas[consultas.length - 1].texto.includes('where temporada ='),
+    'sem temporada na URL o ranking vem inteiro: cliente antigo não quebra');
+});
+
 test('controle recebido do convidado é limitado à faixa válida', () => {
   const ctx = mundoCoop();
   const r = vm.runInContext(`(() => {
