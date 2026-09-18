@@ -23,7 +23,9 @@ O roteiro de trabalho e os próximos passos ficam no Segundo Cérebro, em
 ```
 npm install
 npm run salas      # jogo + salas cooperativas em http://localhost:8123
-npm test           # 16 testes (node --test), incluindo WebSocket real
+npm test           # 43 testes (node --test), incluindo WebSocket real
+node ferramentas/medir-dano.js         # bancada de dano por classe
+node ferramentas/medir-dano.js --ult   # o mesmo, com as ultimates
 ```
 
 Sala cooperativa na mão: abrir `http://localhost:8123` em duas abas, CRIAR SALA numa,
@@ -46,6 +48,17 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
 - **Partida encerrada não se reescreve**: `derrota()` sai fora se o estado já é `gameover` ou
   `vitoria`. Sem isso, a segunda chamada no mesmo quadro trocava o final do segredo por um
   GAME OVER comum.
+
+- **Balanceamento se mede, não se chuta.** `node ferramentas/medir-dano.js`
+  (e `--ult`) põe cada classe na frente de um boss e conta o dano que entra.
+  Antes de mexer em dano de classe ou vida de boss, rode e compare.
+- **ESPECTRO fica na faixa das outras classes** (nerf de 18/09, pedido do Enzo):
+  no máximo ~1,35× a segunda classe no tiro, e a CARNIFICINA na mesma ordem de
+  grandeza das outras ultimates. O eco da ult **não fere boss** — é arma de
+  multidão. Três testes travam isso.
+- **Vida de boss sobe em passo constante (~1,33× por encontro).** Sem degrau no
+  meio da campanha: era isso que fazia o boss da onda 30 virar parede. O
+  CEIFADOR fica fora da conta porque regenera.
 
 ## Convenções
 

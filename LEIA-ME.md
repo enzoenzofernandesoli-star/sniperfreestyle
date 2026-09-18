@@ -177,22 +177,54 @@ entre todos.
 
 ## Quem é o mais forte
 
-O ESPECTRO é, de propósito, a classe mais forte do jogo — e a que mais cobra
-por isso. Medido contra um boss, nível 12, em tempo real:
+Medido por `node ferramentas/medir-dano.js`, que põe cada classe na frente de um
+boss da onda 30 e conta o dano que entra de verdade — tiro viajando, alcance
+curto contando, orbe e drone incluídos.
+
+**Tiro básico, dano por segundo:**
 
 | Classe | Colado (120 px) | Longe (700 px) |
 |---|---|---|
-| **ESPECTRO** | **1.214 de dano/s** | **0** |
-| INVOCADOR | 536 | 302 |
-| ARCANO | 373 | — |
-| GUARDIÃO | 362 | — |
-| SNIPER | 350 | 918 |
+| INVOCADOR | 131 | 113 |
+| **ESPECTRO** | **129** | **0** |
+| SNIPER | 96 | 102 |
+| GUARDIÃO | 54 | 49 |
+| ARCANO | 48 | 43 |
 
-Com a ultimate ligada, colado: **ESPECTRO 2.298** contra 1.205 do INVOCADOR.
+**Ultimate, dano total nos 6 s seguintes à ativação:**
+
+| Classe | Colado | Longe |
+|---|---|---|
+| INVOCADOR (LEGIÃO) | 2.646 | 2.219 |
+| **ESPECTRO (CARNIFICINA)** | **2.377** | 0 |
+| SNIPER (TRAÇANTE) | 782 | 843 |
+| ARCANO (SINGULARIDADE) | 432 | 240 |
+| GUARDIÃO (IMPACTO) | 422 | 378 |
 
 O zero da coluna da direita é a regra da classe, não um defeito: com
-`alcanceCurto: 360` o tiro dele simplesmente morre no ar antes de chegar. Ele é
-o mais forte do jogo dentro de 360 px e nada fora disso.
+`alcanceCurto: 360` o tiro dele morre no ar antes de chegar.
+
+### O nerf de 18/09
+
+O ESPECTRO estava fora de escala e foi trazido para a faixa das outras classes:
+
+| | Antes | Depois |
+|---|---|---|
+| Dano por tiro | 13 × 5 projéteis a cada 0,32 s | **7** × 5 projéteis a cada **0,34 s** |
+| Dano por segundo, colado | 249 (1,98× o segundo colocado) | **129** (empatado com o INVOCADOR) |
+| CARNIFICINA, 6 s de dano | **16.834** (6,7× a segunda ultimate) | **2.377** (0,9× a do INVOCADOR) |
+| Corte da ult | 10× o tiro a cada 70 ms | 5× o tiro a cada 110 ms |
+| Ecos | 14 ecos, 3× o tiro a cada 0,22 s, **feriam boss** | 8 ecos, 1,2× o tiro a cada 0,4 s, **não ferem boss** |
+| Estouro final | tiro × (4 + abates × 1,2), raio até 1.100 | tiro × (3 + abates × 0,5), raio até 820 |
+
+O eco deixou de ferir boss de propósito: parado colado no boss, oito ecos
+somavam mais dano que o corte e a luta virava um botão só. Eco é arma de
+multidão — atravessar o enxame continua valendo muito, encostar no boss e
+esperar não vale mais.
+
+A CARNIFICINA continua sendo a ultimate mais forte contra multidão e ainda dá
+**5 s de intangibilidade**, que nenhuma outra classe tem. O que saiu foi a
+capacidade de apagar um boss sozinha.
 
 ## Dificuldade
 
@@ -238,8 +270,8 @@ comum crescem na metade do ritmo de antes.
 
 ## Vida de boss
 
-Vida e aperto deixaram de ser um número fixo para os catorze: cada um é uma
-**faixa** que a campanha percorre, guiada por `Boss.dureza`.
+Vida e aperto não são um número fixo para os catorze: cada um é uma **faixa**
+que a campanha percorre, guiada por `Boss.dureza`.
 
 | Botão | Primeiro encontro | Último |
 |---|---|---|
@@ -250,22 +282,40 @@ O aperto divide o intervalo entre ataques e multiplica a bala por ataque. O
 escudo de fase segue a mesma faixa: 1,2 s na segunda fase do primeiro boss,
 4,4 s na quarta fase do último. O CEIFADOR ignora tudo isso e usa o teto.
 
-A curva até a onda 50 passou a subir **ao quadrado**, não em linha reta: quase
-nada nos três primeiros encontros, que é onde a build ainda está crua.
+### A curva de 18/09: passo constante
 
-| Onda | Boss | Vida |
-|---|---|---|
-| 5 | SENTINELA CARMESIM | 1.330 |
-| 10 | SERPENTE DE VÍDEO | 2.861 |
-| 20 | O ARQUITETO | 9.933 |
-| 40 | NÚCLEO INFINITO | 24.933 |
-| 50 | TITÃ DE FERRO | 36.563 |
-| 70 | RAINHA ESTÁTICA | 64.737 |
-| 90 | ÚLTIMO ARAUTO | 113.787 |
-| 100 | CEIFADOR ABSOLUTO | 154.392 (e regenera 7% disso por segundo) |
+A vida dos treze bosses do rodízio foi refeita para subir **sempre no mesmo
+passo, ~1,33× por encontro**. Antes ela dobrava nos primeiros encontros e
+empacava depois, e o resultado era uma parede no meio da campanha: o boss da
+onda 30 tinha 14.433 de vida quando a build do jogador ainda fazia uns 50 de
+dano por segundo — cinco minutos de luta.
 
-Tempo de matar medido com o jogador imóvel acertando tudo: 39 s no boss da onda
-5 com nível 3, ~1,5 min nos da 20 e 40, ~3,5 min no da 70 e ~5 min no da 90.
+| # | Onda | Boss | Vida antes | Vida agora | Passo |
+|---|---|---|---|---|---|
+| 1 | 5 | SENTINELA CARMESIM | 1.330 | 1.330 | — |
+| 2 | 10 | SERPENTE DE VÍDEO | 2.861 | 1.748 | 1,31× |
+| 3 | 15 | OLHO DO VAZIO | 5.390 | 2.336 | 1,34× |
+| 4 | 20 | O ARQUITETO | 9.933 | 3.142 | 1,35× |
+| 5 | 25 | FERREIRO SOLAR | 11.657 | 4.114 | 1,31× |
+| 6 | 30 | **ORÁCULO DE JADE** | **14.433** | **5.541** | 1,35× |
+| 7 | 35 | ECLIPSE FANTASMA | 18.025 | 7.414 | 1,34× |
+| 8 | 40 | NÚCLEO INFINITO | 24.933 | 9.842 | 1,33× |
+| 9 | 50 | TITÃ DE FERRO | 36.563 | 12.916 | 1,31× |
+| 10 | 60 | CORTEJO DE VIDRO | 49.065 | 17.220 | 1,33× |
+| 11 | 70 | RAINHA ESTÁTICA | 64.737 | 23.042 | 1,34× |
+| 12 | 80 | ABISMO CARMESIM | 85.460 | 30.477 | 1,32× |
+| 13 | 90 | ÚLTIMO ARAUTO | 113.787 | 40.537 | 1,33× |
+| F | 100 | CEIFADOR ABSOLUTO | 154.392 | 154.392 | intocado |
+
+O CEIFADOR não entrou na conta: ele regenera 7% da barra por segundo e tem teto
+de dano por acerto e por segundo, então a vida dele é decoração.
+
+O que **não** mudou foi o padrão de ataque de ninguém. A ordem de dificuldade
+por pressão de tiro já estava certa, e quem quiser conferir precisa lembrar de
+duas coisas do código: `ataquesLiberados` libera só os primeiros ataques de cada
+fase (`1 + dureza × (n-1)`), então boss de encontro baixo não usa o repertório
+inteiro; e o `laser` não cria projétil, então contar balas por segundo
+subestima quem ataca de laser.
 
 ## Escudo de fase, trilha e o 67
 

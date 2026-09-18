@@ -438,6 +438,92 @@ test('snapshot do cooperativo preserva aparência, nome e raio do colega', () =>
   assert.equal(dados.raio, 16);
 });
 
+test('o tiro do ESPECTRO fica na faixa das outras classes', () => {
+  const dados = vm.runInContext(`(() => {
+    // Dano por segundo de papel: projéteis x dano x crítico médio / cadência.
+    // Serve para comparar classes entre si; o número absoluto sai da bancada
+    // em ferramentas/medir-dano.js.
+    const dps = {};
+    for (const c of CLASSES) {
+      const a = c.atributos;
+      const critMedio = 1 + a.critChance * (a.critMult - 1);
+      dps[c.id] = a.projeteis * a.dano * critMedio / a.cadencia;
+    }
+    const ordem = Object.keys(dps).sort((x, y) => dps[y] - dps[x]);
+    return { dps, topo: ordem[0], segundo: ordem[1],
+      razao: dps[ordem[0]] / dps[ordem[1]],
+      espectroSobreSniper: dps.espectro / dps.sniper };
+  })()`, contexto);
+
+  assert.ok(dados.razao <= 1.35,
+    'nenhuma classe pode ser mais que 1,35x a segunda no tiro — era 2x com o ESPECTRO antigo');
+  assert.ok(dados.espectroSobreSniper <= 1.6,
+    'o ESPECTRO pode ser o maior dano colado, mas não o dobro do SNIPER');
+  assert.ok(dados.dps.espectro > dados.dps.arcano,
+    'ele continua sendo classe de dano: acima do ARCANO');
+});
+
+test('o eco da CARNIFICINA corta multidão e não fere boss', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {}, UI: { aviso() {} } });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Particulas.iniciar();
+    Jogo.onda = 30;
+    const j = Jogo.jogador = new Jogador('espectro', 'original');
+    const b = Jogo.boss = new Boss(BOSSES.filter((x) => !x.final && !x.secreto)[5], 30);
+    b.entrando = 0; b.imune = 0;
+    b.x = j.x; b.y = j.y;                 // colado: pior caso para o boss
+    const inimigo = new Inimigo('corredor', j.x + 30, j.y, 1, false);
+    inimigo.nascendo = 0;
+    Jogo.inimigos = [inimigo];
+
+    // Só os ecos: o corte direto fica de fora marcando o alvo como já cortado.
+    b._cortado = true;
+    inimigo._cortado = true;
+
+    const vidaBossAntes = b.vida;
+    const vidaInimigoAntes = inimigo.vida;
+    j.ultCarga = j.attr.ultRecarga;
+    j.ativarUlt();
+    b.vida = vidaBossAntes;               // desconta a onda de abertura da ult
+    for (let i = 0; i < 120; i++) j.atualizarEcos(1 / 60);
+    return { ecos: j.ecos.length, bossPerdeu: vidaBossAntes - b.vida,
+      inimigoPerdeu: vidaInimigoAntes - inimigo.vida };
+  })()`, mundo);
+
+  assert.ok(dados.ecos > 0 && dados.ecos <= 8, 'o teto de ecos é 8');
+  assert.equal(dados.bossPerdeu, 0, 'eco não é dano de boss: parado colado nele, a barra não desce');
+  assert.ok(dados.inimigoPerdeu > 0, 'contra multidão o eco continua cortando');
+});
+
+test('vida de boss cresce em passo constante e nunca dá degrau', () => {
+  // Boss precisa de Mat e do resto do núcleo: contexto próprio, não o compartilhado.
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {} });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
+    const vidas = rodizio.map((def, i) => {
+      const onda = i < 8 ? (i + 1) * 5 : 40 + (i - 7) * 10;
+      return Math.round(new Boss(def, onda).vidaMax);
+    });
+    const passos = vidas.slice(1).map((v, i) => v / vidas[i]);
+    return { vidas, passos, crescente: vidas.every((v, i) => i === 0 || v > vidas[i - 1]) };
+  })()`, mundo);
+
+  assert.equal(dados.crescente, true, 'cada boss tem mais vida que o anterior');
+  for (const passo of dados.passos) {
+    assert.ok(passo >= 1.2 && passo <= 1.45,
+      'o passo entre bosses fica entre 1,2x e 1,45x — sem parede no meio da campanha (achei ' + passo.toFixed(2) + 'x)');
+  }
+  // O sexto encontro é o que o Enzo reclamou: fica registrado o teto dele.
+  assert.ok(dados.vidas[5] < 6500,
+    'o boss da onda 30 não volta a ter 14 mil de vida: com 48 de dano por segundo isso era uma luta de 5 minutos');
+});
+
 test('pool de partículas devolve o índice e não varre tudo quando enche', () => {
   const mundo = vm.createContext({ console, Math });
   vm.runInContext(fs.readFileSync(path.join(raiz, 'src/nucleo.js'), 'utf8'), mundo, { filename: 'src/nucleo.js' });

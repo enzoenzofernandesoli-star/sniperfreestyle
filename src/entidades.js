@@ -159,7 +159,7 @@ class Jogador {
     const ex = controles.eixoX(), ey = controles.eixoY();
     const mag = Math.hypot(ex, ey) || 1;
     // A CARNIFICINA também dá pernas: sem isso o ESPECTRO não alcança ninguém
-    // durante os cinco segundos em que o corte vale seis vezes o tiro.
+    // durante os cinco segundos em que o corte vale cinco vezes o tiro.
     const corrida = (this.ultAtiva > 0 && this.classe.id === 'espectro') ? 1.4 : 1;
     const velocidadeAtual = this.attr.velocidade * corrida;
     const alvoVX = (ex / mag) * velocidadeAtual * (Math.hypot(ex, ey) > 0 ? 1 : 0);
@@ -348,10 +348,10 @@ class Jogador {
   // estouro que fecha a conta. Vazia, é um empurrão; cheia, limpa a tela.
   estourarCarnificina() {
     const abates = this.abatesNaUlt || 0;
-    const raio = Mat.limitar(320 + abates * 45, 320, 1100);
+    const raio = Mat.limitar(320 + abates * 32, 320, 820);
     Jogo.ondasChoque.push({
       x: this.x, y: this.y, raio: 10, raioMax: raio,
-      dano: this.attr.dano * (4 + abates * 1.2), cor: this.classe.cor,
+      dano: this.attr.dano * (3 + abates * 0.5), cor: this.classe.cor,
       atingidos: new Set(), empurrao: 1100, limpaTiros: true
     });
     Jogo.flashTela(0.5, this.classe.cor);
@@ -366,8 +366,10 @@ class Jogador {
   atualizarEcos(dt) {
     if (!this.ecos) this.ecos = [];
     this.tempoEco = (this.tempoEco || 0) - dt;
-    if (this.tempoEco <= 0 && this.ecos.length < 14) {
-      this.tempoEco = 0.09;
+    // Teto de 8 ecos, um a cada 0,12 s: o corredor de lâminas continua, mas
+    // deixa de virar oito fontes de dano em cima do mesmo ponto.
+    if (this.tempoEco <= 0 && this.ecos.length < 8) {
+      this.tempoEco = 0.12;
       this.ecos.push({ x: this.x, y: this.y, a: this.angulo, vida: 0.75, vidaMax: 0.75, golpe: 0 });
     }
     for (let i = this.ecos.length - 1; i >= 0; i--) {
@@ -376,26 +378,31 @@ class Jogador {
       if (eco.vida <= 0) { this.ecos.splice(i, 1); continue; }
       eco.golpe -= dt;
       if (eco.golpe > 0) continue;
-      eco.golpe = 0.22;
+      eco.golpe = 0.4;
       for (const alvo of Jogo.inimigos) {
         if (Mat.distancia(eco.x, eco.y, alvo.x, alvo.y) < alvo.raio + 90) {
-          Jogo.danificarInimigo(alvo, this.attr.dano * 3, false, eco.x, eco.y);
+          Jogo.danificarInimigo(alvo, this.attr.dano * 1.2, false, eco.x, eco.y);
         }
       }
-      const b = Jogo.boss;
-      if (b && b.vivo && Mat.distancia(eco.x, eco.y, b.x, b.y) < b.raio + 90) {
-        b.receberDano(this.attr.dano * 3, false, eco.x, eco.y);
-      }
+      // O eco NÃO fere boss, de propósito. Parado colado no boss, os oito ecos
+      // somavam mais dano que o corte e a luta virava um botão só. Eco é arma
+      // de multidão: atravessar o enxame continua valendo, encostar no boss e
+      // esperar não.
     }
   }
 
   cortarNoDash() {
-    // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão: vale
-    // dez vezes o tiro e volta no mesmo alvo quase quatro vezes mais rápido.
+    // Durante a CARNIFICINA o corte tem alcance de foice, não de encostão, e
+    // volta no mesmo alvo bem mais rápido que o tiro.
+    //
+    // Os números já foram 10x o tiro a cada 70 ms, o que dava mais de 7.000 de
+    // dano por ult num alvo só — quarenta vezes a ultimate do SNIPER. Hoje é
+    // 5x a cada 110 ms: continua sendo a ult mais forte do jogo, mas na mesma
+    // ordem de grandeza das outras. Medido em ferramentas/medir-dano.js.
     const naUlt = this.ultAtiva > 0;
     const extra = naUlt ? 175 : 12;
-    const forca = naUlt ? 10 : 2.4;
-    const espera = naUlt ? 70 : 240;
+    const forca = naUlt ? 5 : 2.4;
+    const espera = naUlt ? 110 : 240;
     for (const e of Jogo.inimigos) {
       if (e._cortado) continue;
       if (Mat.distancia(this.x, this.y, e.x, e.y) < this.raio + e.raio + extra) {
@@ -460,7 +467,7 @@ class Jogador {
       this.abatesNaUlt = 0;
       this.ecos = [];
       Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 620,
-        dano: this.attr.dano * 4, cor: this.classe.cor, atingidos: new Set(),
+        dano: this.attr.dano * 3, cor: this.classe.cor, atingidos: new Set(),
         empurrao: 900, limpaTiros: true });
     } else if (this.classe.id === 'invocador') {
       // LEGIÃO: tropa maior, mais longa, e um estouro na chamada
@@ -1341,7 +1348,7 @@ const BOSSES = [
     nome: 'SERPENTE DE VÍDEO',
     titulo: 'A Onda que Não Quebra',
     cor: '#00e5ff', cor2: '#00485c',
-    raio: 58, vida: 1800, lados: 5,
+    raio: 58, vida: 1100, lados: 5,
     fases: [
       { movimento: 'senoidal', velocidade: 260, ataques: ['leque', 'chuva'], recarga: 1.3 },
       { movimento: 'senoidal', velocidade: 350, ataques: ['leque', 'precisao', 'parede'], recarga: 0.9 },
@@ -1353,7 +1360,7 @@ const BOSSES = [
     nome: 'OLHO DO VAZIO',
     titulo: 'Aquele que Espirala',
     cor: '#b06dff', cor2: '#3a0d63',
-    raio: 66, vida: 3000, lados: 8,
+    raio: 66, vida: 1300, lados: 8,
     fases: [
       { movimento: 'circular', velocidade: 1.0, ataques: ['espiral'], recarga: 0.14 },
       { movimento: 'teleporte', velocidade: 200, ataques: ['espiral', 'cruz'], recarga: 0.4 },
@@ -1365,7 +1372,7 @@ const BOSSES = [
     nome: 'O ARQUITETO',
     titulo: 'Fim da Linha',
     cor: '#ffd34d', cor2: '#6b4a00',
-    raio: 74, vida: 4900, lados: 3,
+    raio: 74, vida: 1550, lados: 3,
     fases: [
       { movimento: 'perseguir', velocidade: 185, ataques: ['leque', 'laser', 'precisao'], recarga: 1.05 },
       { movimento: 'investida', velocidade: 300, ataques: ['parede', 'anel'], recarga: 0.7 },
@@ -1375,7 +1382,7 @@ const BOSSES = [
   },
   {
     id: 'ferreiro', nome: 'FERREIRO SOLAR', titulo: 'Forja em Colapso',
-    cor: '#ff8e45', cor2: '#7a2909', raio: 65, vida: 5100, lados: 6,
+    cor: '#ff8e45', cor2: '#7a2909', raio: 65, vida: 1800, lados: 6,
     fases: [
       { movimento: 'investida', velocidade: 270, ataques: ['leque3', 'anel'], recarga: 0.85 },
       { movimento: 'cerco', velocidade: 1.3, ataques: ['chuva', 'invocar', 'precisao'], recarga: 0.7 },
@@ -1384,7 +1391,7 @@ const BOSSES = [
   },
   {
     id: 'oraculo', nome: 'ORÁCULO DE JADE', titulo: 'Geometria Viva',
-    cor: '#56f0b0', cor2: '#176451', raio: 61, vida: 5600, lados: 8,
+    cor: '#56f0b0', cor2: '#176451', raio: 61, vida: 2150, lados: 8,
     fases: [
       { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'precisao'], recarga: 0.24 },
       { movimento: 'teleporte', velocidade: 240, ataques: ['cruz', 'parede'], recarga: 0.55 },
@@ -1393,7 +1400,7 @@ const BOSSES = [
   },
   {
     id: 'eclipse', nome: 'ECLIPSE FANTASMA', titulo: 'Luz Devorada',
-    cor: '#8d83ff', cor2: '#33226e', raio: 70, vida: 6200, lados: 5,
+    cor: '#8d83ff', cor2: '#33226e', raio: 70, vida: 2550, lados: 5,
     fases: [
       { movimento: 'teleporte', velocidade: 240, ataques: ['leque3', 'laser'], recarga: 0.85 },
       { movimento: 'caotico', velocidade: 370, ataques: ['parede', 'invocar', 'precisao'], recarga: 0.58 },
@@ -1422,7 +1429,7 @@ const BOSSES = [
   },
   {
     id: 'nucleo', nome: 'NÚCLEO INFINITO', titulo: 'Último Pulso',
-    cor: '#ff5cae', cor2: '#791c55', raio: 78, vida: 7600, lados: 7,
+    cor: '#ff5cae', cor2: '#791c55', raio: 78, vida: 3000, lados: 7,
     fases: [
       { movimento: 'circular', velocidade: 1.2, ataques: ['espiral', 'leque3', 'precisao'], recarga: 0.38 },
       { movimento: 'investida', velocidade: 330, ataques: ['parede', 'invocar'], recarga: 0.6 },
@@ -1438,7 +1445,7 @@ const BOSSES = [
      ------------------------------------------------------------------------ */
   {
     id: 'tita', nome: 'TITÃ DE FERRO', titulo: 'A Muralha que Anda',
-    cor: '#9fb3c8', cor2: '#38485c', raio: 96, vida: 9200, lados: 6,
+    cor: '#9fb3c8', cor2: '#38485c', raio: 96, vida: 3250, lados: 6,
     fases: [
       { movimento: 'investida', velocidade: 240, ataques: ['leque3', 'minas'], recarga: 0.95 },
       { movimento: 'perseguir', velocidade: 210, ataques: ['parede', 'anel', 'precisao'], recarga: 0.7 },
@@ -1447,7 +1454,7 @@ const BOSSES = [
   },
   {
     id: 'vidro', nome: 'CORTEJO DE VIDRO', titulo: 'Mil Reflexos',
-    cor: '#7ef9ff', cor2: '#12586b', raio: 64, vida: 10400, lados: 4,
+    cor: '#7ef9ff', cor2: '#12586b', raio: 64, vida: 3650, lados: 4,
     fases: [
       { movimento: 'circular', velocidade: 1.5, ataques: ['cruz', 'precisao'], recarga: 0.4 },
       { movimento: 'teleporte', velocidade: 300, ataques: ['cruz', 'espiral', 'leque'], recarga: 0.34 },
@@ -1456,7 +1463,7 @@ const BOSSES = [
   },
   {
     id: 'rainha', nome: 'RAINHA ESTÁTICA', titulo: 'Tempestade Presa',
-    cor: '#ffe14d', cor2: '#6b5a0c', raio: 72, vida: 11800, lados: 5,
+    cor: '#ffe14d', cor2: '#6b5a0c', raio: 72, vida: 4200, lados: 5,
     fases: [
       { movimento: 'teleporte', velocidade: 280, ataques: ['laser', 'leque'], recarga: 0.8 },
       { movimento: 'caotico', velocidade: 400, ataques: ['laser', 'cacador', 'chuva'], recarga: 0.55 },
@@ -1465,7 +1472,7 @@ const BOSSES = [
   },
   {
     id: 'abismo', nome: 'ABISMO CARMESIM', titulo: 'O Que Engole a Arena',
-    cor: '#c2185b', cor2: '#4a0322', raio: 88, vida: 13600, lados: 8,
+    cor: '#c2185b', cor2: '#4a0322', raio: 88, vida: 4850, lados: 8,
     fases: [
       { movimento: 'cerco', velocidade: 1.4, ataques: ['anel', 'invocar'], recarga: 0.7 },
       { movimento: 'caotico', velocidade: 380, ataques: ['anel', 'parede', 'minas'], recarga: 0.5 },
@@ -1474,7 +1481,7 @@ const BOSSES = [
   },
   {
     id: 'arauto', nome: 'ÚLTIMO ARAUTO', titulo: 'A Sombra do Ceifador',
-    cor: '#ff5252', cor2: '#5c0b0b', raio: 82, vida: 16000, lados: 3,
+    cor: '#ff5252', cor2: '#5c0b0b', raio: 82, vida: 5700, lados: 3,
     velocidadeTiro: 1.35,
     fases: [
       { movimento: 'investida', velocidade: 340, ataques: ['precisao', 'leque'], recarga: 0.62 },
