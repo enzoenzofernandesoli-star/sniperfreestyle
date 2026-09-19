@@ -1,37 +1,44 @@
 # Avaliação para publicar no Google Play
 
 **Jogo:** Sniper Freestyle — Arena Neon
-**Data:** 10/09/2026
-**Veredito:** **dá pra publicar**, mas não do jeito que está hoje. Falta empacotar como app
-Android e resolver 6 itens obrigatórios. Nada aqui é impeditivo técnico — é papelada, um
-build e uma etapa de teste fechado que leva 14 dias.
+**Conferido em:** 18/09/2026, testando cada item de fora (curl no site publicado)
+**Veredito:** o site já está no ar e o pacote de PWA está completo. Faltam
+**4 itens técnicos** (dois deles de 5 minutos) e **2 decisões de conteúdo** que
+podem reprovar o app se forem ignoradas. Nada aqui é impeditivo de engenharia.
 
 ---
 
-## 1. O que você tem hoje
+## 1. Situação conferida hoje
 
-| Item | Situação |
+**Já no ar e respondendo:**
+
+| Item | Estado |
 |---|---|
-| Jogo funcionando em PC e celular | ✅ pronto |
-| Controles de toque (joystick + botão de tiro) | ✅ pronto |
-| Layout adaptado a celular deitado | ✅ pronto |
-| Manifest de PWA (`manifest.webmanifest`) | ✅ criado hoje |
-| Service worker: abre e joga **sem internet** | ✅ criado hoje |
-| Ícone 512×512 + maskable + 192 | ✅ gerado (`assets/`) |
-| Gráfico de destaque 1024×500 | ✅ gerado (`assets/capa-play-1024x500.png`) |
-| Botão VOLTAR do Android navegando telas | ✅ implementado |
-| Política de privacidade hospedável | ✅ `privacidade.html` |
-| Canal de denúncia de apelido no placar | ✅ na tela de RECORDES |
-| Site no ar em HTTPS | ❌ **pendente** (Vercel) |
-| App Android (`.aab` assinado) | ❌ pendente |
-| Conta no Play Console | ❌ pendente |
-| Capturas de tela da loja | ❌ pendente (você tira, 5 min) |
+| Site em HTTPS | ✅ <https://sniperfreestyle.vercel.app> responde 200 |
+| Versão publicada | ✅ 2.0.0 (a mesma do repositório) |
+| `manifest.webmanifest` | ✅ 200 |
+| `sw.js` (joga offline) | ✅ 200 |
+| Ícone 512 e demais tamanhos | ✅ 200 |
+| `privacidade.html` | ✅ 200 — é a URL que a Play exige |
+| Placar mundial | ✅ funcionando pelo Data API do Neon |
+| Botão VOLTAR do Android | ✅ tratado (pausa, volta de tela, sai no menu) |
+| Capa 1024×500 da loja | ✅ `assets/capa-play-1024x500.png` |
 
----
+**Pendente:**
 
-## 2. Os 6 bloqueios reais
+| Item | Estado | De quem é |
+|---|---|---|
+| `.well-known/assetlinks.json` | ❌ 404 — sem ele o app abre com a barra do Chrome | sai do PWABuilder |
+| `DATABASE_URL` na Vercel | ❌ `/api/placar` responde 503 | você, no painel |
+| Pacotes de moeda com preço em R$ | ⚠️ **risco de reprovação** (ver 2.7) | decisão sua |
+| Áudio de terceiros no jogo | ⚠️ **risco de direito autoral** (ver 2.8) | decisão sua |
+| Servidor de salas (co-op) | ⚠️ Render grátis: 15 s de cold start | decisão sua |
+| Conta Play Console | ❌ US$ 25, uma vez | você |
+| Capturas de tela | ❌ 2 a 8 imagens | você, 5 min |
 
-### 2.1 O jogo precisa estar no ar antes de virar app — **R$ 0**
+## 2. Os bloqueios, um por um
+
+### 2.1 O jogo precisa estar no ar antes de virar app — ✅ **feito**
 O empacotamento oficial (TWA) não embute o jogo: ele abre o seu site em tela cheia, sem barra
 de navegador. Sem o site em HTTPS, não existe app. Isso é o passo da Vercel que já está
 descrito no `LEIA-ME.md` (importar o repo + variável `DATABASE_URL`).
@@ -64,6 +71,52 @@ denúncia**. Você tem os dois: lista negra no servidor e o link de denúncia na
 RECORDES. Declare "sim" para interação entre usuários no questionário de classificação.
 
 ---
+
+### 2.7 Pacotes de moeda: o maior risco de reprovação hoje
+
+A LOJINHA tem uma aba de **pacotes de moeda com preço em reais** (R$ 4,90 a
+R$ 79,90) e botão COMPRAR que hoje só avisa "ainda não está no ar". Isso encosta
+em duas políticas ao mesmo tempo:
+
+- **Pagamentos:** bem digital vendido dentro de app na Play **tem** que passar
+  pelo Google Play Billing. Preço em R$ anunciado na tela, com qualquer outro
+  meio de pagamento depois, é motivo de suspensão.
+- **Funcionalidade mínima:** botão de compra que não compra é feature quebrada,
+  e revisor reprova por isso sozinho.
+
+**Três saídas, em ordem de esforço:**
+
+1. **Esconder a aba de pacotes** até existir pagamento. É uma linha em
+   `VITRINES`/`Loja.abrirAba` e resolve os dois problemas de uma vez. É o que eu
+   recomendo para publicar logo.
+2. Trocar preço em R$ por **texto sem valor** ("em breve") — reduz o problema de
+   pagamento, mas continua sendo feature incompleta.
+3. Implementar **Google Play Billing** de verdade. Isso é projeto próprio: exige
+   backend validando o recibo, e num TWA a compra não é trivial (precisa da
+   Digital Goods API, que só funciona dentro do app, não no site).
+
+### 2.8 O áudio de terceiros
+
+O jogo toca quatro arquivos de voz: `assets/sixseven.mp3` e as três falas
+`assets/encaixa-*.m4a`. Todo o resto do som é sintetizado no navegador, sem
+arquivo — esses quatro são a exceção.
+
+**Preciso saber de onde eles vieram.** Se forem recorte de vídeo, música ou
+áudio de outra pessoa (o "six seven" e o "encaixa" são bordões que circulam em
+vídeo), publicar comercialmente na Play expõe você a reclamação de direito
+autoral, e a Play derruba o app primeiro e pergunta depois.
+
+- Se **você gravou**, está resolvido: só me diga e eu registro isso no projeto.
+- Se **não**, o caminho seguro é gravar você mesmo dizendo as falas (fica até
+  mais engraçado) ou sintetizar no WebAudio como o resto do jogo.
+
+### 2.9 Co-op no Render grátis
+
+O servidor de salas dorme e leva **~15 segundos** para acordar (medido hoje).
+Quem abrir CRIAR SALA no primeiro acesso vai achar que está quebrado — e revisor
+também. Opções: aceitar e avisar na tela ("acordando o servidor…", que já pode
+existir), usar um plano que não dorme, ou esconder o co-op na primeira versão
+publicada e ligar depois.
 
 ## 3. Como empacotar (o caminho mais curto)
 
@@ -99,48 +152,54 @@ bubblewrap build
 Sniper Freestyle: Arena Neon
 ```
 
-**Descrição curta** (máx. 80) — 78 caracteres:
+**Descrição curta** (máx. 80) — 79 caracteres:
 ```
-  Twin-stick roguelite neon: 4 classes, 8 bosses, 40 ondas e placar mundial.
+Twin-stick roguelite neon: 5 classes, 14 bosses, 100 ondas e placar mundial.
 ```
 
 **Descrição completa** (máx. 4000):
 ```
-Você contra a arena. Quarenta ondas, oito bosses e nenhuma segunda chance.
+Você contra a arena. Cem ondas, quatorze bosses e nenhuma segunda chance.
 
-SNIPER FREESTYLE é um twin-stick shooter roguelite: você anda, mira e atira ao mesmo tempo,
-sozinho no meio de uma arena neon que só aumenta a pressão. Cada partida começa do zero e
-termina em minutos — o que muda é a classe que você escolhe e as melhorias que aparecem.
+SNIPER FREESTYLE é um twin-stick shooter roguelite: você anda, mira e atira ao mesmo tempo
+numa arena neon que só aumenta a pressão. Cada partida começa do zero e termina em minutos —
+o que muda é a classe que você escolhe e as melhorias que aparecem no caminho.
 
-QUATRO CLASSES, QUATRO JEITOS DE JOGAR
-· SNIPER — tiro que perfura dois inimigos, dano altíssimo, cadência lenta.
+CINCO CLASSES, CINCO JEITOS DE JOGAR
+· SNIPER — tiro que perfura, dano alto, cadência lenta.
 · GUARDIÃO — seis corações e um escudo que REFLETE os tiros inimigos de volta.
 · ESPECTRO — escopeta de cinco projéteis, velocíssimo, e o dash corta quem estiver na frente.
-· ARCANO — projétil teleguiado e dois satélites que trituram quem se aproxima.
+· ARCANO — projétil teleguiado e satélites que trituram quem se aproxima.
+· INVOCADOR — luta com drones que atiram junto com você.
 
 VINTE E DUAS MELHORIAS, SORTEADAS A CADA NÍVEL
 Ricochete, perfuração, crítico, orbe orbital, estilhaços, dilatação do tempo. Você escolhe uma
-entre três e a escolha vale pelo resto da partida. Duas partidas nunca ficam iguais.
+entre três, e a escolha vale pelo resto da partida. Duas partidas nunca ficam iguais.
 
-QUATRO BOSSES COM FASES DE VERDADE
-A Sentinela Carmesim, a Serpente de Vídeo, o Olho do Vazio e o Arquiteto. Cada um muda
-movimento e padrão de ataque conforme perde vida — e avisa antes de mudar. Decorar o padrão
-é metade da luta.
+QUATORZE BOSSES COM FASES DE VERDADE
+Da SENTINELA CARMESIM na onda 5 ao CEIFADOR ABSOLUTO na onda 100. Cada um muda movimento e
+padrão de ataque conforme perde vida, e avisa antes de mudar. Decorar o padrão é metade da luta.
 
-SETE TIPOS DE INIMIGO QUE PEDEM RESPOSTAS DIFERENTES
-O KAMIKAZE pisca antes de investir: sai do caminho. A COURAÇA bloqueia tiro de frente:
-flanqueie ou use ricochete. O DIVISOR racha em dois quando morre. O ATIRADOR mantém distância.
+DOZE TIPOS DE INIMIGO QUE PEDEM RESPOSTAS DIFERENTES
+O KAMIKAZE pisca antes de investir. A COURAÇA bloqueia tiro de frente: flanqueie ou ricocheteie.
+O DIVISOR racha quando morre. E do meio da campanha em diante aparecem versões elite.
 
-PLACAR MUNDIAL
-Escreva seu apelido e sua pontuação entra no placar que todo mundo vê. Combo de abates rápidos
-multiplica os pontos até x8.
+LOJINHA DE APARÊNCIA
+Moeda cai de todo inimigo que você mata e vira cor de nave, cor de tiro, acessório e emoji —
+com emoji equipado, o emoji é o seu corpo na arena. Nada disso muda atributo: é só aparência.
+
+COOPERATIVO ATÉ 4
+Abra uma sala, passe o código e joguem a mesma arena juntos.
+
+PLACAR MUNDIAL POR TEMPORADA
+Escreva seu apelido e sua pontuação entra no placar que todo mundo vê. Cada atualização do jogo
+abre uma temporada nova e o ranking recomeça do zero.
 
 FEITO PRA CELULAR E PRA PC
 No celular: joystick esquerdo anda, joystick direito mira, e o botão ATIRAR dispara com mira
 automática — dá pra jogar com um dedo só. No PC: WASD e mouse.
 
 · Sem anúncio.
-· Sem compra dentro do app.
 · Sem cadastro, sem login, sem pedir seus dados.
 · Joga offline. O placar sobe quando você estiver na internet.
 · Leve: o jogo inteiro pesa menos que uma foto.
@@ -212,21 +271,28 @@ No Chrome: `F12` → ícone de celular → escolha 1280×720 → botão de três
 
 ---
 
-## 8. Ordem de execução
+## 8. Ordem de execução (atualizada)
 
-1. Publicar na Vercel e confirmar o HTTPS funcionando. *(pendência atual)*
-2. Criar a conta no Play Console (US$ 25) e decidir pessoa física × organização.
-3. Gerar o `.aab` no PWABuilder e **guardar a chave de assinatura**.
-4. Publicar o `assetlinks.json` no domínio e conferir que o app abre sem a barra do Chrome.
-5. Preencher listagem, Segurança de Dados e classificação com o que está aqui.
-6. Subir capturas, ícone 512 e capa 1024×500 (`assets/`).
-7. Teste fechado: 12 testadores, 14 dias.
-8. Enviar para produção. Revisão da Play costuma levar de 1 a 7 dias.
+Feito: site no ar, manifest, service worker, ícones, capa, política de
+privacidade, botão VOLTAR e canal de denúncia.
 
-**Prazo realista:** 3 semanas em conta pessoal (as duas primeiras são a espera do teste
+1. **Decidir os dois itens de conteúdo:** aba de pacotes de moeda (2.7) e áudio
+   de terceiros (2.8). São os dois que reprovam o app.
+2. `DATABASE_URL` na Vercel — 2 minutos, e o placar passa a responder pela rota
+   do próprio site em vez de cair no banco.
+3. Criar a conta no Play Console (US$ 25) e decidir pessoa física × organização.
+4. PWABuilder na URL do jogo → gerar o `.aab` → **guardar a chave de assinatura**.
+5. Publicar o `assetlinks.json` que o PWABuilder gerar em
+   `https://sniperfreestyle.vercel.app/.well-known/assetlinks.json` e conferir
+   que o app abre sem a barra do Chrome.
+6. Preencher listagem, Segurança de Dados e classificação com as respostas das
+   seções 4, 5 e 6 deste arquivo.
+7. Subir capturas, ícone 512 e capa 1024×500 (`assets/`).
+8. Teste fechado: 12 testadores, 14 dias (conta pessoal).
+9. Produção. A revisão da Play costuma levar de 1 a 7 dias.
+
+**Prazo realista:** 3 semanas em conta pessoal (duas delas são a espera do teste
 fechado), ou 2 a 5 dias em conta de organização.
-
----
 
 ## 9. O que pode te reprovar (e como já está resolvido)
 
