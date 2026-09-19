@@ -224,9 +224,14 @@ Mar Sem Fundo). Véspera já existe, como boss da onda 180. Ordem em `HISTORIA.m
 
 ## Classes trancadas
 
-Três classes vêm de graça. **ESPECTRO custa 75.000 moedas e INVOCADOR 120.000**, e o preço é
-alto de propósito: o cosmético mais caro da lojinha custa 30.000 e uma corrida boa das 100
-ondas rende por volta de 25.000 — ESPECTRO sai por três corridas dessas, INVOCADOR por cinco.
+Três classes vêm de graça. **ESPECTRO custa 700 NUCLEUS e INVOCADOR 1.500 NUCLEUS**.
+NUCLEUS é moeda premium exclusiva dos personagens: não cai em run e não compra cosmético.
+Moeda comum continua exclusiva da lojinha; cada inimigo morto vale exatamente **1 moeda**,
+sem bônus por elite, onda ou tipo, e boss também vale 1.
+
+Pacotes planejados: 700 por R$ 39,90; 1.600 por R$ 79,90; 3.500 por R$ 149,90. Com taxa
+de 15% da Google Play, deixam respectivamente R$ 33,92, R$ 67,92 e R$ 127,42 antes de
+impostos, estornos e variação cambial. O botão permanece informativo até integrar Google Play Billing.
 
 - Quem manda é `CLASSES_TRANCADAS` em `src/loja.js`, e o desbloqueio mora na **mesma carteira
   dos cosméticos** (`Carteira.itens`, com id `classe-espectro` / `classe-invocador`): quem
@@ -767,7 +772,7 @@ deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
 | Escala de vida por onda | `src/jogo.js` → `multiplicadorVida()` |
 | Progressão até a onda 100 | `src/jogo.js` → `TOTAL_ONDAS`, curvas de onda e `spawnarBoss()` |
 | Curva de XP (frequência das melhorias) | `src/entidades.js` → `xpProximo` (`50` e `1.38`) |
-| Quanto de moeda o inimigo larga | `src/jogo.js` → `moedasDe()` e o bolo do boss em `bossDerrotado()` |
+| Quanto de moeda o inimigo larga | `src/jogo.js` → `moedasDe()` e `bossDerrotado()` |
 | Preço dos cosméticos | `src/loja.js` → `CASCOS`, `TIROS`, `ACESSORIOS`, `EMOJIS` |
 
 Medido no pior caso (onda 19, 34 inimigos, 300 projéteis): **0,14 ms de lógica e 0,27 ms de
@@ -992,5 +997,5 @@ a versão.
 ### Preços da lojinha
 
 Tudo de 2 a 3 vezes mais caro. O mais barato saiu de 350 para 800 moedas; o topo da vitrine
-(casco Prisma) de 12.000 para 30.000. A moeda que cai do inimigo não mudou: o item bonito
-passou a custar várias partidas de propósito.
+(casco Prisma) de 12.000 para 30.000. Cada morte agora rende exatamente 1 moeda. Classes
+não usam essa moeda: custam NUCLEUS, adquirido somente por compra.

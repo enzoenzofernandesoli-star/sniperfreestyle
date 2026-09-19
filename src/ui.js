@@ -46,6 +46,7 @@ const UI = {
       listaAtualizacoes: g('listaAtualizacoes'),
       moedasMenu: g('moedasMenu'),
       moedasHud: g('moedasHud'),
+      nucleusClasses: g('nucleusClasses'),
       buffs: g('buffs'),
       toqueDash: g('btToqueDash'),
       toqueEscudo: g('btToqueEscudo'),
@@ -154,6 +155,7 @@ const UI = {
     const texto = Carteira.moedas.toLocaleString('pt-BR');
     if (UI.el.moedasMenu) UI.el.moedasMenu.textContent = texto;
     if (UI.el.moedasHud) UI.el.moedasHud.textContent = texto;
+    if (UI.el.nucleusClasses) UI.el.nucleusClasses.textContent = Carteira.nucleus.toLocaleString('pt-BR');
   },
 
   /* ------------------------------- Telas ------------------------------ */
@@ -210,9 +212,9 @@ const UI = {
         (trancada
           ? '<div class="cc-cadeado" aria-hidden="true">🔒</div>' +
             '<div class="cc-tranca"><b>CLASSE TRANCADA</b><span>' +
-            preco.toLocaleString('pt-BR') + ' moedas</span></div>' +
+            preco.toLocaleString('pt-BR') + ' NUCLEUS</span></div>' +
             '<button type="button" class="cc-destrancar">🔓 DESBLOQUEAR · ' +
-            preco.toLocaleString('pt-BR') + ' MOEDAS</button>'
+            preco.toLocaleString('pt-BR') + ' NUCLEUS</button>'
           : '<button type="button" class="cc-loja">🛒 MUDAR APARÊNCIA NA LOJINHA</button>' +
             '<button type="button" class="cc-jogar">JOGAR COM ' + c.nome + ' ▸</button>');
 
@@ -289,14 +291,14 @@ const UI = {
     const falta = Classes.falta(c.id);
     UI.avisoNaTela(falta
       ? c.nome + ' custa ' + Classes.preco(c.id).toLocaleString('pt-BR') +
-        ' moedas — faltam ' + falta.toLocaleString('pt-BR')
+        ' NUCLEUS — faltam ' + falta.toLocaleString('pt-BR')
       : 'Toque em DESBLOQUEAR para liberar ' + c.nome);
   },
 
   comprarClasse(c) {
-    if (Classes.destrancar(c.id) === 'sem-moeda') {
+    if (Classes.destrancar(c.id) === 'sem-nucleus') {
       UI.avisoNaTela('Faltam ' + Classes.falta(c.id).toLocaleString('pt-BR') +
-        ' moedas para liberar ' + c.nome);
+        ' NUCLEUS para liberar ' + c.nome);
       Som.erro();
       return;
     }

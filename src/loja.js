@@ -10,6 +10,7 @@
 const Carteira = {
   CHAVE: 'sniper.loja',
   moedas: 0,
+  nucleus: 0,
   ganhasNaPartida: 0,
   itens: ['casco-original', 'tiro-lima', 'acessorio-nenhum', 'emoji-nenhum'],
   equipado: { casco: 'casco-original', tiro: 'tiro-lima', acessorio: 'acessorio-nenhum', emoji: 'emoji-nenhum' },
@@ -20,6 +21,7 @@ const Carteira = {
     catch (e) { bruto = null; }
     if (!bruto) return;
     Carteira.moedas = Math.max(0, Math.round(Number(bruto.moedas) || 0));
+    Carteira.nucleus = Math.max(0, Math.round(Number(bruto.nucleus) || 0));
     if (Array.isArray(bruto.itens)) {
       for (const id of bruto.itens) if (!Carteira.itens.includes(id)) Carteira.itens.push(id);
     }
@@ -34,7 +36,8 @@ const Carteira = {
   salvar() {
     try {
       localStorage.setItem(Carteira.CHAVE, JSON.stringify({
-        moedas: Carteira.moedas, itens: Carteira.itens, equipado: Carteira.equipado
+        moedas: Carteira.moedas, nucleus: Carteira.nucleus,
+        itens: Carteira.itens, equipado: Carteira.equipado
       }));
     } catch (e) { /* modo privado: a carteira vale só nesta sessão */ }
   },
@@ -58,22 +61,28 @@ const Carteira = {
     Carteira.salvar();
     if (typeof UI !== 'undefined' && UI.atualizarMoedas) UI.atualizarMoedas();
     return true;
+  },
+
+  gastarNucleus(n) {
+    if (Carteira.nucleus < n) return false;
+    Carteira.nucleus -= n;
+    Carteira.salvar();
+    if (typeof UI !== 'undefined' && UI.atualizarMoedas) UI.atualizarMoedas();
+    return true;
   }
 };
 
 /* --------------------------- Classes trancadas --------------------------- */
 /* Três classes vêm de graça. Duas não: ESPECTRO e INVOCADOR se compram com
-   moeda, e o preço é alto de propósito — pedido do Enzo em 18/09/2026, "bem
-   alta mesmo". Para comparação: o cosmético mais caro da lojinha custa 30.000,
-   e uma corrida boa das 100 ondas rende por volta de 25.000. ESPECTRO sai por
-   três corridas dessas e INVOCADOR por cinco.
+   NUCLEUS, moeda premium que não cai durante as runs. Moeda comum fica
+   exclusiva para cosméticos da lojinha.
 
    O desbloqueio mora na mesma carteira dos cosméticos (`Carteira.itens`), com
    id próprio: quem comprou não perde ao atualizar o jogo, e nada aqui encosta
    em atributo — classe travada é só classe que não dá para escolher. */
 const CLASSES_TRANCADAS = {
-  espectro: { item: 'classe-espectro', preco: 75000 },
-  invocador: { item: 'classe-invocador', preco: 120000 }
+  espectro: { item: 'classe-espectro', preco: 700 },
+  invocador: { item: 'classe-invocador', preco: 1500 }
 };
 
 const Classes = {
@@ -82,7 +91,7 @@ const Classes = {
     return !!t && !Carteira.tem(t.item);
   },
   preco(id) { return CLASSES_TRANCADAS[id] ? CLASSES_TRANCADAS[id].preco : 0; },
-  falta(id) { return Math.max(0, Classes.preco(id) - Carteira.moedas); },
+  falta(id) { return Math.max(0, Classes.preco(id) - Carteira.nucleus); },
 
   /* Compra de verdade: só debita se a carteira aguenta, e só anota o item se
      debitou. Devolve o que aconteceu para a tela saber o que dizer. */
@@ -90,7 +99,7 @@ const Classes = {
     const t = CLASSES_TRANCADAS[id];
     if (!t) return 'livre';
     if (Carteira.tem(t.item)) return 'livre';
-    if (!Carteira.gastar(t.preco)) return 'sem-moeda';
+    if (!Carteira.gastarNucleus(t.preco)) return 'sem-nucleus';
     Carteira.itens.push(t.item);
     Carteira.salvar();
     return 'comprada';
@@ -175,13 +184,12 @@ const VITRINES = [
   { chave: 'emoji', titulo: 'EMOJIS', itens: EMOJIS }
 ];
 
-// Pacotes de moeda com dinheiro de verdade. O meio de pagamento entra depois:
+// NUCLEUS só entra por compra. O meio de pagamento entra depois:
 // aqui fica só a vitrine e o gancho `Pagamento.iniciar`, que ainda não existe.
-const PACOTES_MOEDA = [
-  { id: 'pacote-p', moedas: 1200, preco: 'R$ 4,90', selo: '' },
-  { id: 'pacote-m', moedas: 3500, preco: 'R$ 12,90', selo: '+17% de bônus' },
-  { id: 'pacote-g', moedas: 9000, preco: 'R$ 29,90', selo: 'MAIS POPULAR' },
-  { id: 'pacote-gg', moedas: 28000, preco: 'R$ 79,90', selo: 'MELHOR VALOR' }
+const PACOTES_NUCLEUS = [
+  { id: 'nucleus-700', nucleus: 700, precoCentavos: 3990, preco: 'R$ 39,90', selo: 'LIBERA ESPECTRO' },
+  { id: 'nucleus-1600', nucleus: 1600, precoCentavos: 7990, preco: 'R$ 79,90', selo: 'LIBERA INVOCADOR' },
+  { id: 'nucleus-3500', nucleus: 3500, precoCentavos: 14990, preco: 'R$ 149,90', selo: 'MELHOR VALOR' }
 ];
 
 /* --------------------------- Consultas rápidas --------------------------- */
@@ -345,13 +353,13 @@ const Loja = {
       bt.onclick = () => { Som.clique(); Loja.abrirAba(v.chave); };
       abas.appendChild(bt);
     }
-    const btMoedas = document.createElement('button');
-    btMoedas.type = 'button';
-    btMoedas.className = 'loja-aba moeda';
-    btMoedas.dataset.aba = 'moedas';
-    btMoedas.textContent = '＋ MOEDAS';
-    btMoedas.onclick = () => { Som.clique(); Loja.abrirAba('moedas'); };
-    abas.appendChild(btMoedas);
+    const btNucleus = document.createElement('button');
+    btNucleus.type = 'button';
+    btNucleus.className = 'loja-aba nucleus';
+    btNucleus.dataset.aba = 'nucleus';
+    btNucleus.textContent = '✦ NUCLEUS';
+    btNucleus.onclick = () => { Som.clique(); Loja.abrirAba('nucleus'); };
+    abas.appendChild(btNucleus);
     Loja.abrirAba(Loja.aba);
   },
 
@@ -360,7 +368,7 @@ const Loja = {
     document.querySelectorAll('.loja-aba').forEach((bt) => {
       bt.setAttribute('aria-pressed', String(bt.dataset.aba === chave));
     });
-    if (chave === 'moedas') Loja.montarPacotes();
+    if (chave === 'nucleus') Loja.montarPacotes();
     else Loja.montarVitrine(VITRINES.find((v) => v.chave === chave));
     Loja.atualizarSaldo();
   },
@@ -447,34 +455,34 @@ const Loja = {
     const grade = document.getElementById('lojaGrade');
     grade.innerHTML = '';
     grade.classList.add('pacotes');
-    for (const p of PACOTES_MOEDA) {
+    for (const p of PACOTES_NUCLEUS) {
       const card = document.createElement('div');
       card.className = 'loja-item pacote';
       card.innerHTML =
-        '<div class="pa-moeda"></div>' +
-        '<b class="li-nome">' + p.moedas.toLocaleString('pt-BR') + ' moedas</b>' +
+        '<div class="pa-moeda nucleus"></div>' +
+        '<b class="li-nome">' + p.nucleus.toLocaleString('pt-BR') + ' NUCLEUS</b>' +
         (p.selo ? '<span class="pa-selo">' + p.selo + '</span>' : '<span class="pa-selo vazio"></span>') +
         '<span class="li-preco">' + p.preco + '</span>' +
         '<button type="button" class="li-bt">COMPRAR</button>';
-      card.querySelector('.li-bt').onclick = () => Loja.comprarMoedas(p);
+      card.querySelector('.li-bt').onclick = () => Loja.comprarNucleus(p);
       grade.appendChild(card);
     }
     const nota = document.createElement('p');
     nota.className = 'loja-nota';
-    nota.textContent = 'Comprar moeda é atalho, não obrigação: tudo na loja sai matando inimigo. '
+    nota.textContent = 'NUCLEUS serve somente para liberar personagens e não cai durante as runs. '
       + 'O pagamento entra numa atualização — por enquanto o botão só avisa.';
     grade.appendChild(nota);
   },
 
   // Gancho único para o meio de pagamento que vier depois. Enquanto
   // `Pagamento` não existir, a loja é honesta e diz que ainda não dá.
-  comprarMoedas(pacote) {
+  comprarNucleus(pacote) {
     Som.clique();
     if (typeof Pagamento !== 'undefined' && Pagamento.iniciar) {
       Pagamento.iniciar(pacote);
       return;
     }
-    Loja.avisar('A compra de moedas ainda não está no ar. Por enquanto, moeda só caindo de inimigo.');
+    Loja.avisar('A compra de NUCLEUS ainda não está no ar. O saldo nunca é ganho durante as runs.');
   },
 
   comprar(chave, item) {

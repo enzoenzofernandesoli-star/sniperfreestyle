@@ -1216,6 +1216,23 @@ body.toque #btPausar {
 }
 .moeda-mini.grande { width: 26px; height: 26px; margin-right: 10px; vertical-align: -5px; }
 
+.nucleus-mini {
+  display: inline-block;
+  width: 14px; height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  transform: rotate(45deg);
+  border: 1px solid #e9d5ff;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #fff 0%, #c04dff 42%, #4e1682 100%);
+  box-shadow: 0 0 12px rgba(192, 77, 255, .75);
+}
+.saldo-nucleus {
+  font: 700 clamp(10px, .9vw, 13px) Orbitron, sans-serif;
+  letter-spacing: .14em;
+  color: #d99aff;
+}
+
 .moeda-linha { margin-top: 6px; font-size: clamp(10px, .9vw, 13px); letter-spacing: .2em; color: var(--tinta-fraca); }
 .moeda-linha b { color: var(--amarelo); }
 
@@ -1256,8 +1273,8 @@ body.toque #btPausar {
 }
 .loja-aba:hover { color: var(--tinta); border-color: rgba(120, 190, 255, .5); }
 .loja-aba[aria-pressed="true"] { background: var(--ciano); border-color: var(--ciano); color: #05202c; font-weight: 700; }
-.loja-aba.moeda { color: var(--amarelo); border-color: rgba(255, 211, 77, .45); }
-.loja-aba.moeda[aria-pressed="true"] { background: var(--amarelo); border-color: var(--amarelo); color: #2a1d00; }
+.loja-aba.nucleus { color: #d99aff; border-color: rgba(192, 77, 255, .5); }
+.loja-aba.nucleus[aria-pressed="true"] { background: #a43bea; border-color: #d99aff; color: #10051a; }
 
 .loja-aviso { min-height: 18px; margin: 10px 0 2px; font-size: 12px; color: var(--amarelo); text-align: center; }
 
@@ -1307,14 +1324,20 @@ body.toque #btPausar {
 .li-bt:hover:not(:disabled) { background: var(--ciano); color: #05202c; }
 .li-bt:disabled { opacity: .38; cursor: default; }
 
-.loja-item.pacote { border-color: rgba(255, 211, 77, .3); }
-.loja-item.pacote .li-bt { border-color: var(--amarelo); background: rgba(255, 211, 77, .12); color: var(--amarelo); }
-.loja-item.pacote .li-bt:hover { background: var(--amarelo); color: #2a1d00; }
+.loja-item.pacote { border-color: rgba(192, 77, 255, .35); }
+.loja-item.pacote .li-bt { border-color: #c04dff; background: rgba(192, 77, 255, .12); color: #d99aff; }
+.loja-item.pacote .li-bt:hover { background: #c04dff; color: #16051f; }
 .pa-moeda {
   width: 54px; height: 54px;
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #fff6cf 0%, #ffd34d 42%, #c8901a 100%);
   box-shadow: inset 0 0 0 4px rgba(138, 97, 0, .6), 0 0 22px rgba(255, 211, 77, .45);
+}
+.pa-moeda.nucleus {
+  border-radius: 12px;
+  transform: rotate(45deg) scale(.78);
+  background: linear-gradient(135deg, #fff 0%, #d590ff 24%, #8d28d1 58%, #32104e 100%);
+  box-shadow: inset 0 0 0 3px rgba(245, 222, 255, .45), 0 0 26px rgba(192, 77, 255, .65);
 }
 .pa-selo { min-height: 14px; font-size: 10px; letter-spacing: .12em; color: var(--verde); }
 .pa-selo.vazio { color: transparent; }

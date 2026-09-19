@@ -30,7 +30,7 @@ podem reprovar o app se forem ignoradas. Nada aqui é impeditivo de engenharia.
 |---|---|---|
 | `.well-known/assetlinks.json` | ❌ 404 — sem ele o app abre com a barra do Chrome | sai do PWABuilder |
 | `DATABASE_URL` na Vercel | ❌ `/api/placar` responde 503 | você, no painel |
-| Pacotes de moeda com preço em R$ | ⚠️ **risco de reprovação** (ver 2.7) | decisão sua |
+| Pacotes de NUCLEUS com preço em R$ | ⚠️ **risco de reprovação** até integrar Billing (ver 2.7) | decisão sua |
 | Áudio de terceiros no jogo | ⚠️ **risco de direito autoral** (ver 2.8) | decisão sua |
 | Servidor de salas (co-op) | ⚠️ Render grátis: 15 s de cold start | decisão sua |
 | Conta Play Console | ❌ US$ 25, uma vez | você |
@@ -72,10 +72,11 @@ RECORDES. Declare "sim" para interação entre usuários no questionário de cla
 
 ---
 
-### 2.7 Pacotes de moeda: o maior risco de reprovação hoje
+### 2.7 Pacotes de NUCLEUS: o maior risco de reprovação hoje
 
-A LOJINHA tem uma aba de **pacotes de moeda com preço em reais** (R$ 4,90 a
-R$ 79,90) e botão COMPRAR que hoje só avisa "ainda não está no ar". Isso encosta
+A LOJINHA tem uma aba de **NUCLEUS com preço em reais**: 700 por R$ 39,90,
+1.600 por R$ 79,90 e 3.500 por R$ 149,90. NUCLEUS só libera personagens e não
+cai nas runs. O botão COMPRAR hoje só avisa "ainda não está no ar". Isso encosta
 em duas políticas ao mesmo tempo:
 
 - **Pagamentos:** bem digital vendido dentro de app na Play **tem** que passar
@@ -86,7 +87,7 @@ em duas políticas ao mesmo tempo:
 
 **Três saídas, em ordem de esforço:**
 
-1. **Esconder a aba de pacotes** até existir pagamento. É uma linha em
+1. **Esconder a aba de NUCLEUS** até existir pagamento. É uma linha em
    `VITRINES`/`Loja.abrirAba` e resolve os dois problemas de uma vez. É o que eu
    recomendo para publicar logo.
 2. Trocar preço em R$ por **texto sem valor** ("em breve") — reduz o problema de

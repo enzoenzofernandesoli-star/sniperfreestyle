@@ -287,7 +287,7 @@ test('cosmético é da conta, não da classe, e não encosta em atributo', () =>
   }
 });
 
-test('moeda cai de todo inimigo e o preço pede várias partidas', () => {
+test('cada inimigo morto vale exatamente uma moeda', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -303,9 +303,9 @@ test('moeda cai de todo inimigo e o preço pede várias partidas', () => {
       maisCaro: Math.max(...CASCOS.concat(TIROS, ACESSORIOS, EMOJIS).map((i) => i.preco))
     };
   })()`, mundo);
-  assert.ok(dados.comum >= 1, 'inimigo nenhum sai sem moeda');
-  assert.ok(dados.elite > dados.comum, 'elite paga mais');
-  assert.ok(dados.tarde > dados.comum, 'onda alta paga mais');
+  assert.equal(dados.comum, 1, 'inimigo comum vale uma moeda');
+  assert.equal(dados.elite, 1, 'elite também vale uma moeda');
+  assert.equal(dados.tarde, 1, 'onda alta também vale uma moeda');
   assert.ok(dados.maisCaro >= 10000, 'o item topo de linha continua sendo meta de longo prazo');
 });
 
@@ -1546,10 +1546,10 @@ test('run de NÁDIR conta no ranking, e morrer lá não apaga a vitória da Aren
   assert.equal(dados.noAto2.venceu, true);
 });
 
-/* Duas classes se compram com moeda, e o preço é alto de propósito. O que este
-   teste guarda é a integridade da tranca: comprar sem moeda não libera nada e
+/* Duas classes se compram com NUCLEUS. O que este teste guarda é a separação:
+   moeda normal nunca libera classe, comprar sem NUCLEUS não libera nada e
    classe já comprada não cobra de novo. */
-test('ESPECTRO e INVOCADOR só abrem com moeda, e a tranca não tem atalho', () => {
+test('ESPECTRO e INVOCADOR só abrem com NUCLEUS, e a tranca não tem atalho', () => {
   const guardado = {};
   const mundo = vm.createContext({ console, Math,
     localStorage: {
@@ -1562,19 +1562,20 @@ test('ESPECTRO e INVOCADOR só abrem com moeda, e a tranca não tem atalho', () 
     const precos = Object.keys(CLASSES_TRANCADAS).map((id) => [id, Classes.preco(id)]);
     const livresDeGraca = ['sniper', 'guardiao', 'arcano'].every((id) => !Classes.trancada(id));
 
-    // Sem moeda: não compra, não anota item, não tira moeda.
-    Carteira.moedas = 74999;
+    // Milhões de moedas comuns não compram personagem.
+    Carteira.moedas = 9999999;
+    Carteira.nucleus = 699;
     const pobre = Classes.destrancar('espectro');
     const aindaTrancada = Classes.trancada('espectro');
-    const naoGastou = Carteira.moedas;
+    const naoGastou = Carteira.nucleus;
 
-    // Com moeda: compra, debita exatamente o preço e libera para sempre.
-    Carteira.moedas = 80000;
+    // Com NUCLEUS: compra, debita exatamente o preço e libera para sempre.
+    Carteira.nucleus = 800;
     const comprou = Classes.destrancar('espectro');
-    const sobrou = Carteira.moedas;
+    const sobrou = Carteira.nucleus;
     const liberada = !Classes.trancada('espectro');
     const deNovo = Classes.destrancar('espectro');
-    const sobrouDepois = Carteira.moedas;
+    const sobrouDepois = Carteira.nucleus;
 
     const item = Carteira.itens.filter((i) => i.indexOf('classe-') === 0);
     return { precos, livresDeGraca, pobre, aindaTrancada, naoGastou, comprou, sobrou,
@@ -1583,18 +1584,28 @@ test('ESPECTRO e INVOCADOR só abrem com moeda, e a tranca não tem atalho', () 
 
   assert.deepEqual(Array.from(dados.precos).map((p) => p[0]).sort(), ['espectro', 'invocador']);
   assert.equal(dados.livresDeGraca, true, 'três classes continuam de graça');
-  assert.ok(Array.from(dados.precos).every((p) => p[1] >= 50000),
-    'preço alto de propósito: bem acima dos 30.000 do cosmético mais caro');
-  assert.equal(dados.pobre, 'sem-moeda');
+  assert.deepEqual(Array.from(dados.precos).map((p) => p[1]), [700, 1500]);
+  assert.equal(dados.pobre, 'sem-nucleus');
   assert.equal(dados.aindaTrancada, true, 'sem pagar, continua trancada');
-  assert.equal(dados.naoGastou, 74999, 'compra recusada não tira moeda');
+  assert.equal(dados.naoGastou, 699, 'compra recusada não tira NUCLEUS');
   assert.equal(dados.comprou, 'comprada');
-  assert.equal(dados.sobrou, 5000, 'debita exatamente o preço');
+  assert.equal(dados.sobrou, 100, 'debita exatamente o preço');
   assert.equal(dados.liberada, true);
   assert.equal(dados.deNovo, 'livre');
-  assert.equal(dados.sobrouDepois, 5000, 'classe já comprada não cobra de novo');
+  assert.equal(dados.sobrouDepois, 100, 'classe já comprada não cobra de novo');
   assert.deepEqual(Array.from(dados.item), ['classe-espectro']);
   assert.equal(dados.invocadorTrancado, true, 'comprar uma não libera a outra');
+});
+
+test('pacote de NUCLEUS preserva pelo menos R$ 30 depois da taxa de 15%', () => {
+  const mundo = vm.createContext({ console, Math, localStorage: { getItem: () => null, setItem() {} } });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/loja.js'), 'utf8'), mundo, { filename: 'src/loja.js' });
+  const dados = vm.runInContext(`PACOTES_NUCLEUS.map((p) => ({
+    id: p.id, nucleus: p.nucleus, liquidoCentavos: Math.round(p.precoCentavos * 0.85)
+  }))`, mundo);
+  assert.deepEqual(Array.from(dados).map((p) => p.nucleus), [700, 1600, 3500]);
+  assert.ok(Array.from(dados).every((p) => p.liquidoCentavos >= 3000),
+    'nenhum pacote pode render menos de R$ 30 antes de impostos e estornos');
 });
 
 /* A guarda que não depende da tela estar certa. */
@@ -1617,7 +1628,7 @@ test('partida nunca começa com classe trancada, venha o pedido de onde vier', (
     document = { documentElement: { style: { setProperty() {} } } };
     Jogo.novoJogo('invocador', 'casco-original');
     const trocada = Jogo.jogador.classe.id;
-    Carteira.moedas = 999999;
+    Carteira.nucleus = 2000;
     Classes.destrancar('invocador');
     Jogo.novoJogo('invocador', 'casco-original');
     return { trocada, depoisDeComprar: Jogo.jogador.classe.id };
