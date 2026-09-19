@@ -221,7 +221,7 @@ const Coop = {
     Coop.fase = 'partida';
     Jogo.estado = 'jogando';
     UI.mostrarTela(null);
-    Coop.enviar({ tipo: 'comecou' });
+    Coop.enviar({ tipo: 'comecou', dificuldade: Jogo.dificuldade });
     Coop.statusSala();
     UI.montarEquipe();
     Coop.enviarEstado(performance.now(), true);
@@ -275,6 +275,7 @@ const Coop = {
         break;
 
       case 'comecou':
+        Jogo.definirDificuldade(dados.dificuldade);
         if (Coop.convidado() && !Coop.partidaComecou && Coop.minhaClasse) Coop.entrarNaArena();
         break;
 
@@ -321,7 +322,7 @@ const Coop = {
     Coop.equipe.set(dados.id, membro);
     if (Coop.partidaComecou && !Jogo.outros.has(dados.id)) {
       Coop.criarNave(dados.id, membro);
-      Coop.enviar({ tipo: 'comecou' });
+      Coop.enviar({ tipo: 'comecou', dificuldade: Jogo.dificuldade });
       Coop.enviarEstado(performance.now(), true);
     }
     Coop.publicarLista();

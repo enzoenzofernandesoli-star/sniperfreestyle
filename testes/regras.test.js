@@ -1085,7 +1085,7 @@ test('escudo da couraça tem vida própria e quebra', () => {
   assert.equal(dados.acelerou, true, 'ao perder o escudo o bicho fica mais rápido');
 });
 
-test('bala do drone é um tiro do jogador: mesmo dano, crítico e melhorias', () => {
+test('bala do drone herda crítico e melhorias, mas usa 65% do dano', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -1106,12 +1106,12 @@ test('bala do drone é um tiro do jogador: mesmo dano, crítico e melhorias', ()
     const tirosAntes = Jogo.estat.tiros;
     j.atualizarLacaios(0.016);
     const b = Jogo.projeteis[0];
-    return { dano: b.dano, esperado: j.attr.dano * j.attr.critMult, critico: b.critico,
+    return { dano: b.dano, esperado: j.attr.dano * 0.65 * j.attr.critMult, critico: b.critico,
       perfuracao: b.perfuracao, ricochete: b.ricochete, dono: b.dono,
       contou: Jogo.estat.tiros - tirosAntes };
   })()`, mundo);
   assert.equal(dados.dono, 'jogador');
-  assert.equal(dados.dano, dados.esperado, 'dano cheio, com o mesmo multiplicador de crítico');
+  assert.equal(dados.dano, dados.esperado, 'dano automático reduzido, mantendo o crítico');
   assert.equal(dados.critico, true);
   assert.equal(dados.perfuracao, 3, 'herda a perfuração das melhorias');
   assert.equal(dados.ricochete, 2, 'e o ricochete também');
@@ -1625,6 +1625,41 @@ test('partida nunca começa com classe trancada, venha o pedido de onde vier', (
 
   assert.equal(dados.trocada, 'sniper', 'classe trancada não entra: cai na primeira');
   assert.equal(dados.depoisDeComprar, 'invocador', 'comprada, entra normal');
+});
+
+test('dificuldade altera inimigos e bosses sem mexer no modo normal', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {} });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    UI = { atualizarHUD() {}, aviso() {}, mostrarBarraBoss() {} };
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.onda = 21;
+    const quantidades = {};
+    for (const modo of ['facil', 'normal', 'dificil']) {
+      Jogo.definirDificuldade(modo);
+      Jogo.prepararOnda();
+      quantidades[modo] = Jogo.spawnRestante;
+    }
+    const def = BOSSES.find((b) => !b.final && !b.secreto && (b.ato || 1) === 1);
+    const vidas = {};
+    for (const modo of ['facil', 'normal', 'dificil']) {
+      Jogo.definirDificuldade(modo);
+      vidas[modo] = new Boss(def, 20).vidaMax;
+    }
+    Jogo.definirDificuldade('qualquer-lixo');
+    return { quantidades, vidas, invalida: Jogo.dificuldade,
+      ajustes: Jogo.DIFICULDADES };
+  })()`, mundo);
+
+  assert.ok(dados.quantidades.facil < dados.quantidades.normal);
+  assert.ok(dados.quantidades.dificil > dados.quantidades.normal);
+  assert.equal(dados.vidas.facil / dados.vidas.normal, 0.75);
+  assert.equal(dados.vidas.dificil / dados.vidas.normal, 1.4);
+  assert.ok(dados.ajustes.facil.ritmoBoss > 1, 'fácil aumenta intervalo entre ataques');
+  assert.ok(dados.ajustes.dificil.ritmoBoss < 1, 'difícil reduz intervalo entre ataques');
+  assert.equal(dados.invalida, 'normal', 'entrada inválida volta ao padrão seguro');
 });
 
 /* Qualidade adaptativa do celular: desce quando o FPS cai, sobe quando sobra, e

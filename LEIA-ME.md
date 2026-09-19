@@ -129,6 +129,14 @@ na mesma cadência dele, com tiro teleguiado. Durante a LEGIÃO a tropa atira 20
 mais rápido. A melhoria **MAIS UM NA TROPA** (+1 drone, até 2 vezes) só aparece
 para ele — melhoria com `exige` não polui o sorteio das outras classes.
 
+## Dificuldade por run
+
+Depois da classe, a run pede uma dificuldade. **NORMAL** preserva exatamente o
+balanceamento original. **FÁCIL** usa 25% menos inimigos, 25% menos vida de boss e
+intervalos de ataque de boss 25% maiores. **DIFÍCIL** usa 35% mais inimigos, 40% mais
+vida de boss e reduz o intervalo de ataque para 72% do normal. No cooperativo, o
+anfitrião escolhe e a mesma dificuldade vale para toda a sala.
+
 ## Emoji é o corpo, não enfeite
 
 Comprar um emoji na LOJINHA troca o **corpo** do jogador: a nave deixa de ser desenhada e
@@ -755,6 +763,7 @@ deles guardas elites), 155 projéteis e 714 partículas ao mesmo tempo:
 | Vida/velocidade/dano de inimigo | `src/entidades.js` → `TIPOS_INIMIGO` |
 | Vida e padrões de boss | `src/entidades.js` → `BOSSES` |
 | Densidade das ondas | `src/jogo.js` → `prepararOnda()` (`orcamento`) e `tetoSimultaneo` |
+| Modos FÁCIL/NORMAL/DIFÍCIL | `src/jogo.js` → `DIFICULDADES` |
 | Escala de vida por onda | `src/jogo.js` → `multiplicadorVida()` |
 | Progressão até a onda 100 | `src/jogo.js` → `TOTAL_ONDAS`, curvas de onda e `spawnarBoss()` |
 | Curva de XP (frequência das melhorias) | `src/entidades.js` → `xpProximo` (`50` e `1.38`) |

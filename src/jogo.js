@@ -86,6 +86,17 @@ const Jogo = {
   avisoTimer: 0,
 
   estat: { abates: 0, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 0 },
+  dificuldade: 'normal',
+  DIFICULDADES: {
+    facil: { inimigos: 0.75, vidaBoss: 0.75, ritmoBoss: 1.25 },
+    normal: { inimigos: 1, vidaBoss: 1, ritmoBoss: 1 },
+    dificil: { inimigos: 1.35, vidaBoss: 1.4, ritmoBoss: 0.72 }
+  },
+
+  definirDificuldade(valor) {
+    Jogo.dificuldade = Jogo.DIFICULDADES[valor] ? valor : 'normal';
+  },
+  ajusteDificuldade() { return Jogo.DIFICULDADES[Jogo.dificuldade] || Jogo.DIFICULDADES.normal; },
 
   /* ------------------------------ Boot ------------------------------- */
   iniciar() {
@@ -249,7 +260,8 @@ const Jogo = {
       const depois50 = Jogo.ato() === 2
         ? Mat.limitar(Jogo.ondaDoAto(), 0, 50)
         : Mat.limitar(Jogo.onda - 50, 0, 50);
-      const orcamento = Math.round(3 + ate50 * 0.9 + depois50 * 2.1);
+      const baseOrcamento = 3 + ate50 * 0.9 + depois50 * 2.1;
+      const orcamento = Math.max(2, Math.round(baseOrcamento * Jogo.ajusteDificuldade().inimigos));
       const disponiveis = Jogo.tiposDaOnda(Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.

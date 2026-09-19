@@ -114,16 +114,15 @@ class Jogador {
       if (!alvo) continue;
       l.mira = Mat.anguloEntre(l.x, l.y, alvo.x, alvo.y);
       l.recarga = this.attr.cadencia * (this.ultAtiva > 0 ? 0.8 : 1.05);
-      // A bala do drone é um tiro seu saindo de outro lugar: mesmo dano, mesmo
-      // crítico, mesma perfuração, ricochete e alcance. Toda melhoria que vale
-      // para o seu tiro vale para o dele — e ele conta na estatística de tiros.
+      // Drone ainda herda melhorias, mas entrega 65% do dano. Com dois drones
+      // automáticos usando 100%, o INVOCADOR valia três jogadores sem mirar.
       const a = this.attr;
       const crit = Mat.chance(a.critChance);
       Jogo.projeteis.push(new Projetil({
         x: l.x, y: l.y, angulo: l.mira,
         velocidade: a.balaVel * Mat.aleatorio(0.95, 1.05),
         raio: a.balaRaio,
-        dano: a.dano * (crit ? a.critMult : 1),
+        dano: a.dano * 0.65 * (crit ? a.critMult : 1),
         critico: crit,
         dono: 'jogador',
         cor: crit ? CORES_TIRO.critico : CORES_TIRO.jogador,
@@ -470,10 +469,10 @@ class Jogador {
         dano: this.attr.dano * 3, cor: this.classe.cor, atingidos: new Set(),
         empurrao: 900, limpaTiros: true });
     } else if (this.classe.id === 'invocador') {
-      // LEGIÃO: tropa maior, mais longa, e um estouro na chamada
-      const total = this.lacaios.length + 5;
-      for (let i = 0; i < 5; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 14));
-      this.ultAtiva = 14;   // enquanto dura, a tropa inteira atira mais rápido
+      // LEGIÃO: três reforços por dez segundos. Forte sem jogar sozinha.
+      const total = this.lacaios.length + 3;
+      for (let i = 0; i < 3; i++) this.lacaios.push(this.novoLacaio(this.lacaios.length, total, 10));
+      this.ultAtiva = 10;
       this.reposicionarLacaios();
       Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 520, dano: this.attr.dano * 3, cor: this.classe.cor, atingidos: new Set(), empurrao: 760 });
       Particulas.anel(this.x, this.y, this.classe.cor, 110, 30);
@@ -1913,7 +1912,7 @@ class Boss {
     // Pressão e peso de nível só existem no Ato II; no Ato I os dois valem 1.
     this.pressao = Boss.pressao(onda);
     this.pesoNivel = def.ato === 2 && Jogo.jogador ? Boss.pesoDoNivel(Jogo.jogador.nivel) : 1;
-    this.vidaMax = def.vida * escala * vidaExtra * this.pesoNivel;
+    this.vidaMax = def.vida * escala * vidaExtra * this.pesoNivel * Jogo.ajusteDificuldade().vidaBoss;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
     this.fase = def.fases[0];
@@ -2146,7 +2145,8 @@ class Boss {
       // de ler o padrão, o fim não dá.
       const doEncontro = 1.6 - this.dureza * 0.75;
       this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo
-        * this.ritmoAscensao / this.aperto / this.pressao * Mat.aleatorio(0.85, 1.15);
+        * this.ritmoAscensao / this.aperto / this.pressao
+        * Jogo.ajusteDificuldade().ritmoBoss * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura

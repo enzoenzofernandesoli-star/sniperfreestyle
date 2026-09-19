@@ -4,6 +4,7 @@
 
 const UI = {
   el: {},
+  runPendente: null,
 
   iniciar() {
     const g = (id) => document.getElementById(id);
@@ -73,6 +74,14 @@ const UI = {
     g('btEntrarSala').onclick = () => { Som.clique(); UI.abrirSala('entrar'); };
     g('btSairSala').onclick = () => { Som.clique(); Coop.sair(); };
     UI.ligarSala();
+    document.querySelectorAll('[data-dificuldade]').forEach((botao) => {
+      botao.onclick = () => UI.confirmarDificuldade(botao.dataset.dificuldade);
+    });
+    g('btVoltarDificuldade').onclick = () => {
+      Som.clique();
+      UI.runPendente = null;
+      UI.mostrarTela(Coop.ativo() ? 'sala' : 'classes');
+    };
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
     g('btAtualizar').onclick = () => { Som.clique(); UI.montarAtualizacoes(); UI.mostrarTela('atualizacoes'); };
@@ -220,7 +229,7 @@ const UI = {
           UI.mostrarTela('sala');
           return;
         }
-        Jogo.novoJogo(c.id, Carteira.equipado.casco);
+        UI.abrirDificuldade(() => Jogo.novoJogo(c.id, Carteira.equipado.casco));
       };
 
       if (trancada) {
@@ -251,6 +260,24 @@ const UI = {
       };
       UI.el.gradeClasses.appendChild(card);
     });
+  },
+
+  abrirDificuldade(aoConfirmar) {
+    UI.runPendente = aoConfirmar;
+    document.querySelectorAll('[data-dificuldade]').forEach((b) => {
+      b.classList.toggle('selecionado', b.dataset.dificuldade === 'normal');
+    });
+    UI.mostrarTela('dificuldade');
+  },
+
+  confirmarDificuldade(valor) {
+    if (!UI.runPendente) return;
+    Som.clique();
+    Som.destravar();
+    Jogo.definirDificuldade(valor);
+    const iniciar = UI.runPendente;
+    UI.runPendente = null;
+    iniciar();
   },
 
   /* Tocou numa classe trancada: não é erro, é vitrine. Diz o que falta. */
@@ -699,7 +726,11 @@ const UI = {
       else Coop.status('Copie na mão: ' + texto);
     };
     g('btMinhaClasse').onclick = () => { Som.clique(); Coop.intencao = 'sala'; UI.mostrarTela('classes'); };
-    g('btComecarSala').onclick = () => { Som.clique(); Som.destravar(); Coop.comecar(); };
+    g('btComecarSala').onclick = () => {
+      Som.clique();
+      if (!Coop.minhaClasse) { Coop.status('Escolha sua classe antes de começar.'); return; }
+      UI.abrirDificuldade(() => Coop.comecar());
+    };
 
     const servidor = g('campoServidor');
     servidor.value = Coop.servidorSalvo();

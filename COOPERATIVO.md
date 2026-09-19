@@ -34,7 +34,8 @@ O menu tem **CRIAR SALA** e **ENTRAR NA SALA**; os dois abrem a tela `data-tela=
 3. Quem entra aparece no painel da sala dos dois lados, com nome e classe. Enquanto
    não escolher classe, a linha dele fica como "escolhendo classe…".
 4. A largada é do anfitrião: COMEÇAR A PARTIDA só aparece para ele, e só funciona
-   depois que ele escolheu a própria classe.
+   depois que ele escolheu a própria classe. Antes da largada ele escolhe FÁCIL,
+   NORMAL ou DIFÍCIL; essa escolha vale para toda a sala.
 5. Quem entrar com a partida já rolando não espera nada: assim que escolhe a classe,
    o anfitrião cria a nave e manda o snapshot — o convidado cai direto na arena.
 
