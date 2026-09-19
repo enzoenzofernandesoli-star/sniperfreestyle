@@ -64,6 +64,25 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
   projéteis. O que sobe é `Boss.pressao` (1,0 → 1,4), que é frequência de ataque, mais a vida
   (~1,12× por encontro, ancorada nos 154.392 do CEIFADOR) e `Boss.pesoDoNivel` (até +30% de
   vida pelo nível do jogador, só no Ato II).
+- **ESPECTRO e INVOCADOR são pagas** (pedido do Enzo, 18/09/2026): 75.000 e 120.000 moedas,
+  "bem alta mesmo". O desbloqueio mora em `Carteira.itens` com id `classe-<id>`, e
+  `Jogo.novoJogo` recusa classe trancada mesmo que a tela deixe passar. Não baixe o preço
+  "para testar" — use `Carteira.moedas` no console.
+
+- **Tocar em qualquer parte do cartão de classe começa a partida.** É o que resolve o celular
+  deitado, onde o botão JOGAR ficava embaixo da dobra de um cartão que rolava por dentro.
+  Botão dentro do cartão precisa de `stopPropagation`, senão abre a loja E começa o jogo.
+
+- **O Ato II repinta o aplicativo inteiro, e isso é prêmio.** `Progresso` (em `nucleo.js`)
+  guarda `ato2` no aparelho e põe `data-ato="2"` no `<html>`; o CSS faz o resto por variável.
+  Quem nunca atravessou a fenda nunca deve ver o tema violeta — não ligue isso por
+  configuração nem por botão.
+
+- **A escala de render do celular é automática** (`Jogo.ajustarQualidade`, 0,45 a 0,75). Não
+  troque por número fixo: era o que pesava no aparelho fraco e desperdiçava nítido no forte.
+  As faixas de subir (57) e descer (46) têm de ficar longe, e a mudança exige várias medidas
+  no mesmo sentido — senão o jogo pisca entre duas qualidades.
+
 - **`HISTORIA.md` é a fonte da verdade da narrativa.** Nome de inimigo, fala, cor de ato,
   quem aparece em qual região: sai de lá. Inventar narrativa fora dela cria contradição —
   se algo precisa mudar, muda o arquivo primeiro.

@@ -32,6 +32,9 @@ const ATUALIZACOES = [
       'Lojinha ficou mais caro em tudo: de duas a três vezes o preço antigo.',
       'Botão ATUALIZAR no menu, com o histórico completo de versões.',
       'Saiu versão nova? Um aviso desce na tela sozinho, no menu ou no meio da luta.',
+      'Ato II — NÁDIR: depois da onda 100 a campanha atravessa a fenda e vai até a 200, com dez bosses novos.',
+      'ESPECTRO e INVOCADOR agora se compram com moeda. As outras três continuam de graça.',
+      'No celular, tocar em qualquer parte do personagem começa a partida.',
       'Ranking agora tem temporada: cada atualização começa um placar novo, mundial e local.'
     ]
   },

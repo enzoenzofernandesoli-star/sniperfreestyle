@@ -115,13 +115,15 @@
     <div class="menu-caixa">
       <p class="tag-topo">ARENA NEON · TWIN-STICK ROGUELITE</p>
       <h1 class="titulo">SNIPER<span>FREESTYLE</span></h1>
-      <p class="subtitulo">5 classes · lojinha de cosméticos · 12 tipos de inimigo · 14 bosses com fases · 22 melhorias · 100 ondas</p>
+      <p class="subtitulo">5 classes · lojinha de cosméticos · 22 tipos de inimigo · 24 bosses com fases · 22 melhorias · 2 atos · 200 ondas</p>
       <div class="menu-botoes">
         <button id="btJogar" class="bt principal">JOGAR</button>
         <button id="btCriarSala" class="bt">CRIAR SALA</button>
         <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
         <button id="btComoJogar" class="bt">COMO JOGAR</button>
         <button id="btLoja" class="bt">LOJINHA</button>
+        <!-- Só aparece para quem atravessou a fenda; o CSS decide pelo data-ato. -->
+        <span id="marcaAto" class="marca-ato">ATO II · NÁDIR LIBERADO</span>
         <button id="btRecordes" class="bt">RECORDES</button>
         <button id="btConfig" class="bt">AJUSTES</button>
         <button id="btAtualizar" class="bt">ATUALIZAR<span id="seloVersao" class="selo-versao"></span></button>
@@ -146,7 +148,8 @@
       <span id="avisoNome"></span>
     </div>
     <div id="gradeClasses" class="grade-classes"></div>
-    <p class="dica-arraste">◂ ARRASTE PARA VER AS 5 CLASSES ▸</p>
+    <p class="dica-arraste">◂ ARRASTE PARA VER AS 5 CLASSES · TOQUE PARA JOGAR ▸</p>
+    <p id="avisoClasses" class="aviso-classes" role="status"></p>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 

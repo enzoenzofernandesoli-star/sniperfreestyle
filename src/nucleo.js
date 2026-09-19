@@ -105,6 +105,49 @@ const Camera = {
    run de temporada antiga não é apagada, só sai da tela —, e `lista` mostra
    apenas a temporada de agora. Run sem temporada é de antes desta regra e
    entra como T1. */
+/* ------------------------------ Progresso -------------------------------- */
+/* O que a pessoa CONQUISTOU, e que não volta ao normal quando a partida acaba.
+   Hoje guarda uma coisa só: atravessou a fenda para NÁDIR. Isso repinta o
+   aplicativo inteiro — menu, loja, placar, ajuda — na paleta do Ato II, e
+   continua repintado na próxima vez que abrir. Quem nunca chegou lá vê o neon
+   ciano de sempre, e é esse o ponto: a cara nova é prêmio, não enfeite. */
+const Progresso = {
+  CHAVE: 'sniper.progresso',
+  ato2: false,
+
+  carregar() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(Progresso.CHAVE) || 'null');
+      Progresso.ato2 = !!(bruto && bruto.ato2);
+    } catch (e) { Progresso.ato2 = false; }
+    Progresso.aplicar();
+  },
+
+  salvar() {
+    try { localStorage.setItem(Progresso.CHAVE, JSON.stringify({ ato2: Progresso.ato2 })); }
+    catch (e) { /* modo privado: vale só nesta sessão */ }
+  },
+
+  /* Chamado na travessia. Devolve true só na PRIMEIRA vez, para quem quiser
+     comemorar o desbloqueio sem repetir o anúncio em toda corrida. */
+  liberarAto2() {
+    if (Progresso.ato2) { Progresso.aplicar(); return false; }
+    Progresso.ato2 = true;
+    Progresso.salvar();
+    Progresso.aplicar();
+    return true;
+  },
+
+  // A troca de tema é um atributo no <html>; o resto é CSS.
+  aplicar() {
+    try {
+      const raiz = document.documentElement;
+      if (Progresso.ato2) raiz.setAttribute('data-ato', '2');
+      else raiz.removeAttribute('data-ato');
+    } catch (e) { /* sem DOM (teste em Node): nada a pintar */ }
+  }
+};
+
 const Recordes = {
   lista: [],          // só a temporada atual, já ordenada
   historico: [],      // tudo que existe no aparelho, de todas as temporadas

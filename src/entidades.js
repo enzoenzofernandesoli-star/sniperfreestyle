@@ -1364,6 +1364,30 @@ class Inimigo {
       ctx.restore();
     }
 
+    /* O eco: ruína é cópia de um Condutor que morreu, e a cópia não fecha
+       direito. Um contorno do mesmo corpo, girado um tanto atrás e quase
+       transparente, dá a sensação de imagem que não alinha. Só contorno, e só
+       fora do modo leve: é enfeite, e enfeite é o primeiro a sair quando o
+       celular está sofrendo. */
+    if (this.mordidas && !Jogo.modoLeve) {
+      ctx.save();
+      ctx.rotate(this.angulo - 0.22);
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = t.cor;
+      ctx.lineWidth = 1.4;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = t.cor;
+      ctx.beginPath();
+      for (let i = 0; i < t.lados; i++) {
+        const a = (Mat.TAU / t.lados) * i;
+        const r = this.raio * this.mordidas[i] * 1.14;
+        ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.rotate(this.angulo);
     ctx.shadowBlur = Jogo.modoLeve ? 0 : 20;
     ctx.shadowColor = t.cor;
@@ -1389,6 +1413,24 @@ class Inimigo {
     ctx.lineWidth = 2;
     ctx.strokeStyle = this.flash > 0 ? '#fff' : t.cor;
     ctx.stroke();
+
+    /* Ruína: o corpo não é só um polígono comido, está rachado. As rachas saem
+       das próprias `mordidas`, então são as mesmas em todo quadro e não custam
+       sorteio nem alocação. Duas linhas do centro para fora bastam — mais que
+       isso, no tamanho que o bicho tem na tela, vira borrão. */
+    if (this.mordidas) {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let i = 0; i < 2; i++) {
+        const m = this.mordidas[i % this.mordidas.length];
+        const a = m * Mat.TAU;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * this.raio * 0.95, Math.sin(a) * this.raio * 0.95);
+      }
+      ctx.stroke();
+    }
 
     // núcleo
     ctx.shadowBlur = 0;
@@ -1638,6 +1680,7 @@ const BOSSES = [
 
   {
     id: 'ruinaPrimeiroTiro',
+    glifo: 'M',
     nome: 'O PRIMEIRO TIRO',
     titulo: 'Ruína do SNIPER',
     ato: 2,
@@ -1651,6 +1694,7 @@ const BOSSES = [
   },
   {
     id: 'ruinaMuralha',
+    glifo: 'G',
     nome: 'A MURALHA QUE CEDEU',
     titulo: 'Ruína do GUARDIÃO',
     ato: 2,
@@ -1678,6 +1722,7 @@ const BOSSES = [
   },
   {
     id: 'ruinaDuasVezes',
+    glifo: 'E',
     nome: 'O QUE PISCA DUAS VEZES',
     titulo: 'Ruína do ESPECTRO',
     ato: 2,
@@ -1705,6 +1750,7 @@ const BOSSES = [
   },
   {
     id: 'ruinaCirculoQuebrado',
+    glifo: 'A',
     nome: 'O CÍRCULO QUEBRADO',
     titulo: 'Ruína do ARCANO',
     ato: 2,
@@ -1747,6 +1793,7 @@ const BOSSES = [
   },
   {
     id: 'ruinaQueChama',
+    glifo: 'I',
     nome: 'O QUE AINDA CHAMA',
     titulo: 'Ruína do INVOCADOR',
     ato: 2,
@@ -2518,16 +2565,58 @@ class Boss {
 
     // olho
     const olhoAng = Mat.anguloEntre(this.x, this.y, Jogo.jogador.x, Jogo.jogador.y) + this.angulo * 0.6;
+    /* Boss-ruína tem olho pequeno: no meio do corpo dele mora a letra da classe
+       que ele foi, e olho do tamanho normal engolia a letra — as duas coisas
+       juntas viravam uma bola preta sem leitura. */
+    const rOlho = d.glifo ? 0.18 : 0.42;
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#08070d';
     ctx.beginPath();
-    ctx.arc(0, 0, this.raio * 0.42, 0, Mat.TAU);
+    ctx.arc(0, 0, this.raio * rOlho, 0, Mat.TAU);
     ctx.fill();
     ctx.fillStyle = d.cor;
     ctx.shadowBlur = 30; ctx.shadowColor = d.cor;
     ctx.beginPath();
-    ctx.arc(Math.cos(olhoAng) * this.raio * 0.14, Math.sin(olhoAng) * this.raio * 0.14, this.raio * 0.2, 0, Mat.TAU);
+    ctx.arc(Math.cos(olhoAng) * this.raio * rOlho * 0.34, Math.sin(olhoAng) * this.raio * rOlho * 0.34,
+      this.raio * rOlho * 0.48, 0, Mat.TAU);
     ctx.fill();
+
+    /* Marca de NÁDIR: fissuras atravessando o corpo e, nos bosses que foram
+       Condutores, a letra da classe apodrecida no meio. É o que faz a RUÍNA DO
+       SNIPER parecer o SNIPER morto e não um polígono roxo qualquer. */
+    if (d.ato === 2) {
+      ctx.save();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(0,0,0,.45)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = (Mat.TAU / 4) * i + 0.4;
+        ctx.moveTo(Math.cos(a) * this.raio * 0.2, Math.sin(a) * this.raio * 0.2);
+        ctx.lineTo(Math.cos(a + 0.5) * this.raio * 0.96, Math.sin(a + 0.5) * this.raio * 0.96);
+      }
+      ctx.stroke();
+      if (d.glifo) {
+        /* A letra é ESCURA, não clara: o corpo do boss tem o centro quase
+           branco, e letra branca em cima de branco simplesmente não aparece —
+           foi o primeiro jeito que tentei e na tela não existia. Escura, ela
+           lê como marca queimada no casco. */
+        ctx.globalAlpha = 0.62 + Math.sin(Jogo.tempo * 1.3) * 0.1;
+        ctx.font = '900 ' + Math.round(this.raio * 1.05) + 'px Orbitron, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#0a0612';
+        ctx.fillText(d.glifo, 0, this.raio * 0.04);
+        // Contorno claro só para a letra não sumir quando o corpo escurece na
+        // borda: a marca tem de aparecer no claro e no escuro.
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText(d.glifo, 0, this.raio * 0.04);
+      }
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 }

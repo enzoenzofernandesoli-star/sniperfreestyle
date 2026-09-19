@@ -1055,14 +1055,18 @@ body.toque #btPausar {
     flex: 0 0 min(94%, 620px);
     scroll-snap-align: center;
     min-height: 0;
-    overflow-y: auto;
-    /* cartão fica largo e baixo: duas colunas dentro dele */
+    /* Sem rolagem DENTRO do cartão: o que não cabe some (as listas), e o
+       cartão inteiro cabe na tela. Antes o botão JOGAR ficava embaixo da
+       dobra e só aparecia arrastando o cartão para cima — e num carrossel
+       horizontal ninguém adivinha que também dá para arrastar para baixo.
+       Agora toque em qualquer parte do cartão começa a partida. */
+    overflow: hidden;
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 14px;
-    row-gap: 4px;
+    row-gap: 3px;
     align-content: start;
-    padding: 10px 12px;
+    padding: 9px 12px;
   }
   .cc-topo { grid-column: 1 / -1; gap: 8px; }
   .cc-icone { width: 30px; border-radius: 8px; font-size: 15px; }
@@ -1078,6 +1082,14 @@ body.toque #btPausar {
   .cc-ult span { font-size: 9px; line-height: 1.2; }
   .cc-loja { grid-column: 1 / -1; margin-top: 3px; min-height: 34px; font-size: 9px; }
   .cc-jogar { grid-column: 1 / -1; margin-top: 4px; font-size: 11px; }
+
+  /* Trancada no celular: cadeado menor, faixa e botão ocupando a largura. */
+  .cc-cadeado { top: 6px; right: 8px; font-size: 17px; }
+  .cc-tranca { grid-column: 1 / -1; margin-top: 4px; padding: 5px 8px; }
+  .cc-tranca b { font-size: 8px; }
+  .cc-tranca span { font-size: 10px; }
+  .cc-destrancar { grid-column: 1 / -1; margin-top: 4px; padding: 9px 8px; font-size: 10px; }
+  .aviso-classes { min-height: 12px; font-size: 10px; }
 
   .dica-arraste {
     display: block;
@@ -1408,3 +1420,203 @@ body.toque #btPausar {
   .ava-texto span { font-size: 9px; }
   #avisoAtualizacao .bt { padding: 6px 10px; font-size: 9px; }
 }
+
+/* ========================= Classe trancada ============================== */
+/* Três classes vêm de graça; ESPECTRO e INVOCADOR se compram. O cartão trancado
+   continua mostrando tudo — atributos, ultimate, fraquezas — porque é vitrine:
+   quem vê o que está perdendo junta moeda. O que muda é que ele não joga. */
+.cartao-classe.trancado {
+  border-top-color: rgba(255, 211, 77, .75);
+  cursor: not-allowed;
+}
+.cartao-classe.trancado::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--raio);
+  /* Grade diagonal por cima: leitura de "fechado" sem apagar o conteúdo. */
+  background:
+    repeating-linear-gradient(135deg, rgba(4, 6, 12, .55) 0 10px, rgba(4, 6, 12, .3) 10px 20px);
+  pointer-events: none;
+}
+.cartao-classe.trancado .cc-desc,
+.cartao-classe.trancado .cc-attr,
+.cartao-classe.trancado .cc-ult { opacity: .5; }
+
+/* A lista de forças e fraquezas sai do cartão trancado: a faixa de preço e o
+   botão de desbloquear entram no lugar dela e o cartão continua com a mesma
+   altura dos outros. Senão ele cresce, estoura a linha da grade e o botão de
+   comprar — justamente o que importa aqui — sai da tela. */
+.cartao-classe.trancado .cc-lista { display: none; }
+
+/* Cadeado grande, no canto de cima */
+.cc-cadeado {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  font-size: clamp(18px, 1.8vw, 26px);
+  filter: drop-shadow(0 0 10px rgba(255, 211, 77, .6));
+  pointer-events: none;
+}
+
+.cc-tranca {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 1px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 211, 77, .4);
+  border-radius: 10px;
+  background: rgba(255, 211, 77, .08);
+  text-align: center;
+}
+.cc-tranca b {
+  font-family: Orbitron, sans-serif;
+  font-size: clamp(8px, .8vw, 11px);
+  letter-spacing: .16em;
+  color: var(--amarelo);
+}
+.cc-tranca span { font-size: clamp(10px, .95vw, 13px); color: var(--tinta); }
+
+.cc-destrancar {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffd34d, #c98a09);
+  color: #241a00;
+  font-family: Orbitron, sans-serif;
+  font-size: clamp(9px, .9vw, 12px);
+  font-weight: 700;
+  letter-spacing: .1em;
+  cursor: pointer;
+}
+.cc-destrancar:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Tocou e não pode: o cartão nega com a cabeça, sem diálogo nenhum. */
+.cartao-classe.nega { animation: negaCartao .32s ease; }
+@keyframes negaCartao {
+  20% { transform: translateX(-7px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+
+/* Recado embaixo da tela de classes: preço, falta de moeda, compra feita. */
+.aviso-classes {
+  min-height: 15px;
+  margin-top: 2px;
+  font-size: clamp(10px, .95vw, 13px);
+  letter-spacing: .04em;
+  color: var(--amarelo);
+  text-align: center;
+}
+.aviso-classes.piscando { animation: acendeAviso .5s ease; }
+@keyframes acendeAviso { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Tela baixíssima (celular deitado pequeno): o cartão continua tendo que caber
+   inteiro, então a lista de forças e fraquezas sai. Atributo, ultimate e o
+   botão ficam — são eles que decidem a escolha. */
+@media (max-height: 450px) {
+  .cc-lista { display: none; }
+  .cc-desc { grid-column: 1 / -1; margin: 2px 0 0; font-size: 10px; }
+  .cc-attr { grid-column: 1; }
+  .cc-ult { grid-column: 2; grid-row: 3; }
+  /* A LOJINHA também mora no menu: aqui ela sai para o cartão caber inteiro,
+     com o botão de jogar à vista. Cartão cortado no meio do botão principal é
+     pior que um atalho de menos. */
+  .cc-loja { display: none; }
+  .cc-jogar { margin-top: 2px; padding: 9px 10px; }
+  .cartao-classe { padding: 7px 11px; row-gap: 2px; }
+  .cc-icone { width: 26px; height: 26px; font-size: 13px; }
+  .cartao-classe h3 { font-size: 13px; }
+  .cc-apelido { display: none; }
+  .cc-ult { padding: 4px 7px; }
+  /* Descrição em duas linhas no máximo: é o texto que variava de tamanho por
+     classe e fazia um cartão caber e o outro não. */
+  .cc-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Cartão trancado: o preço já está escrito no botão, então a faixa sai. */
+  .cc-tranca { display: none; }
+  .cc-destrancar { margin-top: 2px; padding: 9px 8px; }
+}
+
+/* ===================== O APLICATIVO EM NÁDIR ============================= */
+/* Atravessar a fenda repinta tudo: menu, lojinha, placar, ajuda, HUD. O ciano
+   da Arena dá lugar ao violeta, e o fundo escurece para o preto-violeta do
+   Ato II. É prêmio de quem chegou lá — quem nunca atravessou nunca vê isto.
+   Quem manda é `data-ato="2"` no <html>, posto por `Progresso.aplicar()`.
+
+   Repintar por variável, e não componente por componente, é o que faz uma
+   tela nova já nascer com os dois temas certos. */
+:root[data-ato="2"] {
+  --cor-classe: #c04dff;
+  --tinta: #f0e6ff;
+  --tinta-fraca: #a98fc4;
+  --fundo: #05020c;
+  --fundo-2: #12062a;
+  --vidro: rgba(20, 8, 38, .94);
+  --borda: rgba(190, 120, 255, .22);
+  --ciano: #c04dff;
+  --roxo: #ff4da6;
+  --sombra: 0 18px 60px rgba(0, 0, 0, .7);
+}
+
+/* O fundo da página também muda: os brilhos de canto viram violeta e magenta. */
+:root[data-ato="2"] body {
+  background:
+    radial-gradient(1100px 600px at 12% -10%, rgba(150, 60, 255, .16), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(255, 46, 168, .12), transparent 60%),
+    var(--fundo);
+}
+
+/* A marca no menu: só existe depois da travessia. */
+.marca-ato { display: none; }
+:root[data-ato="2"] .marca-ato {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 77, 166, .5);
+  border-radius: 999px;
+  background: rgba(255, 77, 166, .1);
+  font-family: Orbitron, sans-serif;
+  font-size: clamp(8px, .8vw, 11px);
+  letter-spacing: .22em;
+  color: #ff88c8;
+  text-shadow: 0 0 14px rgba(255, 77, 166, .6);
+  animation: respiraMarca 3.4s ease-in-out infinite;
+}
+@keyframes respiraMarca { 50% { opacity: .58; } }
+
+/* O que ficou com cor fixa no CSS da Arena: título, botão principal, aba ativa
+   e o brilho de hover. São gradientes, e gradiente não sai de uma variável só —
+   então cada um ganha a versão de NÁDIR aqui, no mesmo lugar. */
+:root[data-ato="2"] .titulo {
+  background: linear-gradient(180deg, #fff 18%, #e6a0ff 58%, #7a2ecc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(192, 77, 255, .5));
+}
+:root[data-ato="2"] .bt.principal {
+  background: linear-gradient(135deg, #c04dff, #6a1fb0);
+  color: #150024;
+  box-shadow: 0 12px 34px rgba(192, 77, 255, .32);
+}
+:root[data-ato="2"] .bt:hover {
+  background: rgba(192, 77, 255, .14);
+  box-shadow: 0 0 26px rgba(192, 77, 255, .26);
+}
+:root[data-ato="2"] .aba.ativa {
+  background: linear-gradient(135deg, #c04dff, #6a1fb0);
+  color: #150024;
+}
+:root[data-ato="2"] .aba:hover { background: rgba(192, 77, 255, .12); }
+:root[data-ato="2"] .cartao-classe { --cor: #c04dff; }

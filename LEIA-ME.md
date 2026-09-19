@@ -214,6 +214,57 @@ já está perto de 5×, e é ele que faz NÁDIR doer.
 entre capítulos — e os hazards de cada região (gravidade da Cidade Invertida, escuridão do
 Mar Sem Fundo). Véspera já existe, como boss da onda 180. Ordem em `HISTORIA.md`.
 
+## Classes trancadas
+
+Três classes vêm de graça. **ESPECTRO custa 75.000 moedas e INVOCADOR 120.000**, e o preço é
+alto de propósito: o cosmético mais caro da lojinha custa 30.000 e uma corrida boa das 100
+ondas rende por volta de 25.000 — ESPECTRO sai por três corridas dessas, INVOCADOR por cinco.
+
+- Quem manda é `CLASSES_TRANCADAS` em `src/loja.js`, e o desbloqueio mora na **mesma carteira
+  dos cosméticos** (`Carteira.itens`, com id `classe-espectro` / `classe-invocador`): quem
+  comprou não perde ao atualizar o jogo.
+- O cartão trancado continua mostrando atributo, ultimate e fraqueza — é vitrine. Ganha
+  cadeado, hachura diagonal e o botão **DESBLOQUEAR**. Tocar nele não joga: o cartão nega com
+  a cabeça e o rodapé diz quantas moedas faltam.
+- `Jogo.novoJogo` tem a mesma trava, e ela não depende da tela estar certa: classe trancada
+  vira a primeira classe. Dois testes guardam isso, incluindo "comprada uma, a outra continua
+  trancada" e "classe já comprada não cobra de novo".
+
+## Escolher classe no celular
+
+Tocar em **qualquer parte** do cartão começa a partida. No celular deitado o cartão era mais
+alto que a tela e o botão JOGAR ficava embaixo da dobra — num carrossel horizontal ninguém
+adivinha que também dá para arrastar para baixo. Agora:
+
+- o cartão **não rola por dentro** (`overflow: hidden`) e cabe inteiro: até 450 px de altura
+  a lista de forças sai, a descrição vai a duas linhas e o atalho da LOJINHA sai do cartão
+  (ele continua no menu);
+- os botões de dentro do cartão dão `stopPropagation`, então continuam valendo;
+- o cartão também responde a Enter e Espaço, com `role="button"`.
+
+## Fluidez no celular
+
+Duas coisas, as duas medidas em vez de sentidas:
+
+**Stick que nasce onde o dedo cai.** O centro do analógico passou a ser o ponto do toque (até
+40% do raio fora do meio), e não o meio do desenho. Encostando 20 px fora do centro, a nave
+saltava para aquele lado antes de o dedo se mexer. Junto veio **zona morta de 14%**, com
+reescala: passando dela a força recomeça do zero, senão o primeiro movimento é um tranco.
+
+**Qualidade que se ajusta sozinha** (`Jogo.ajustarQualidade`). Celular não é um aparelho, são
+mil: escala fixa ou pesa no fraco ou desperdiça nítido no forte. O jogo mede o próprio FPS a
+cada meio segundo e anda na escala de render entre **0,45 e 0,75**:
+
+| Medida | O que acontece |
+|---|---|
+| FPS < 46 duas vezes seguidas | desce um passo |
+| FPS > 57 seis vezes seguidas | sobe um passo |
+| entre 46 e 57 | não mexe |
+
+As duas faixas ficam longe uma da outra e exigem várias medidas no mesmo sentido justamente
+para o jogo não piscar entre duas qualidades. No PC a escala é 1 e continua 1. Um teste cobre
+a descida, a subida, o piso, o teto e a estabilidade no meio da faixa.
+
 ## A campanha tem dois atos
 
 | | Ato I — Arena Neon | Ato II — NÁDIR |
@@ -277,6 +328,32 @@ a **pressão** (`Boss.pressao`): o boss ataca mais vezes, com os mesmos ataques.
 Vida de boss de NÁDIR também olha o **nível do jogador** (`Boss.pesoDoNivel`, até +30%), o que
 nenhum boss do Ato I faz. Em NÁDIR não existe mais nível esperado: quem atravessa pode estar
 no 28 ou no 45, e a mesma barra seria muro para um e trâmite para o outro.
+
+### O visual do Ato II
+
+Atravessar a fenda muda **o aplicativo inteiro**, e não só a arena: menu, lojinha, placar,
+ajuda e HUD passam do ciano da Arena para o violeta de NÁDIR. Quem manda é
+`Progresso.liberarAto2()`, que escreve `sniper.progresso` no aparelho e põe `data-ato="2"` no
+`<html>`; o resto é CSS repintando as variáveis. **É prêmio, não enfeite**: quem nunca chegou
+lá nunca vê, e quem chegou continua vendo na próxima vez que abrir. O menu ganha a marca
+`ATO II · NÁDIR LIBERADO`.
+
+Gradiente não sai de uma variável, então título, botão principal e aba ativa têm a versão de
+NÁDIR escrita à mão, no mesmo bloco do CSS.
+
+Na arena:
+
+- **Fundo de NÁDIR** (`Jogo.desenharNadir`): chão fragmentado em placas irregulares no lugar
+  da grade quadrada, névoa violeta em três faixas lentas, duas luas partidas e brasa subindo.
+  Nenhuma posição é guardada em lista — tudo sai de seno, para o fundo não alocar por quadro.
+  A brasa sai no modo leve: enfeite é o primeiro a sair quando o celular sofre.
+- **Ruínas** têm corpo comido (`mordidas`, sorteadas uma vez no construtor), duas rachas
+  saindo do centro e um **eco**: o contorno do mesmo corpo, girado 0,22 rad atrás e quase
+  transparente — cópia de um Condutor morto que não fecha direito.
+- **Boss-ruína carrega a letra da classe** que ele foi (`glifo`), queimada no casco, e por
+  isso tem olho pequeno: com o olho do tamanho normal, letra e olho viravam uma bola preta.
+  A letra é escura com contorno claro, porque o centro do corpo é quase branco e letra branca
+  ali simplesmente não aparecia.
 
 ### A onda 200
 

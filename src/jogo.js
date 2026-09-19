@@ -94,6 +94,8 @@ const Jogo = {
     Jogo.modoLeve = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0);
     // No celular o custo por pixel é o que trava. 0,62 dá um quadro 2,6 vezes
     // mais barato que o tamanho cheio e a diferença mal aparece na tela pequena.
+    // Daqui em diante quem manda é `Jogo.ajustarQualidade`, que sobe e desce
+    // este número conforme o aparelho aguenta.
     Jogo.escalaRender = Jogo.modoLeve ? 0.62 : 1;
     Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
     Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
@@ -110,6 +112,10 @@ const Jogo = {
   },
 
   novoJogo(classeId, skinId) {
+    // Classe trancada nunca entra em partida, venha o pedido de onde vier
+    // (atalho, sala, recarregar a página com estado velho). A tela já barra;
+    // isto é a trava que não depende da tela estar certa.
+    if (typeof Classes !== 'undefined' && Classes.trancada(classeId)) classeId = CLASSES[0].id;
     Jogo.jogador = new Jogador(classeId, skinId);
     Jogo.outros.clear();
     Jogo.inimigos.length = 0;
@@ -447,6 +453,11 @@ const Jogo = {
      garante que, se a partida acabar em NÁDIR, ela ainda conte como vencida. */
   atravessarFenda() {
     Jogo.atravessou = true;
+    // O aplicativo inteiro muda de cara daqui em diante, e continua mudado na
+    // próxima vez que abrir: atravessar a fenda é conquista, não estado de
+    // partida. Quem nunca chegou aqui nunca vê NÁDIR no menu.
+    const primeiraVez = typeof Progresso !== 'undefined' && Progresso.liberarAto2();
+    if (primeiraVez && typeof UI !== 'undefined' && UI.anunciarAto2) UI.anunciarAto2();
     Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
     Jogo.boss = null;
     UI.esconderBarraBoss();
@@ -753,6 +764,7 @@ const Jogo = {
     if (Jogo.acumFps > 0.5) {
       Jogo.fps = Math.round(Jogo.contFps / Jogo.acumFps);
       Jogo.acumFps = 0; Jogo.contFps = 0;
+      Jogo.ajustarQualidade();
     }
 
     Som.tocarMusica();
@@ -770,6 +782,42 @@ const Jogo = {
       Jogo.ultimoDesenho = agora;
     }
     Input.limparQuadro();
+  },
+
+  /* ------------------- Qualidade que se ajusta sozinha ----------------- */
+  /* Celular não é um aparelho, são mil. Um número fixo de escala de render ou
+     fica pesado no aparelho fraco ou desperdiça nítido no forte. Então o jogo
+     mede o próprio FPS e mexe na escala: caiu de 46 por dois meio-segundos
+     seguidos, desce um passo; passou de 57 por seis, sobe um passo.
+
+     Duas proteções contra o pior defeito possível aqui, que é o jogo ficar
+     piscando entre duas qualidades:
+       - precisa de várias medidas no mesmo sentido para mexer (não é na
+         primeira queda, que pode ser o navegador carregando algo);
+       - a faixa de subir (57) está longe da de descer (46).
+
+     Fora do celular não mexe em nada: no PC a escala é 1 e fica 1. */
+  QUALIDADES: [0.45, 0.55, 0.62, 0.75],
+  _quedas: 0,
+  _folgas: 0,
+
+  ajustarQualidade() {
+    if (!Jogo.modoLeve || Jogo.estado !== 'jogando') return;
+    const passo = Jogo.QUALIDADES.indexOf(Jogo.escalaRender);
+    const atual = passo < 0 ? 2 : passo;          // 0,62 é o ponto de partida
+
+    if (Jogo.fps < 46) { Jogo._quedas++; Jogo._folgas = 0; }
+    else if (Jogo.fps > 57) { Jogo._folgas++; Jogo._quedas = 0; }
+    else { Jogo._quedas = 0; Jogo._folgas = 0; }
+
+    let novo = atual;
+    if (Jogo._quedas >= 2 && atual > 0) { novo = atual - 1; Jogo._quedas = 0; }
+    else if (Jogo._folgas >= 6 && atual < Jogo.QUALIDADES.length - 1) { novo = atual + 1; Jogo._folgas = 0; }
+    if (novo === atual) return;
+
+    Jogo.escalaRender = Jogo.QUALIDADES[novo];
+    Jogo.canvas.width = Math.round(Jogo.LARGURA * Jogo.escalaRender);
+    Jogo.canvas.height = Math.round(Jogo.ALTURA * Jogo.escalaRender);
   },
 
   atualizar(dtReal) {
@@ -1376,6 +1424,24 @@ const Jogo = {
       ctx.fillRect(0, y - 90, Jogo.LARGURA, 180);
     }
     ctx.restore();
+
+    /* Brasa: pontos subindo devagar, como cinza de algo que queimou antes de
+       a gente chegar. Vem de seno, como o resto do fundo — nada guardado,
+       nada alocado por quadro. Sai no modo leve. */
+    if (!Jogo.modoLeve) {
+      ctx.save();
+      ctx.fillStyle = '#ff6cc4';
+      for (let i = 0; i < 18; i++) {
+        const base = ((Math.sin(i * 57.31) * 1000) % 1 + 1) % 1;
+        const x = base * Jogo.LARGURA + Math.sin(t * 0.4 + i) * 14;
+        const y = Jogo.ALTURA - ((t * 26 + i * 137) % (Jogo.ALTURA + 120));
+        ctx.globalAlpha = 0.22 * (y / Jogo.ALTURA);
+        ctx.beginPath();
+        ctx.arc(x, y, 1.6, 0, Mat.TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
 
     // Moldura: violeta, e não o ciano da Arena — o lugar não é o mesmo.
     ctx.save();

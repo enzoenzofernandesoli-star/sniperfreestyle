@@ -61,6 +61,43 @@ const Carteira = {
   }
 };
 
+/* --------------------------- Classes trancadas --------------------------- */
+/* Três classes vêm de graça. Duas não: ESPECTRO e INVOCADOR se compram com
+   moeda, e o preço é alto de propósito — pedido do Enzo em 18/09/2026, "bem
+   alta mesmo". Para comparação: o cosmético mais caro da lojinha custa 30.000,
+   e uma corrida boa das 100 ondas rende por volta de 25.000. ESPECTRO sai por
+   três corridas dessas e INVOCADOR por cinco.
+
+   O desbloqueio mora na mesma carteira dos cosméticos (`Carteira.itens`), com
+   id próprio: quem comprou não perde ao atualizar o jogo, e nada aqui encosta
+   em atributo — classe travada é só classe que não dá para escolher. */
+const CLASSES_TRANCADAS = {
+  espectro: { item: 'classe-espectro', preco: 75000 },
+  invocador: { item: 'classe-invocador', preco: 120000 }
+};
+
+const Classes = {
+  trancada(id) {
+    const t = CLASSES_TRANCADAS[id];
+    return !!t && !Carteira.tem(t.item);
+  },
+  preco(id) { return CLASSES_TRANCADAS[id] ? CLASSES_TRANCADAS[id].preco : 0; },
+  falta(id) { return Math.max(0, Classes.preco(id) - Carteira.moedas); },
+
+  /* Compra de verdade: só debita se a carteira aguenta, e só anota o item se
+     debitou. Devolve o que aconteceu para a tela saber o que dizer. */
+  destrancar(id) {
+    const t = CLASSES_TRANCADAS[id];
+    if (!t) return 'livre';
+    if (Carteira.tem(t.item)) return 'livre';
+    if (!Carteira.gastar(t.preco)) return 'sem-moeda';
+    Carteira.itens.push(t.item);
+    Carteira.salvar();
+    return 'comprada';
+  }
+};
+
+
 /* ------------------------------- Catálogo -------------------------------- */
 /* Preço alto de propósito: nada aqui sai em uma partida. O barato pede umas   */
 /* três runs boas; o topo da vitrine é meta de temporada, não de tarde.        */

@@ -65,6 +65,7 @@ const UI = {
     Toque.iniciar();
     UI.montarRecordes();
     UI.marcarVersao();
+    Progresso.carregar();
     UI.ligarAvisoAtualizacao();
 
     g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
@@ -177,9 +178,11 @@ const UI = {
 
   montarClasses() {
     UI.el.gradeClasses.innerHTML = '';
-    CLASSES.forEach((c, i) => {
+    CLASSES.forEach((c) => {
+      const trancada = typeof Classes !== 'undefined' && Classes.trancada(c.id);
+      const preco = trancada ? Classes.preco(c.id) : 0;
       const card = document.createElement('div');
-      card.className = 'cartao-classe';
+      card.className = 'cartao-classe' + (trancada ? ' trancado' : '');
       card.style.setProperty('--cor', c.cor);
       card.style.setProperty('--cor2', c.cor2);
       card.innerHTML =
@@ -195,10 +198,19 @@ const UI = {
         '<ul class="cc-lista">' + c.forcas.map((f) => '<li class="bom">+ ' + f + '</li>').join('') +
         c.fraquezas.map((f) => '<li class="ruim">− ' + f + '</li>').join('') + '</ul>' +
         '<div class="cc-ult"><b>' + c.ult.nome + '</b><span>' + c.ult.descricao + '</span></div>' +
-        '<button type="button" class="cc-loja">🛒 MUDAR APARÊNCIA NA LOJINHA</button>' +
-        '<button type="button" class="cc-jogar">JOGAR COM ' + c.nome + ' ▸</button>';
-      card.querySelector('.cc-loja').onclick = () => { Som.clique(); Loja.abrirAba(Loja.aba); UI.mostrarTela('loja'); };
-      card.querySelector('.cc-jogar').onclick = () => {
+        (trancada
+          ? '<div class="cc-cadeado" aria-hidden="true">🔒</div>' +
+            '<div class="cc-tranca"><b>CLASSE TRANCADA</b><span>' +
+            preco.toLocaleString('pt-BR') + ' moedas</span></div>' +
+            '<button type="button" class="cc-destrancar">🔓 DESBLOQUEAR · ' +
+            preco.toLocaleString('pt-BR') + ' MOEDAS</button>'
+          : '<button type="button" class="cc-loja">🛒 MUDAR APARÊNCIA NA LOJINHA</button>' +
+            '<button type="button" class="cc-jogar">JOGAR COM ' + c.nome + ' ▸</button>');
+
+      /* Começar a partida com esta classe. Virou função própria porque agora
+         três coisas chamam: o botão, o toque no cartão e o teclado. */
+      const jogar = () => {
+        if (trancada) { UI.recusarClasseTrancada(card, c); return; }
         Som.clique();
         Som.destravar();
         UI.el.classeNome.textContent = c.nome;
@@ -210,8 +222,80 @@ const UI = {
         }
         Jogo.novoJogo(c.id, Carteira.equipado.casco);
       };
+
+      if (trancada) {
+        card.querySelector('.cc-destrancar').onclick = (ev) => {
+          ev.stopPropagation();
+          UI.comprarClasse(c);
+        };
+      } else {
+        card.querySelector('.cc-loja').onclick = (ev) => {
+          ev.stopPropagation();
+          Som.clique();
+          Loja.abrirAba(Loja.aba);
+          UI.mostrarTela('loja');
+        };
+        card.querySelector('.cc-jogar').onclick = (ev) => { ev.stopPropagation(); jogar(); };
+      }
+
+      /* Toque em QUALQUER parte do cartão entra no jogo. No celular o cartão é
+         mais alto que a tela e o botão JOGAR ficava escondido embaixo: ninguém
+         deveria precisar rolar dentro de um cartão para começar a partida. Os
+         botões de dentro param a propagação, então continuam valendo. */
+      card.onclick = jogar;
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', (trancada ? 'Classe trancada: ' : 'Jogar com ') + c.nome);
+      card.onkeydown = (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jogar(); }
+      };
       UI.el.gradeClasses.appendChild(card);
     });
+  },
+
+  /* Tocou numa classe trancada: não é erro, é vitrine. Diz o que falta. */
+  recusarClasseTrancada(card, c) {
+    Som.erro();
+    card.classList.remove('nega');
+    void card.offsetWidth;                       // reinicia a animação
+    card.classList.add('nega');
+    const falta = Classes.falta(c.id);
+    UI.avisoNaTela(falta
+      ? c.nome + ' custa ' + Classes.preco(c.id).toLocaleString('pt-BR') +
+        ' moedas — faltam ' + falta.toLocaleString('pt-BR')
+      : 'Toque em DESBLOQUEAR para liberar ' + c.nome);
+  },
+
+  comprarClasse(c) {
+    if (Classes.destrancar(c.id) === 'sem-moeda') {
+      UI.avisoNaTela('Faltam ' + Classes.falta(c.id).toLocaleString('pt-BR') +
+        ' moedas para liberar ' + c.nome);
+      Som.erro();
+      return;
+    }
+    Som.subirNivel();
+    UI.avisoNaTela(c.nome + ' liberada. Ela é sua para sempre.');
+    UI.montarClasses();                          // o cartão volta jogável
+    if (UI.atualizarMoedas) UI.atualizarMoedas();
+  },
+
+  /* Primeira travessia: o aplicativo trocou de cara e a pessoa tem de saber
+     por quê. Um letreiro só, dentro do jogo, sem tela nova nem botão. */
+  anunciarAto2() {
+    Jogo.aviso('NÁDIR É SEU AGORA');
+    const marca = document.getElementById('marcaAto');
+    if (marca) marca.hidden = false;
+  },
+
+  /* Recado curto embaixo da tela de classes — serve para preço, falta de moeda
+     e compra feita, sem abrir diálogo nenhum. */
+  avisoNaTela(texto) {
+    const alvo = document.getElementById('avisoClasses');
+    if (!alvo) return;
+    alvo.textContent = texto;
+    alvo.classList.remove('piscando');
+    void alvo.offsetWidth;
+    alvo.classList.add('piscando');
   },
 
   barrinha(rotulo, valor) {
@@ -922,25 +1006,38 @@ const Toque = {
     }
   },
 
+  // Abaixo disso o dedo está parado e tremendo, não andando. Sem zona morta a
+  // nave vibra sozinha e o tiro sai torto enquanto o dedo está quieto.
+  ZONA_MORTA: 0.14,
+
   ligarStick(el, destino) {
     if (!el) return;
     const knob = el.querySelector('i');
-    let id = null, cx = 0, cy = 0, raio = 1;
+    let id = null, cx = 0, cy = 0, raio = 1, ox = 0, oy = 0;
 
     const mover = (e) => {
       let dx = (e.clientX - cx) / raio;
       let dy = (e.clientY - cy) / raio;
       const m = Math.hypot(dx, dy);
       if (m > 1) { dx /= m; dy /= m; }
+      // Zona morta com reescala: passando dela, a força volta a começar do zero,
+      // em vez de pular de 0 para 0,14 — senão o primeiro movimento é um tranco.
+      if (m < Toque.ZONA_MORTA) {
+        dx = 0; dy = 0;
+      } else if (m > 0) {
+        const f = ((m - Toque.ZONA_MORTA) / (1 - Toque.ZONA_MORTA)) / m;
+        dx *= f; dy *= f;
+      }
       destino.x = dx; destino.y = dy;
       knob.style.transform =
-        'translate(calc(-50% + ' + (dx * raio * 0.55).toFixed(1) + 'px), calc(-50% + ' + (dy * raio * 0.55).toFixed(1) + 'px))';
+        'translate(calc(-50% + ' + (ox + dx * raio * 0.55).toFixed(1) + 'px), calc(-50% + ' + (oy + dy * raio * 0.55).toFixed(1) + 'px))';
     };
 
     const soltar = (e) => {
       if (e && e.pointerId !== id) return;
       id = null;
       destino.ativo = false; destino.x = 0; destino.y = 0;
+      ox = 0; oy = 0;
       knob.style.transform = 'translate(-50%, -50%)';
       el.classList.remove('usando');
     };
@@ -950,9 +1047,19 @@ const Toque = {
       id = e.pointerId;
       try { el.setPointerCapture(id); } catch (err) { /* ponteiro já liberado */ }
       const r = el.getBoundingClientRect();
-      cx = r.left + r.width / 2;
-      cy = r.top + r.height / 2;
+      /* O centro do stick é ONDE O DEDO CAIU, não o meio do desenho. Ninguém
+         acerta o centro de um círculo que não está olhando: encostando 20 px
+         fora do meio, a nave saltava para aquele lado antes de o dedo se mexer.
+         O centro só pode andar até 40% do raio, senão o stick sai do próprio
+         desenho e o dedo perde a referência de onde ele está. */
       raio = r.width / 2;
+      const meioX = r.left + r.width / 2;
+      const meioY = r.top + r.height / 2;
+      const limite = raio * 0.4;
+      ox = Mat.limitar(e.clientX - meioX, -limite, limite);
+      oy = Mat.limitar(e.clientY - meioY, -limite, limite);
+      cx = meioX + ox;
+      cy = meioY + oy;
       destino.ativo = true;
       el.classList.add('usando');
       mover(e);
