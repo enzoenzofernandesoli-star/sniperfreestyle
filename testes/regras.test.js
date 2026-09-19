@@ -10,12 +10,13 @@ for (const arquivo of ['src/loja.js', 'src/classes.js', 'src/entidades.js', 'src
   vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), contexto, { filename: arquivo });
 }
 
-test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () => {
+test('o Ato I termina na onda 100 e o boss final fica fora do rodízio', () => {
   assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 100);
+  assert.equal(vm.runInContext('Jogo.ondaFinalDaCampanha()', contexto), 200);
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(40)', contexto), true);
   assert.equal(vm.runInContext('Jogo.ehOndaDeBoss(100)', contexto), true);
   const dados = vm.runInContext(`(() => {
-    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
+    const rodizio = Jogo.rodizioDoAto1();
     const finais = BOSSES.filter((b) => b.final);
     const secretos = BOSSES.filter((b) => b.secreto);
     // mesma conta que Jogo.spawnarBoss faz
@@ -39,13 +40,13 @@ test('a corrida termina na onda 100 e o boss final fica fora do rodízio', () =>
   assert.deepEqual(Array.from(dados.secretos), ['espectador'], 'o segredo existe e é um só');
 });
 
-test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por tempo', () => {
+test('O ESPECTADOR abre o Interstício, conversa e atravessa a campanha para NÁDIR', () => {
   // Coop entra como esboço: a run desta simulação não vai para placar nenhum.
   const mundo = vm.createContext({ console, Math, setTimeout,
     Coop: { ativo: () => true },
     UI: {
       aviso() {}, mostrarBarraBoss() {}, esconderBarraBoss() {}, atualizarBarraBoss() {},
-      mostrarFinal() {}
+      mostrarFinal() {}, atualizarHUD() {}
     } });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -71,11 +72,12 @@ test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por te
     const abriu = Jogo.segredo.fase;
     const dimensao = Jogo.dimensao;
 
-    // A cinemática termina e ele entra na arena.
+    // A cinemática traz ele para a tela, e o que começa é conversa, não luta.
     for (let i = 0; i < 300; i++) Jogo.atualizarSegredo(1 / 60);
     const faseDepoisDaCinematica = Jogo.segredo.fase;
     const boss = Jogo.boss;
     boss.entrando = 0;
+    const paradoNaConversa = [boss.x, boss.y];
 
     // Dano nenhum passa: build máxima, crítico, ultimate, o que for.
     const vidaAntes = boss.vida;
@@ -88,27 +90,52 @@ test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por te
     boss.tempoVivo = boss.def.fasesPorTempo * 3; boss.atualizarFase();
     const faseTarde = boss.faseIndice;
 
-    // Morrer aqui não é derrota: é o fim da história. E a morte chega por vários
-    // caminhos no mesmo quadro: chamar de novo não pode virar GAME OVER.
+    // A conversa acaba e a fenda abre: mesma partida, do outro lado.
+    for (let i = 0; i < 3000; i++) Jogo.atualizarSegredo(1 / 60);
+    const depoisDaConversa = {
+      fase: Jogo.segredo.fase, dimensao: Jogo.dimensao, onda: Jogo.onda,
+      atravessou: Jogo.atravessou, boss: Jogo.boss, rotulo: Jogo.rotuloDaOnda(),
+      ato: Jogo.ato(), ondaDoAto: Jogo.ondaDoAto()
+    };
+
+    // Morrer para ele na onda 200 não é derrota: é o fim da história. E a morte
+    // chega por vários caminhos no mesmo quadro: chamar de novo não pode virar
+    // GAME OVER.
+    Jogo.onda = Jogo.ondaFinalDaCampanha();
+    Jogo.boss = null; Jogo.spawnarBoss();
+    const bossDa200 = Jogo.boss.def.id;
     Jogo.jogador.vida = 0;
     Jogo.derrota();
     Jogo.derrota();
     Jogo.derrota();
     return { apareceuNoRodizio, abriu, faseDepoisDaCinematica, dimensao, id: boss.def.id,
       vidaAntes, vidaDepois, porcentagem: boss.porcentagem, fase0, faseTarde,
+      paradoNaConversa, depoisDaConversa, bossDa200,
       estado: Jogo.estado };
   })()`, mundo);
 
   assert.equal(dados.apareceuNoRodizio, false, 'o secreto não pode cair em onda normal');
   assert.equal(dados.abriu, 'abertura', 'derrubar o CEIFADOR começa pela cinemática');
-  assert.equal(dados.faseDepoisDaCinematica, 'luta', 'e a cinemática entrega a luta');
+  assert.equal(dados.faseDepoisDaCinematica, 'conversa',
+    'na onda 100 ele conversa; a luta dele é na 200');
   assert.equal(dados.dimensao, 'intersticio', 'o segredo leva para o Interstício Violeta');
   assert.equal(dados.id, 'espectador');
   assert.equal(dados.vidaDepois, dados.vidaAntes, 'nenhum dano entra: a barra não se move');
   assert.equal(dados.porcentagem, 1, 'a barra fica cheia por definição');
   assert.equal(dados.fase0, 0);
   assert.ok(dados.faseTarde > dados.fase0, 'a fase avança por tempo de luta');
-  assert.equal(dados.estado, 'vitoria', 'cair para ele não apaga a vitória das 100 ondas');
+
+  // A travessia: a partida continua, a contagem recomeça e o ato muda.
+  assert.equal(dados.depoisDaConversa.fase, null, 'a conversa não fica presa no estado de segredo');
+  assert.equal(dados.depoisDaConversa.dimensao, 'nadir', 'do outro lado da fenda é NÁDIR');
+  assert.equal(dados.depoisDaConversa.onda, 101, 'a campanha continua na onda 101 por dentro');
+  assert.equal(dados.depoisDaConversa.ondaDoAto, 1, 'e vira ONDA 1 na tela');
+  assert.equal(dados.depoisDaConversa.rotulo, 'ATO 2 · ONDA 1');
+  assert.equal(dados.depoisDaConversa.ato, 2);
+  assert.equal(dados.depoisDaConversa.atravessou, true, 'atravessou fica gravado para o ranking');
+  assert.equal(dados.depoisDaConversa.boss, null, 'ele desaparece: a luta dele é no fim de NÁDIR');
+  assert.equal(dados.bossDa200, 'espectador', 'a onda 200 é ele');
+  assert.equal(dados.estado, 'vitoria', 'cair para ele não apaga a corrida inteira');
 });
 
 test('o verificador de atualização lê a versão de verdade, não um comentário', () => {
@@ -521,7 +548,7 @@ test('vida de boss cresce em passo constante e nunca dá degrau', () => {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
   }
   const dados = vm.runInContext(`(() => {
-    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
+    const rodizio = Jogo.rodizioDoAto1();
     const vidas = rodizio.map((def, i) => {
       const onda = i < 8 ? (i + 1) * 5 : 40 + (i - 7) * 10;
       return Math.round(new Boss(def, onda).vidaMax);
@@ -624,7 +651,7 @@ test('ricochete vertical também libera novo acerto', () => {
   assert.equal(resultado, true);
 });
 
-test('API aceita até a onda 100, recusa além, e conhece o INVOCADOR', async () => {
+test('API aceita as 200 ondas dos dois atos, recusa além, e conhece o INVOCADOR', async () => {
   const Module = require('node:module');
   const carregar = Module._load;
   const consultas = [];
@@ -656,8 +683,10 @@ test('API aceita até a onda 100, recusa além, e conhece o INVOCADOR', async ()
   };
 
   assert.equal((await responder(40)).codigo, 201);
-  assert.equal((await responder(100)).codigo, 201, 'a onda final entra no placar');
-  assert.equal((await responder(101)).codigo, 400, 'onda acima do teto é recusada');
+  assert.equal((await responder(100)).codigo, 201, 'a onda final do Ato I entra no placar');
+  assert.equal((await responder(137)).codigo, 201, 'run de NÁDIR conta no ranking');
+  assert.equal((await responder(200)).codigo, 201, 'a última onda da campanha entra');
+  assert.equal((await responder(201)).codigo, 400, 'onda acima do teto é recusada');
   assert.equal((await responder(40, 'INVOCADOR')).codigo, 201, 'a classe nova é aceita');
   assert.equal((await responder(40, 'MAGO')).codigo, 400, 'classe inventada é recusada');
   assert.ok(consultas.some((consulta) => consulta.texto.includes('insert into public.placar_sobrecarga')));
@@ -1383,4 +1412,136 @@ test('a ruína do invocador respeita o teto da própria ninhada', () => {
   assert.equal(dados.tipoDaCria, 'larvaNadir');
   assert.equal(dados.mordidas, 7, 'ruína tem um recuo sorteado por vértice, e só uma vez');
   assert.equal(dados.larvaPodre, false, 'bicho nascido em NÁDIR não é ruína de ninguém');
+});
+
+/* Os dez encontros de NÁDIR: de dez em dez, na ordem, com as cinco ruínas das
+   classes jogáveis e O ESPECTADOR fechando na 200. E a rampa de vida: sobe
+   sempre, começa no pé do CEIFADOR e nunca dá degrau. */
+test('NÁDIR tem boss de dez em dez, as cinco ruínas, e a vida sobe sem degrau', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {},
+    UI: {
+      aviso() {}, mostrarBarraBoss() {}, esconderBarraBoss() {}, atualizarBarraBoss() {},
+      mostrarFinal() {}, atualizarHUD() {}
+    } });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.LARGURA = 1280; Jogo.ALTURA = 720;
+    Particulas.iniciar();
+
+    // Quais ondas do Ato II chamam boss, e qual boss cada uma chama.
+    const ondasComBoss = [];
+    const escolhidos = [];
+    for (let o = 101; o <= 210; o++) {
+      if (!Jogo.ehOndaDeBoss(o)) continue;
+      ondasComBoss.push(o);
+      Jogo.onda = o; Jogo.boss = null; Jogo.spawnarBoss();
+      escolhidos.push(Jogo.boss.def.id);
+    }
+
+    const deNadir = Jogo.bossesDeNadir();
+    const vidas = deNadir.map((def, i) => Math.round(new Boss(def, 110 + i * 10).vidaMax));
+    const passos = vidas.slice(1).map((v, i) => v / vidas[i]);
+    const ceifador = Math.round(new Boss(BOSSES.find((b) => b.final), 100).vidaMax);
+
+    // Pressao: o que cresce em NADIR e a frequencia de ataque, nao o volume.
+    const pressoes = [110, 150, 190, 200].map((o) => +Boss.pressao(o).toFixed(2));
+    const durezas = [110, 190, 200].map((o) => Boss.dureza(o));
+
+    // Titulo de ruina aponta a classe: e assim que o jogador reconhece de quem e.
+    const ruinas = deNadir.filter((b) => (b.titulo || '').indexOf('Ru\u00edna do') === 0)
+      .map((b) => b.titulo.replace('Ru\u00edna do ', ''));
+
+    // Nenhum boss do Ato I pode cair em NADIR, e vice-versa.
+    const vazou = escolhidos.filter((id) => {
+      const def = BOSSES.find((b) => b.id === id);
+      return (def.ato || 1) !== 2;
+    });
+
+    return { ondasComBoss, escolhidos, vidas, passos, ceifador, pressoes, durezas, ruinas, vazou,
+      quantos: deNadir.length };
+  })()`, mundo);
+
+  assert.deepEqual(Array.from(dados.ondasComBoss), [110, 120, 130, 140, 150, 160, 170, 180, 190, 200],
+    'boss de dez em dez, e nada depois da 200');
+  assert.equal(dados.quantos, 9, 'nove bosses de NÁDIR mais O ESPECTADOR na 200');
+  assert.equal(dados.escolhidos[9], 'espectador', 'a onda 200 é O ESPECTADOR');
+  assert.equal(new Set(Array.from(dados.escolhidos)).size, 10, 'nenhum boss repetido em NÁDIR');
+  assert.deepEqual(Array.from(dados.vazou), [], 'boss do Ato I caindo em NÁDIR');
+
+  // As cinco classes jogáveis, cada uma com a sua ruína.
+  assert.deepEqual(Array.from(dados.ruinas).sort(),
+    ['ARCANO', 'ESPECTRO', 'GUARDIÃO', 'INVOCADOR', 'SNIPER'],
+    'uma ruína por classe jogável, e o título diz de quem é');
+
+  // Rampa de vida.
+  assert.ok(dados.vidas[0] >= dados.ceifador,
+    'o primeiro boss de NÁDIR não pode ser mais fraco que o CEIFADOR — seria degrau para baixo');
+  for (const passo of dados.passos) {
+    assert.ok(passo >= 1.08 && passo <= 1.2,
+      'a vida sobe entre 1,08x e 1,2x por encontro (achei ' + passo.toFixed(3) + 'x)');
+  }
+  assert.ok(dados.vidas[8] / dados.ceifador > 2 && dados.vidas[8] / dados.ceifador < 3,
+    'o último antes da 200 fica entre 2x e 3x o CEIFADOR');
+
+  // Pressão sobe; dureza fica no teto, porque dureza manda em volume de tiro.
+  assert.deepEqual(Array.from(dados.pressoes), [1, 1.2, 1.4, 1.4], 'a pressão sobe até 1,4 e para');
+  for (const d of dados.durezas) {
+    assert.equal(d, 1, 'dureza no teto: esticar ela viraria anel de 89 projéteis');
+  }
+});
+
+/* Ranking. Quem atravessou a fenda venceu as 100 ondas, e isso não se perde se
+   a partida acabar em NÁDIR — era a primeira coisa que o Enzo perguntou. */
+test('run de NÁDIR conta no ranking, e morrer lá não apaga a vitória da Arena', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {},
+    Coop: { ativo: () => false },
+    Placar: { enviar() {} },
+    Perfil: { exibir: () => 'TESTE' },
+    UI: {
+      aviso() {}, mostrarBarraBoss() {}, esconderBarraBoss() {}, atualizarBarraBoss() {},
+      mostrarFinal(venceu, segredo, emNadir) { this.ultimoFinal = { venceu, segredo, emNadir }; },
+      atualizarHUD() {}, mostrarTela() {}, el: {}
+    } });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.LARGURA = 1280; Jogo.ALTURA = 720;
+    Particulas.iniciar();
+    // Os dublês entram DEPOIS de carregar: nucleo.js declara Recordes e Perfil
+    // com const, e const no arquivo sombreia o que veio no contexto.
+    const registradas = [];
+    Recordes.registrar = (e) => registradas.push(['local', e]);
+    Placar.enviar = (e) => registradas.push(['mundial', e]);
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.estat = { abates: 7, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 10 };
+
+    // Morte no Ato I: derrota comum.
+    Jogo.onda = 37; Jogo.pontos = 1000; Jogo.estado = 'jogando'; Jogo.atravessou = false;
+    Jogo.derrota();
+    const noAto1 = UI.ultimoFinal;
+
+    // Agora a mesma coisa, mas depois da travessia.
+    Jogo.estado = 'jogando'; Jogo.atravessou = true;
+    Jogo.onda = 137; Jogo.pontos = 90000;
+    Jogo.derrota();
+    const noAto2 = UI.ultimoFinal;
+    return { noAto1, noAto2, registradas };
+  })()`, mundo);
+
+  const registradas = dados.registradas;
+  const entradas = registradas.filter((r) => r[0] === 'local').map((r) => r[1]);
+  assert.equal(entradas.length, 2);
+  assert.equal(entradas[0].venceu, false, 'morrer no Ato I é derrota');
+  assert.equal(entradas[0].ato, 1);
+  assert.equal(entradas[1].venceu, true, 'quem atravessou já tinha vencido as 100 ondas');
+  assert.equal(entradas[1].ato, 2, 'a linha guarda o ato: onda 137 não é onda 37');
+  assert.equal(entradas[1].onda, 137, 'a onda vai por dentro, com o número corrido');
+  assert.ok(entradas[1].pontos > entradas[0].pontos);
+  assert.equal(registradas.filter((r) => r[0] === 'mundial').length, 2,
+    'as duas também vão para o placar mundial');
+  assert.equal(dados.noAto2.emNadir, true, 'a tela de fim sabe que a queda foi em NÁDIR');
+  assert.equal(dados.noAto2.venceu, true);
 });

@@ -163,9 +163,18 @@ guardados para uma continuação futura. Nenhuma revelação final deve aparecer
 
 ## Ordem recomendada de implementação
 
-1. Trocar fundo branco do segredo pelo Interstício Violeta e inserir diálogo da onda 100.
-2. Transformar O ESPECTADOR atual em encontro narrativo sem combate.
-3. Adicionar estado de campanha `nadir`, ondas 101–200 e checkpoints por região.
-4. Criar inimigos/personagens do Ato II por blocos de 20 ondas.
-5. Fazer o encontro impossível da onda 200 e encerrar com `AINDA NÃO É O BASTANTE`.
-6. Guardar fraqueza, identidade e final verdadeiro para expansão futura.
+1. ~~Trocar fundo branco do segredo pelo Interstício Violeta e inserir diálogo da onda 100.~~
+   **Feito** em 18/09/2026 (`Jogo.desenharIntersticio`, `Jogo.FALAS_DO_INTERSTICIO`).
+2. ~~Transformar O ESPECTADOR atual em encontro narrativo sem combate.~~ **Feito**: na onda 100
+   ele conversa e não ataca; a luta dele foi para a onda 200.
+3. ~~Adicionar estado de campanha `nadir` e ondas 101–200.~~ **Feito**
+   (`Jogo.atravessarFenda`, `dimensao: 'nadir'`, `Jogo.ondaDoAto`). Checkpoint por região
+   ainda não existe.
+4. ~~Criar inimigos do Ato II.~~ **Feito**: dez tipos, cinco deles ruínas das classes, mais
+   dez bosses — nove de NÁDIR e O ESPECTADOR na 200. Falta **Mara Voss, Íris-9 e O Órfão**,
+   que não lutam e só aparecem em transição; Véspera já entrou, como boss da onda 180.
+5. ~~Fazer o encontro impossível da onda 200 e encerrar com `AINDA NÃO É O BASTANTE`.~~
+   **Feito**.
+6. Guardar fraqueza, identidade e final verdadeiro para expansão futura. **Vale ainda.**
+7. Falta também: os hazards de região (gravidade da Cidade Invertida, paredes móveis,
+   escuridão viva do Mar Sem Fundo) e as mensagens-chave das ondas 120, 150, 180 e 199.

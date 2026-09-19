@@ -357,7 +357,7 @@ const UI = {
         const eu = r.nome === meu ? ' class="eu"' : '';
         return '<tr' + eu + '><td>' + (i + 1) + '</td><td class="nome">' + UI.escapar(r.nome) +
           '</td><td class="destaque">' + Number(r.pontos).toLocaleString('pt-BR') + '</td><td>' +
-          UI.escapar(r.classe) + '</td><td>' + r.onda + '</td><td>' + (r.venceu ? '🏆' : '') + '</td></tr>';
+          UI.escapar(r.classe) + '</td><td>' + UI.rotuloOnda(r.onda) + '</td><td>' + (r.venceu ? '🏆' : '') + '</td></tr>';
       }).join('') + '</tbody></table>';
   },
 
@@ -498,7 +498,7 @@ const UI = {
       lista.map((r, i) =>
         '<tr><td>' + (i + 1) + '</td><td class="nome">' + UI.escapar(r.nome || 'ANÔNIMO') +
         '</td><td class="destaque">' + r.pontos.toLocaleString('pt-BR') + '</td><td>' + r.classe +
-        '</td><td>' + r.onda + '</td><td>' + r.tempo + 's</td><td>' + (r.venceu ? '🏆' : '') + '</td></tr>'
+        '</td><td>' + UI.rotuloOnda(r.onda) + '</td><td>' + r.tempo + 's</td><td>' + (r.venceu ? '🏆' : '') + '</td></tr>'
       ).join('') + '</tbody></table>';
   },
 
@@ -529,15 +529,28 @@ const UI = {
   },
 
   /* ------------------------------- Final ------------------------------ */
-  mostrarFinal(venceu, segredo) {
+  /* Onda de uma linha de placar. Acima de 100 a corrida chegou a NÁDIR, e na
+     tabela isso aparece como "A2 37" — senão "137" numa coluna cujo teto todo
+     mundo aprendeu que era 100 parece erro. */
+  rotuloOnda(n) {
+    const o = Number(n) || 0;
+    return o > 100 ? 'A2 ' + (o - 100) : String(o);
+  },
+
+  mostrarFinal(venceu, segredo, emNadir) {
     const j = Jogo.jogador;
     if (segredo) {
-      UI.el.finalTitulo.textContent = 'VOCÊ VIU';
+      // Onda 200. Chegar até ele já é o recorde; vencer não está na mesa.
+      UI.el.finalTitulo.textContent = 'VOCÊ CHEGOU ATÉ ELE';
       UI.el.finalTitulo.className = 'segredo';
-      UI.el.finalSub.textContent = 'As 100 ondas caíram, o CEIFADOR caiu, e então apareceu ' +
-        'algo que não estava no jogo. O ESPECTADOR não tem barra para zerar: ele é imortal por ' +
-        'regra, não por dificuldade. Ninguém vence essa luta — e sua vitória das 100 ondas já ' +
-        'está registrada no placar.';
+      UI.el.finalSub.textContent = 'AINDA NÃO É O BASTANTE. Duzentas ondas, dois atos, e O ' +
+        'ESPECTADOR continua sem barra para zerar: ele é imortal por regra, não por ' +
+        'dificuldade. A corrida inteira está registrada no placar.';
+    } else if (emNadir && venceu) {
+      UI.el.finalTitulo.textContent = 'NÁDIR FICOU COM VOCÊ';
+      UI.el.finalTitulo.className = 'segredo';
+      UI.el.finalSub.textContent = 'Caiu em ' + Jogo.rotuloDaOnda() + '. A Arena já era sua — ' +
+        'as 100 ondas estão ganhas e contam no placar. O que faltou foi o outro lado da fenda.';
     } else {
       UI.el.finalTitulo.textContent = venceu ? 'ARENA DOMINADA' : 'VOCÊ CAIU';
       UI.el.finalTitulo.className = venceu ? 'vitoria' : 'derrota';
@@ -549,7 +562,9 @@ const UI = {
     const linhas = [
       ['PONTOS', Math.round(Jogo.pontos).toLocaleString('pt-BR')],
       ['CLASSE', j.classe.nome],
-      ['ONDA', segredo ? '100 + ???' : Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
+      ['ONDA', segredo ? '200 / 200' : Jogo.ato() === 2
+        ? 'ATO 2 · ' + Jogo.ondaDoAto() + ' / ' + Jogo.ONDAS_ATO2
+        : Jogo.onda + ' / ' + Jogo.TOTAL_ONDAS],
       ['NÍVEL', j.nivel],
       ['ABATES', Jogo.estat.abates],
       ['BOSSES', Jogo.estat.bosses],
@@ -770,10 +785,13 @@ const UI = {
     }
 
     UI.el.pontos.textContent = Math.round(Jogo.pontos).toLocaleString('pt-BR');
-    // No segredo não existe contagem de onda: a corrida já terminou.
+    // No Interstício não existe contagem de onda: a Arena acabou e NÁDIR ainda
+    // não começou. Em NÁDIR a contagem recomeça do 1, com o ato na frente.
     UI.el.onda.textContent = Jogo.segredo && Jogo.segredo.fase
       ? '???'
-      : Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
+      : Jogo.ato() === 2
+        ? 'A2 ' + Jogo.ondaDoAto() + '/' + Jogo.ONDAS_ATO2
+        : Jogo.onda + '/' + Jogo.TOTAL_ONDAS;
     UI.el.nivel.textContent = j.nivel;
     UI.el.barraXP.style.width = Mat.limitar(j.xp / j.xpProximo, 0, 1) * 100 + '%';
     UI.el.fps.textContent = Jogo.fps;

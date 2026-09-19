@@ -76,6 +76,9 @@ const Jogo = {
   // Quem leva o jogador para lá é só ele. Ver HISTORIA.md.
   dimensao: 'normal',
   segredo: { fase: null, tempo: 0, marco: 0 },
+  // Atravessou a fenda para NÁDIR? Quem atravessou já venceu as 100 ondas, e o
+  // ranking tem de saber disso mesmo que a partida acabe em morte no Ato II.
+  atravessou: false,
 
   flash: { alpha: 0, cor: '#fff' },
   festa67: null,        // o 67 gigante que aparece a cada boss derrubado
@@ -131,6 +134,7 @@ const Jogo = {
     Jogo.estat = { abates: 0, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 0 };
     Jogo.dimensao = 'normal';
     Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
+    Jogo.atravessou = false;
     Jogo.estado = 'jogando';
     Som.intensidade = 0;
     Jogo.prepararOnda();
@@ -145,8 +149,15 @@ const Jogo = {
   // Boss a cada 5 ondas até a 40. Depois disso as ondas ficam longas demais
   // para um boss a cada cinco: passa a ser de 10 em 10 — e a 100, o final.
   ehOndaDeBoss(onda) {
-    if (onda > Jogo.TOTAL_ONDAS) return false;
+    if (onda > Jogo.ondaFinalDaCampanha()) return false;
+    // NÁDIR mantém o ritmo de dez em dez: dez encontros, o último na onda 200.
+    if (onda > Jogo.TOTAL_ONDAS) return onda % 10 === 0;
     return onda <= 40 ? onda % 5 === 0 : onda % 10 === 0;
+  },
+
+  // Qual encontro de NÁDIR é esta onda, de 1 a 10. A 200 é o décimo.
+  encontroDeNadir(onda) {
+    return Math.round(((onda === undefined ? Jogo.onda : onda) - Jogo.TOTAL_ONDAS) / 10);
   },
 
   // Quantos bosses já apareceram até esta onda (usado para escolher qual vem
@@ -165,6 +176,20 @@ const Jogo = {
   ONDAS_ATO2: 100,                       // 101 a 200
   ato(onda) { return (onda === undefined ? Jogo.onda : onda) > Jogo.TOTAL_ONDAS ? 2 : 1; },
   ondaFinalDaCampanha() { return Jogo.TOTAL_ONDAS + Jogo.ONDAS_ATO2; },
+
+  /* A onda que o JOGADOR vê. Em NÁDIR a contagem recomeça: a onda 137 por
+     dentro é "ATO 2 · ONDA 37" na tela. Por dentro ela continua sendo 137,
+     porque é disso que a escala de vida, o elite e o boss vivem. */
+  ondaDoAto(onda) {
+    const o = onda === undefined ? Jogo.onda : onda;
+    return o > Jogo.TOTAL_ONDAS ? o - Jogo.TOTAL_ONDAS : o;
+  },
+  rotuloDaOnda(onda) {
+    const o = onda === undefined ? Jogo.onda : onda;
+    return Jogo.ato(o) === 2
+      ? 'ATO 2 · ONDA ' + Jogo.ondaDoAto(o)
+      : 'ONDA ' + o;
+  },
 
   // Tipos que a onda de agora pode sortear: do ato certo e já estreados.
   tiposDaOnda(onda) {
@@ -202,13 +227,22 @@ const Jogo = {
     if (Jogo.ehOndaDeBoss(Jogo.onda)) {
       Jogo.spawnRestante = 0;
       Som.intensidade = 1;
-      Jogo.aviso('⚠ ONDA ' + Jogo.onda + ' — BOSS');
+      Jogo.aviso('⚠ ' + Jogo.rotuloDaOnda() + ' — BOSS');
     } else {
       // Metade tranquila: até a onda 50 a arena enche devagar e dá para ler o
       // que está acontecendo. Da 50 em diante o orçamento acelera e a tela vira
       // o caos que o fim da campanha pede.
       const ate50 = Math.min(Jogo.onda, 50);
-      const depois50 = Math.max(0, Jogo.onda - 50);
+      /* O segundo termo tem teto, e em NÁDIR ele recomeça do começo do ato.
+         Dois motivos: sem teto a onda 200 pediria 363 inimigos, e com o limite
+         de 30 vivos na tela isso é uma onda de dez minutos; e herdar o
+         orçamento da onda 100 faria a PRIMEIRA onda de NÁDIR chegar com 153
+         bichos — isso não é dificuldade, é fila. Em NÁDIR a onda volta a
+         crescer; o que mantém o ato duro é a vida (multiplicadorVida conta a
+         onda corrida, 101 a 200) e os dez bosses. */
+      const depois50 = Jogo.ato() === 2
+        ? Mat.limitar(Jogo.ondaDoAto(), 0, 50)
+        : Mat.limitar(Jogo.onda - 50, 0, 50);
       const orcamento = Math.round(3 + ate50 * 0.9 + depois50 * 2.1);
       const disponiveis = Jogo.tiposDaOnda(Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
@@ -228,7 +262,8 @@ const Jogo = {
       Jogo.spawnRestante = Jogo.composicao.length;
       Som.intensidade = Mat.limitar(Jogo.onda / 42, 0, 0.8);
       const novo = disponiveis.find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
-      Jogo.aviso(novo ? 'ONDA ' + Jogo.onda + ' — ' + TIPOS_INIMIGO[novo].nome : 'ONDA ' + Jogo.onda);
+      const rotulo = Jogo.rotuloDaOnda();
+      Jogo.aviso(novo ? rotulo + ' — ' + TIPOS_INIMIGO[novo].nome : rotulo);
     }
     UI.atualizarHUD();
   },
@@ -253,13 +288,29 @@ const Jogo = {
     Jogo.spawnRestante--;
   },
 
+  // Rodízio do Ato I: os treze da Arena. O CEIFADOR (final) e O ESPECTADOR
+  // (secreto) ficam fora, e os bosses de NÁDIR também — aquele rodízio é só da
+  // Arena, e misturar os atos é o único jeito de quebrar a regra da história.
+  rodizioDoAto1() { return BOSSES.filter((b) => !b.final && !b.secreto && (b.ato || 1) === 1); },
+  bossesDeNadir() { return BOSSES.filter((b) => b.ato === 2 && !b.secreto); },
+
   spawnarBoss() {
     // O último da lista é o boss final: ele só aparece na onda 100 e fica de
     // fora do rodízio das ondas múltiplas de 5.
-    const rodizio = BOSSES.filter((b) => !b.final && !b.secreto);
-    const final = Jogo.onda >= Jogo.TOTAL_ONDAS;
+    const rodizio = Jogo.rodizioDoAto1();
+    const noAto2 = Jogo.ato() === 2;
+    // Onda 200: O ESPECTADOR, e ele é invencível por regra. Não é um boss duro,
+    // é o limite da história — ninguém vence, e a tela de fim diz isso.
+    const final = !noAto2 && Jogo.onda >= Jogo.TOTAL_ONDAS;
     const encontro = Jogo.encontroDeBoss(Jogo.onda) - 1;
-    const def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
+    let def;
+    if (noAto2) {
+      const deNadir = Jogo.bossesDeNadir();
+      const i = Jogo.encontroDeNadir(Jogo.onda) - 1;
+      def = i >= deNadir.length ? BOSSES.find((b) => b.secreto) : deNadir[i];
+    } else {
+      def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
+    }
     Jogo.boss = new Boss(def, Jogo.onda);
     Jogo.flashTela(final ? 0.9 : 0.5, def.cor);
     Camera.bater(final ? 40 : 20);
@@ -268,7 +319,9 @@ const Jogo = {
       Jogo.aviso(def.nome);
       Jogo.pararTempo(0.6);
     } else {
-      const ciclo = Math.floor(encontro / rodizio.length) + 1;
+      // ASCENSÃO é o rodízio dando a volta: o mesmo boss de novo, pior. Em
+      // NÁDIR nenhum boss repete, então lá o letreiro nunca leva número.
+      const ciclo = noAto2 ? 1 : Math.floor(encontro / rodizio.length) + 1;
       Jogo.aviso(def.nome + (ciclo > 1 ? ' · ASCENSÃO ' + ciclo : ''));
     }
     UI.mostrarBarraBoss(Jogo.boss);
@@ -335,38 +388,79 @@ const Jogo = {
     Jogo.aviso('');
   },
 
-  // Cinemática de quatro segundos: silêncio, aviso, nome, e ele aparece.
+  /* O encontro da onda 100 não é luta: é conversa. Ele aparece, fala, abre a
+     fenda e desaparece — a luta dele é na onda 200, no fim de NÁDIR. As falas
+     são as de HISTORIA.md, encurtadas para caber num letreiro. */
+  FALAS_DO_INTERSTICIO: [
+    [1.1, 'ISSO NÃO ESTAVA NO JOGO'],
+    [2.6, 'ELE ASSISTIU TUDO'],
+    [4.2, null],                                      // ele materializa
+    [6.4, '“CEM SALAS. QUATORZE GUARDIÕES.”'],
+    [9.0, '“JÁ VI VOCÊ MORRER COM TODOS ESSES ROSTOS.”'],
+    [11.6, '“GUARDEI TUDO. MEDO. RAIVA. INSTINTO.”'],
+    [14.2, '— ENTÃO DEVOLVA TODAS.'],
+    [16.4, '“VENHA BUSCÁ-LAS.”'],
+    [18.8, 'ATRAVESSE, CONDUTOR']
+  ],
+
+  // Cinemática: silêncio, aviso, nome, ele aparece, e a conversa corre.
   atualizarSegredo(dtReal) {
     const seg = Jogo.segredo;
     seg.tempo += dtReal;
-    if (seg.fase !== 'abertura') return;
+    if (seg.fase !== 'abertura' && seg.fase !== 'conversa') return;
 
-    if (seg.marco === 0 && seg.tempo > 1.1) {
-      seg.marco = 1;
-      Jogo.aviso('ISSO NÃO ESTAVA NO JOGO');
-      Camera.bater(10);
-      Som.segredo();
-    } else if (seg.marco === 1 && seg.tempo > 2.6) {
-      seg.marco = 2;
-      Jogo.aviso('ELE ASSISTIU TUDO');
-      Jogo.flashTela(0.5, '#ffffff');
-    } else if (seg.marco === 2 && seg.tempo > 4.2) {
-      seg.marco = 3;
-      seg.fase = 'luta';
-      const def = BOSSES.find((b) => b.secreto);
-      Jogo.boss = new Boss(def, Jogo.TOTAL_ONDAS);
-      // Ele não desce do topo como os outros: materializa no meio da arena,
-      // que é de onde o fundo desta dimensão está olhando.
-      Jogo.boss.x = Jogo.LARGURA / 2;
-      Jogo.boss.y = Jogo.ALTURA / 2;
-      Jogo.boss.baseY = Jogo.ALTURA / 2;
-      Jogo.boss.entrando = 0;
-      Jogo.flashTela(0.9, '#ffffff');
-      Camera.bater(30);
-      Som.bossEntra();
-      Jogo.aviso(def.nome);
-      UI.mostrarBarraBoss(Jogo.boss);
+    const falas = Jogo.FALAS_DO_INTERSTICIO;
+    while (seg.marco < falas.length && seg.tempo > falas[seg.marco][0]) {
+      const texto = falas[seg.marco][1];
+      seg.marco++;
+      if (texto === null) {
+        // Ele materializa no meio da arena — que é de onde o fundo desta
+        // dimensão está olhando — e fica imóvel. Sem barra, porque não é luta:
+        // durante a conversa o laço de entidades nem chama o atualizar dele.
+        seg.fase = 'conversa';
+        const def = BOSSES.find((b) => b.secreto);
+        Jogo.boss = new Boss(def, Jogo.ondaFinalDaCampanha());
+        Jogo.boss.x = Jogo.LARGURA / 2;
+        Jogo.boss.y = Jogo.ALTURA / 2;
+        Jogo.boss.baseY = Jogo.ALTURA / 2;
+        Jogo.boss.entrando = 0;
+        Jogo.flashTela(0.9, '#c04dff');
+        Camera.bater(30);
+        Som.bossEntra();
+        Jogo.aviso(def.nome);
+      } else {
+        Jogo.aviso(texto);
+        Camera.bater(8);
+        Som.segredo();
+      }
+      return;
     }
+
+    if (seg.marco >= falas.length && seg.tempo > falas[falas.length - 1][0] + 2.2) {
+      Jogo.atravessarFenda();
+    }
+  },
+
+  /* A fenda. Do outro lado a campanha CONTINUA: mesma partida, mesma build,
+     mesmo placar — a contagem de onda é que recomeça do 1, com ATO 2 na frente.
+     A vitória das 100 ondas já está registrada desde `abrirSegredo`; `atravessou`
+     garante que, se a partida acabar em NÁDIR, ela ainda conte como vencida. */
+  atravessarFenda() {
+    Jogo.atravessou = true;
+    Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
+    Jogo.boss = null;
+    UI.esconderBarraBoss();
+    Jogo.dimensao = 'nadir';
+    Jogo.onda = Jogo.TOTAL_ONDAS + 1;
+    Jogo.ondaLimpa = false;
+    Jogo.filaDeMelhorias = 0;
+    Jogo.flashTela(1, '#c04dff');
+    Camera.bater(40);
+    Camera.pulsar(1.12);
+    Jogo.pararTempo(0.8);
+    Som.intensidade = 1;
+    Jogo.prepararOnda();
+    Jogo.aviso('ATO 2 — NÁDIR');
   },
 
   /* Morrer para O ESPECTADOR não é derrota: a corrida já foi ganha antes dele
@@ -377,8 +471,11 @@ const Jogo = {
     Jogo.segredo.fase = 'fim';
     Som.gameOver();
     Camera.bater(30);
-    Jogo.flashTela(0.9, '#ffffff');
-    if (Jogo.jogador) Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, '#f4f6ff', 60, 620, 1.2, 6);
+    Jogo.flashTela(0.9, '#c04dff');
+    if (Jogo.jogador) Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, '#c04dff', 60, 620, 1.2, 6);
+    // Chegar até ele é a maior corrida que existe: entra no placar com a
+    // pontuação das 200 ondas, não com a das 100.
+    Jogo.registrarPartida(true);
     UI.mostrarFinal(true, true);
   },
 
@@ -725,7 +822,10 @@ const Jogo = {
       Jogo.intervaloOnda -= dtReal;
       if (Jogo.festa67) Jogo.intervaloOnda = Math.max(Jogo.intervaloOnda, 0.4);
       if (Jogo.intervaloOnda <= 0 && Jogo.ondaLimpa) {
-        if (Jogo.onda >= Jogo.TOTAL_ONDAS) { Jogo.vitoria(); return; }
+        // A 100 não encerra mais nada: derrubar o CEIFADOR abre o Interstício, e
+        // de lá a campanha atravessa para NÁDIR. Este ramo existe para a onda
+        // 200 — e ela só termina se O ESPECTADOR cair, o que não acontece.
+        if (Jogo.onda >= Jogo.ondaFinalDaCampanha()) { Jogo.vitoria(); return; }
         Jogo.onda++;
         Jogo.prepararOnda();
       } else if (Jogo.intervaloOnda <= 0 && Jogo.ehOndaDeBoss(Jogo.onda) && !Jogo.boss) {
@@ -754,7 +854,9 @@ const Jogo = {
       e.atualizar(dtMundo);
       if (!e.vivo) Jogo.inimigos.splice(i, 1);
     }
-    if (Jogo.boss) {
+    // Na conversa do Interstício ele está na tela e não faz nada: não anda, não
+    // atira, não cobra nada do jogador. É o único momento do jogo assim.
+    if (Jogo.boss && Jogo.segredo.fase !== 'conversa') {
       Jogo.boss.atualizar(dtMundo);
     }
 
@@ -963,7 +1065,9 @@ const Jogo = {
     UI.mostrarTela(null);
   },
   derrota() {
-    if (Jogo.segredo.fase === 'luta') { Jogo.fimDoSegredo(); return; }
+    // Cair para O ESPECTADOR não é derrota: é o fim da história, e tem tela
+    // própria. Quem decide isso é a invencibilidade dele, não a onda.
+    if (Jogo.boss && Jogo.boss.def.invencivel) { Jogo.fimDoSegredo(); return; }
     // A morte chega por mais de um caminho no mesmo quadro (dano, laço de
     // jogadores, colisão). Partida já encerrada não pode ser reescrita — era
     // isso que trocava o final do segredo por um GAME OVER comum.
@@ -973,8 +1077,10 @@ const Jogo = {
     Camera.bater(30);
     Jogo.flashTela(0.8, '#ff2b4d');
     if (Jogo.jogador) Particulas.explosao(Jogo.jogador.x, Jogo.jogador.y, Jogo.jogador.classe.cor, 60, 620, 1.2, 6);
-    Jogo.registrarPartida(false);
-    UI.mostrarFinal(false);
+    // Morrer em NÁDIR não apaga as 100 ondas: quem atravessou a fenda venceu a
+    // Arena, e a pontuação de agora é maior que a de lá.
+    Jogo.registrarPartida(Jogo.atravessou);
+    UI.mostrarFinal(Jogo.atravessou, false, true);
   },
   vitoria() {
     if (Jogo.estado === 'vitoria') return;
@@ -991,6 +1097,8 @@ const Jogo = {
       pontos: Math.round(Jogo.pontos),
       classe: Jogo.jogador.classe.nome,
       onda: Jogo.onda,
+      // O ato fica gravado: onda 137 no Ato II é outra coisa que onda 37.
+      ato: Jogo.ato(),
       nivel: Jogo.jogador.nivel,
       abates: Jogo.estat.abates,
       tempo: Math.round(Jogo.tempoJogo),
@@ -1144,6 +1252,7 @@ const Jogo = {
 
   desenharFundo(ctx) {
     if (Jogo.dimensao === 'intersticio') { Jogo.desenharIntersticio(ctx); return; }
+    if (Jogo.dimensao === 'nadir') { Jogo.desenharNadir(ctx); return; }
     // gradiente de base
     const g = ctx.createLinearGradient(0, 0, 0, Jogo.ALTURA);
     g.addColorStop(0, '#0a0d18');
@@ -1199,6 +1308,85 @@ const Jogo = {
      que nascem no centro e crescem, raios girando devagar, e uma moldura branca
      sem os cantos de mira — este lugar não é uma arena, é um lugar onde se
      assiste. Custa três gradientes e ~20 linhas por quadro. */
+  /* ---------------------------- NÁDIR -------------------------------- */
+  /* Fundo do Ato II. Não é a Arena com outra cor: a grade neon dá lugar a chão
+     rachado, névoa violeta e duas luas partidas. Mesma regra do Interstício —
+     nada de lista guardada, tudo sai de seno, porque fundo não aloca por
+     quadro (ver HISTORIA.md, "Ato II"). */
+  desenharNadir(ctx) {
+    const t = Jogo.tempo;
+
+    const g = ctx.createLinearGradient(0, 0, 0, Jogo.ALTURA);
+    g.addColorStop(0, '#0a0318');
+    g.addColorStop(0.55, '#12062a');
+    g.addColorStop(1, '#05010d');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
+
+    // Duas luas partidas, paradas no céu do lugar.
+    ctx.save();
+    for (let i = 0; i < 2; i++) {
+      const cx = i ? Jogo.LARGURA * 0.78 : Jogo.LARGURA * 0.19;
+      const cy = i ? Jogo.ALTURA * 0.2 : Jogo.ALTURA * 0.13;
+      const r = i ? 54 : 88;
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = '#d9a0ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Mat.TAU);
+      ctx.fill();
+      // A racha: um pedaço da lua está fora de lugar.
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = '#05010d';
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy + r * 0.1);
+      ctx.lineTo(cx + r, cy - r * 0.25);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.lineTo(cx - r, cy + r);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Chão fragmentado: placas irregulares em vez da grade quadrada da Arena.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150,70,255,.13)';
+    ctx.lineWidth = 1;
+    const passo = 150;
+    ctx.beginPath();
+    for (let x = 0; x <= Jogo.LARGURA; x += passo) {
+      for (let y = 0; y <= Jogo.ALTURA; y += passo) {
+        const d = Math.sin((x + y) * 0.013) * 26;
+        ctx.moveTo(x + d, y);
+        ctx.lineTo(x + passo * 0.62 + d, y + passo * 0.38);
+        ctx.lineTo(x + passo, y + d * 0.4);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Névoa: três faixas largas passando devagar, sem piscar.
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const y = ((t * 7 + i * 340) % (Jogo.ALTURA + 300)) - 150;
+      const faixa = ctx.createLinearGradient(0, y - 90, 0, y + 90);
+      faixa.addColorStop(0, 'rgba(120,40,200,0)');
+      faixa.addColorStop(0.5, 'rgba(120,40,200,.07)');
+      faixa.addColorStop(1, 'rgba(120,40,200,0)');
+      ctx.fillStyle = faixa;
+      ctx.fillRect(0, y - 90, Jogo.LARGURA, 180);
+    }
+    ctx.restore();
+
+    // Moldura: violeta, e não o ciano da Arena — o lugar não é o mesmo.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(170,80,255,.34)';
+    ctx.shadowBlur = Jogo.modoLeve ? 0 : 24;
+    ctx.shadowColor = '#a850ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(2, 2, Jogo.LARGURA - 4, Jogo.ALTURA - 4);
+    ctx.restore();
+  },
+
   /* ------------------- O INTERSTÍCIO VIOLETA ------------------------- */
   /* Fundo do encontro com O ESPECTADOR, e a primeira coisa que o jogador vê
      quando a Arena racha. Não é claro nem branco: preto-violeta sem horizonte,

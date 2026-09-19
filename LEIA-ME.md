@@ -210,9 +210,92 @@ de quem invocou). Sem teto, a onda nunca terminaria: o spawn correria atrás do 
 sempre. Vida base fica na faixa do Ato I de propósito — na onda 101 o `multiplicadorVida`
 já está perto de 5×, e é ele que faz NÁDIR doer.
 
-**O que ainda não existe:** a campanha não chega à onda 101. Falta a travessia da fenda
-(o diálogo do Interstício), os bosses das cinco regiões, os personagens novos (Mara Voss,
-Íris-9, O Órfão, Véspera) e o encontro da onda 200. Ordem em `HISTORIA.md`.
+**O que ainda não existe:** Mara Voss, Íris-9 e O Órfão — os três personagens que falam
+entre capítulos — e os hazards de cada região (gravidade da Cidade Invertida, escuridão do
+Mar Sem Fundo). Véspera já existe, como boss da onda 180. Ordem em `HISTORIA.md`.
+
+## A campanha tem dois atos
+
+| | Ato I — Arena Neon | Ato II — NÁDIR |
+|---|---|---|
+| Ondas por dentro | 1 a 100 | 101 a 200 |
+| Ondas na tela | `ONDA 37` | `ATO 2 · ONDA 37` |
+| Boss | de 5 em 5 até a 40, de 10 em 10 depois | de 10 em 10, dez encontros |
+| Inimigos | os doze da Arena | as cinco ruínas e os cinco de NÁDIR |
+| Fundo | grade neon | chão rachado, névoa violeta, luas partidas |
+
+`Jogo.onda` **nunca reinicia**: por dentro a campanha conta 1 a 200 corrido, porque é disso
+que vivem a escala de vida (`multiplicadorVida`), a chance de elite e o encontro de boss.
+Quem reinicia é a tela: `Jogo.ondaDoAto()` e `Jogo.rotuloDaOnda()`. No placar a mesma coisa
+— a linha guarda `onda: 137` e `ato: 2`, e a tabela mostra `A2 37`.
+
+### A travessia
+
+Derrubar o CEIFADOR na onda 100 **não encerra mais a partida**. A vitória das 100 ondas é
+registrada ali (`abrirSegredo` → `registrarPartida(true)`), a arena esvazia e o jogo vai para
+o Interstício Violeta, onde O ESPECTADOR aparece e **conversa** — as falas de `HISTORIA.md`,
+em `Jogo.FALAS_DO_INTERSTICIO`. Ele fica imóvel e não ataca: durante `fase === 'conversa'` o
+laço de entidades nem chama o `atualizar` dele. É o único momento do jogo assim.
+
+No fim da conversa, `Jogo.atravessarFenda()`: mesma partida, mesma build, mesmos pontos,
+`dimensao = 'nadir'`, `onda = 101` e `atravessou = true`. Daí em diante a campanha corre
+normal até a 200.
+
+### O orçamento da onda recomeça
+
+Herdar o orçamento da onda 100 faria a primeira onda de NÁDIR chegar com 153 inimigos, o que
+não é dificuldade, é fila. Em NÁDIR o segundo termo do orçamento conta a onda **do ato**: 50
+inimigos na primeira, 153 no fim. O que mantém o ato duro é a vida (que conta a onda corrida,
+101 a 200) e os dez bosses.
+
+### Bosses de NÁDIR
+
+| Onda | Na tela | Boss | Vida |
+|---|---|---|---|
+| 110 | A2 10 | **O PRIMEIRO TIRO** — Ruína do SNIPER | 158 mil |
+| 120 | A2 20 | **A MURALHA QUE CEDEU** — Ruína do GUARDIÃO | 175 mil |
+| 130 | A2 30 | **O JARDINEIRO DE OSSOS** — Jardim de Ossos | 197 mil |
+| 140 | A2 40 | **O QUE PISCA DUAS VEZES** — Ruína do ESPECTRO | 221 mil |
+| 150 | A2 50 | **O PRUMO INVERTIDO** — Cidade Invertida | 248 mil |
+| 160 | A2 60 | **O CÍRCULO QUEBRADO** — Ruína do ARCANO | 279 mil |
+| 170 | A2 70 | **A BOCA DO MAR** — Mar Sem Fundo | 314 mil |
+| 180 | A2 80 | **VÉSPERA** — a Primeira Condutora | 356 mil |
+| 190 | A2 90 | **O QUE AINDA CHAMA** — Ruína do INVOCADOR | 401 mil |
+| 200 | A2 100 | **O ESPECTADOR** — o autor do fim | imortal |
+
+A vida não foi chutada: o CEIFADOR, com a escala da própria campanha, tem **154.392** na onda
+100. O primeiro de NÁDIR empata com ele e cada encontro sobe ~1,12×, até 2,6× o CEIFADOR na
+onda 190. Começar abaixo dele seria degrau para baixo depois da luta mais dura do jogo; subir
+1,3× por encontro faria a onda 190 durar dez minutos. Um teste trava a faixa.
+
+**O que NÃO cresce em NÁDIR é a `dureza`.** Ela manda em volume de projétil, tamanho de leque
+e quantos ataques a fase libera, e esses números foram medidos no teto do Ato I — esticar
+para 1,9 daria anel de 89 projéteis, o que não é dificuldade, é tela branca. O que cresce é
+a **pressão** (`Boss.pressao`): o boss ataca mais vezes, com os mesmos ataques. De 1,0 na onda
+110 a 1,4 na 190, e a onda 200 herda o teto.
+
+Vida de boss de NÁDIR também olha o **nível do jogador** (`Boss.pesoDoNivel`, até +30%), o que
+nenhum boss do Ato I faz. Em NÁDIR não existe mais nível esperado: quem atravessa pode estar
+no 28 ou no 45, e a mesma barra seria muro para um e trâmite para o outro.
+
+### A onda 200
+
+O ESPECTADOR volta, como boss da onda 200, e continua **invencível por regra**: `receberDano`
+devolve sem tocar na barra. Não existe final disponível — cair para ele mostra
+**VOCÊ CHEGOU ATÉ ELE / AINDA NÃO É O BASTANTE**, e a corrida inteira (200 ondas) entra no
+placar. Quem decide que aquela morte tem tela própria é a invencibilidade dele, não o número
+da onda.
+
+### Ranking dos dois atos
+
+- Quem atravessou a fenda venceu a Arena. Morrer em NÁDIR registra `venceu: true`, porque
+  `Jogo.atravessou` fica gravado — senão uma queda na onda 137 apagaria a vitória das 100.
+- A run entra **duas vezes** no placar, e isso é de propósito: uma na onda 100, no momento em
+  que a vitória é ganha (se o navegador fechar em NÁDIR, ela não se perde), e outra no fim de
+  verdade, com a pontuação maior. A segunda é que fica no topo.
+- O teto de onda do placar subiu para 200 na API (`api/placar.js`) **e** no banco
+  (migração `005_placar_dois_atos.sql`). Se a migração não rodar, o CHECK recusa toda linha do
+  Ato II — e recusa exatamente as melhores.
 
 ## Quem é o mais forte
 

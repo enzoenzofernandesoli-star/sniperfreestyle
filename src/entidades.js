@@ -1620,9 +1620,148 @@ const BOSSES = [
      As fases dele passam por TEMPO (`fasesPorTempo`), não por vida — vida que
      não cai nunca trocaria de fase. A cada 18 segundos ele fica pior.
      ---------------------------------------------------------------------- */
+  /* ===================== BOSSES DO ATO II — NÁDIR ======================
+
+     Um a cada dez ondas: 110, 120, ... 190, e a onda 200 é O ESPECTADOR.
+     Cinco deles são as classes jogáveis apodrecidas, e lutam como a classe
+     lutava — quem jogou de ESPECTRO reconhece de quem é o passo. Os outros
+     quatro são de NÁDIR: o senhor de cada região e VÉSPERA, a primeira
+     Condutora (ver HISTORIA.md).
+
+     `ato: 2` é o que os mantém fora do rodízio do Ato I.
+
+     A vida não foi chutada: o CEIFADOR, com a escala da própria campanha, tem
+     154.392 de vida na onda 100. O primeiro de NÁDIR empata com ele (~157 mil)
+     e cada encontro seguinte sobe ~1,12×, até ~2,6× o CEIFADOR na onda 190.
+     Começar abaixo dele seria degrau para baixo depois da luta mais dura do
+     jogo; subir 1,3× por encontro faria a onda 190 durar dez minutos. */
+
   {
-    id: 'espectador', nome: 'O ESPECTADOR', titulo: 'Esteve aqui desde a onda 1',
-    secreto: true, invencivel: true, fasesPorTempo: 18,
+    id: 'ruinaPrimeiroTiro',
+    nome: 'O PRIMEIRO TIRO',
+    titulo: 'Ruína do SNIPER',
+    ato: 2,
+    cor: '#b06cff', cor2: '#2a0d4d',
+    raio: 62, vida: 20800, lados: 5,
+    fases: [
+      { movimento: 'teleporte', velocidade: 210, ataques: ['unico', 'precisao'], recarga: 1.0 },
+      { movimento: 'emboscada', velocidade: 280, ataques: ['precisao', 'cacador', 'laser'], recarga: 0.72 },
+      { movimento: 'teleporte', velocidade: 330, ataques: ['precisao', 'laser', 'parede', 'cacador'], recarga: 0.52 }
+    ]
+  },
+  {
+    id: 'ruinaMuralha',
+    nome: 'A MURALHA QUE CEDEU',
+    titulo: 'Ruína do GUARDIÃO',
+    ato: 2,
+    cor: '#8f8aa8', cor2: '#2b2740',
+    raio: 82, vida: 22400, lados: 4,
+    fases: [
+      { movimento: 'horizontal', velocidade: 190, ataques: ['anel', 'leque'], recarga: 1.05 },
+      { movimento: 'investida', velocidade: 240, ataques: ['anel', 'parede', 'cruz'], recarga: 0.8 },
+      { movimento: 'cerco', velocidade: 1.3, ataques: ['anel', 'parede', 'cruz', 'chuva'], recarga: 0.6 }
+    ]
+  },
+  {
+    id: 'jardineiroDeOssos',
+    nome: 'O JARDINEIRO DE OSSOS',
+    titulo: 'Senhor do Jardim de Ossos',
+    ato: 2,
+    cor: '#d9cdbb', cor2: '#4a3f33',
+    raio: 74, vida: 24500, lados: 7,
+    convoca: ['costelaViva', 'larvaNadir'],
+    fases: [
+      { movimento: 'senoidal', velocidade: 200, ataques: ['invocar', 'chuva'], recarga: 1.0 },
+      { movimento: 'cerco', velocidade: 1.2, ataques: ['invocar', 'chuva', 'minas'], recarga: 0.76 },
+      { movimento: 'cerco', velocidade: 1.6, ataques: ['invocar', 'minas', 'espiral', 'cacador'], recarga: 0.56 }
+    ]
+  },
+  {
+    id: 'ruinaDuasVezes',
+    nome: 'O QUE PISCA DUAS VEZES',
+    titulo: 'Ruína do ESPECTRO',
+    ato: 2,
+    cor: '#e14dff', cor2: '#3d0a4d',
+    raio: 56, vida: 26800, lados: 5,
+    velocidadeTiro: 1.25,
+    fases: [
+      { movimento: 'teleporte', velocidade: 300, ataques: ['leque3', 'precisao'], recarga: 0.86 },
+      { movimento: 'emboscada', velocidade: 380, ataques: ['precisao', 'cruz', 'espiral'], recarga: 0.62 },
+      { movimento: 'emboscada', velocidade: 440, ataques: ['precisao', 'cruz', 'espiral', 'todosOsLados'], recarga: 0.44 }
+    ]
+  },
+  {
+    id: 'prumoInvertido',
+    nome: 'O PRUMO INVERTIDO',
+    titulo: 'Senhor da Cidade Invertida',
+    ato: 2,
+    cor: '#b84dff', cor2: '#2e0a4d',
+    raio: 70, vida: 29400, lados: 8,
+    fases: [
+      { movimento: 'circular', velocidade: 1.7, ataques: ['parede', 'anel'], recarga: 0.94 },
+      { movimento: 'caotico', velocidade: 340, ataques: ['parede', 'cruz', 'anel'], recarga: 0.7 },
+      { movimento: 'circular', velocidade: 2.3, ataques: ['parede', 'cruz', 'espiral', 'minas'], recarga: 0.5 }
+    ]
+  },
+  {
+    id: 'ruinaCirculoQuebrado',
+    nome: 'O CÍRCULO QUEBRADO',
+    titulo: 'Ruína do ARCANO',
+    ato: 2,
+    cor: '#ff4da6', cor2: '#4d0f2e',
+    raio: 66, vida: 32200, lados: 6,
+    volumeExtra: 1.15,
+    fases: [
+      { movimento: 'circular', velocidade: 1.5, ataques: ['espiral', 'anel'], recarga: 0.9 },
+      { movimento: 'perseguir', velocidade: 250, ataques: ['espiral', 'anel', 'todosOsLados'], recarga: 0.66 },
+      { movimento: 'caotico', velocidade: 360, ataques: ['espiral', 'todosOsLados', 'parede', 'laser'], recarga: 0.46 }
+    ]
+  },
+  {
+    id: 'bocaDoMar',
+    nome: 'A BOCA DO MAR',
+    titulo: 'Fundo do Mar Sem Fundo',
+    ato: 2,
+    cor: '#6a57b5', cor2: '#120d24',
+    raio: 98, vida: 35500, lados: 10,
+    fases: [
+      { movimento: 'senoidal', velocidade: 170, ataques: ['chuva', 'parede'], recarga: 0.92 },
+      { movimento: 'cerco', velocidade: 1.2, ataques: ['chuva', 'parede', 'laser'], recarga: 0.68 },
+      { movimento: 'cerco', velocidade: 1.7, ataques: ['chuva', 'parede', 'laser', 'todosOsLados', 'minas'], recarga: 0.46 }
+    ]
+  },
+  {
+    id: 'vespera',
+    nome: 'VÉSPERA',
+    titulo: 'A Primeira Condutora',
+    ato: 2,
+    cor: '#ff2e8a', cor2: '#4d0020',
+    raio: 58, vida: 39300, lados: 3,
+    velocidadeTiro: 1.35,
+    fases: [
+      { movimento: 'investida', velocidade: 330, ataques: ['precisao', 'leque3'], recarga: 0.8 },
+      { movimento: 'caotico', velocidade: 420, ataques: ['precisao', 'cacador', 'cruz'], recarga: 0.58 },
+      { movimento: 'emboscada', velocidade: 470, ataques: ['precisao', 'cacador', 'cruz', 'espiral'], recarga: 0.42 },
+      { movimento: 'caotico', velocidade: 520, ataques: ['precisao', 'cacador', 'cruz', 'espiral', 'laser', 'minas'], recarga: 0.3 }
+    ]
+  },
+  {
+    id: 'ruinaQueChama',
+    nome: 'O QUE AINDA CHAMA',
+    titulo: 'Ruína do INVOCADOR',
+    ato: 2,
+    cor: '#6f4dff', cor2: '#1a0f4d',
+    raio: 76, vida: 43400, lados: 7,
+    convoca: ['larvaNadir', 'costelaViva', 'vigiaDoTrono', 'oInvertido'],
+    fases: [
+      { movimento: 'cerco', velocidade: 1.2, ataques: ['invocar', 'anel'], recarga: 0.88 },
+      { movimento: 'cerco', velocidade: 1.6, ataques: ['invocar', 'anel', 'cacador', 'chuva'], recarga: 0.62 },
+      { movimento: 'teleporte', velocidade: 320, ataques: ['invocar', 'espiral', 'laser', 'chuva', 'minas'], recarga: 0.42 }
+    ]
+  },
+  {
+    id: 'espectador', nome: 'O ESPECTADOR', titulo: 'O autor do fim',
+    ato: 2, secreto: true, invencivel: true, fasesPorTempo: 18,
     velocidadeTiro: 1.5, volumeExtra: 1.5,
     cor: '#f4f6ff', cor2: '#05050a', raio: 118, vida: 1, lados: 12,
     fases: [
@@ -1670,6 +1809,28 @@ class Boss {
     return Mat.limitar(0.35 + ((onda - 50) / 40) * 0.65, 0, 1);
   }
 
+  /* Ato II não estica `dureza` acima de 1, e isso é de propósito: dureza manda
+     em volume de projétil, tamanho de leque e quantos ataques a fase libera, e
+     esses números foram medidos no teto do Ato I. Esticar para 1,9 daria anel
+     de 89 projéteis — não é dificuldade, é tela branca.
+
+     O que cresce em NÁDIR é a PRESSÃO: o boss ataca mais vezes, com os mesmos
+     ataques. Vai de 1,0 no primeiro encontro (onda 110) a 1,4 no último antes
+     do fim (onda 190), e a onda 200 herda o teto. */
+  static pressao(onda) {
+    if (onda <= Jogo.TOTAL_ONDAS) return 1;
+    return 1 + Mat.limitar((onda - 110) / 80, 0, 1) * 0.4;
+  }
+
+  /* Vida de boss do Ato II também olha o NÍVEL do jogador, o que nenhum boss do
+     Ato I faz. Motivo: em NÁDIR não existe mais "nível esperado" — quem
+     atravessou a fenda pode estar no 28 ou no 45, e a mesma barra seria um muro
+     para um e um trâmite para o outro. Teto de 30% para isso continuar sendo
+     tempero, e não castigo por ter jogado bem. */
+  static pesoDoNivel(nivel) {
+    return 1 + Mat.limitar((nivel - 20) * 0.012, 0, 0.3);
+  }
+
   // O quanto ESTE boss aperta, entre APERTO_MIN e APERTO_MAX. O final ignora a
   // faixa e usa DIFICULDADE cheia.
   get aperto() {
@@ -1689,14 +1850,23 @@ class Boss {
     this.direcao = 1;
     this.raio = def.raio;
     const encontro = Math.max(1, Math.floor(onda / 5));
-    this.ascensao = Math.floor((encontro - 1) / BOSSES.length);
+    /* Ascensão é repetição de rodízio: quando o mesmo boss volta, volta pior.
+       A conta é sobre o tamanho do RODÍZIO, não sobre BOSSES.length — a lista
+       cresceu com NÁDIR, e usar o tamanho dela desligaria em silêncio a
+       ascensão dos últimos bosses da Arena. Em NÁDIR cada um dos dez aparece
+       uma única vez, logo ascensão lá é sempre 0. */
+    const voltas = def.ato === 2 ? 0 : Jogo.rodizioDoAto1().length;
+    this.ascensao = voltas ? Math.floor((encontro - 1) / voltas) : 0;
     this.ritmoAscensao = Math.max(0.72, 1 - this.ascensao * 0.035);
     this.impetoAscensao = Math.min(1.18, 1 + this.ascensao * 0.025);
     const escala = 1 + Math.min(encontro - 1, 7) * 0.13 + Math.pow(Math.max(0, encontro - 8), 0.78) * 0.09;
     // Boss final ignora a rampa: ele é o teto, não um degrau.
     this.dureza = def.final ? 1 : Boss.dureza(onda);
     const vidaExtra = def.final ? Boss.VIDA_MAX : Mat.misturar(Boss.VIDA_MIN, Boss.VIDA_MAX, this.dureza);
-    this.vidaMax = def.vida * escala * vidaExtra;
+    // Pressão e peso de nível só existem no Ato II; no Ato I os dois valem 1.
+    this.pressao = Boss.pressao(onda);
+    this.pesoNivel = def.ato === 2 && Jogo.jogador ? Boss.pesoDoNivel(Jogo.jogador.nivel) : 1;
+    this.vidaMax = def.vida * escala * vidaExtra * this.pesoNivel;
     this.vida = this.vidaMax;
     this.faseIndice = 0;
     this.fase = def.fases[0];
@@ -1929,7 +2099,7 @@ class Boss {
       // de ler o padrão, o fim não dá.
       const doEncontro = 1.6 - this.dureza * 0.75;
       this.recarga = f.recarga * Boss.RITMO_ATAQUE * daFase * doEncontro * ritmo
-        * this.ritmoAscensao / this.aperto * Mat.aleatorio(0.85, 1.15);
+        * this.ritmoAscensao / this.aperto / this.pressao * Mat.aleatorio(0.85, 1.15);
     }
 
     // laser em varredura
@@ -2155,8 +2325,13 @@ class Boss {
         const quantos = this.volume(1, 2) + this.faseIndice;
         for (let i = 0; i < quantos; i++) {
           const a = Math.random() * Mat.TAU;
+          // Elenco do ato: em NÁDIR o boss não pode chamar bicho da Arena, que
+          // ficou do outro lado da fenda. `convoca` na def manda, se existir.
+          const elenco = this.def.convoca || (Jogo.ato() === 2
+            ? ['larvaNadir', 'costelaViva', 'vigiaDoTrono']
+            : ['corredor', 'atirador', 'kamikaze', 'lanceiro', 'enxame']);
           Jogo.inimigos.push(new Inimigo(
-            Mat.escolher(['corredor', 'atirador', 'kamikaze', 'lanceiro', 'enxame']),
+            Mat.escolher(elenco),
             this.x + Math.cos(a) * (this.raio + 40),
             this.y + Math.sin(a) * (this.raio + 40)
           ));

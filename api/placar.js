@@ -115,7 +115,9 @@ module.exports = async function (req, res) {
     }
 
     const pontos = inteiro(corpo.pontos, 0, 5000000);
-    const onda = inteiro(corpo.onda, 1, 100);   // a corrida termina na onda 100
+    // Dois atos: 1 a 100 é a Arena, 101 a 200 é NÁDIR. O CHECK do banco tem o
+    // mesmo teto (migração 005) — baixar um sem o outro recusa run do Ato II.
+    const onda = inteiro(corpo.onda, 1, 200);
     const nivel = inteiro(corpo.nivel, 1, 99) || 1;
     const tempo = inteiro(corpo.tempo, 0, 86400);
     const abates = inteiro(corpo.abates, 0, 100000);

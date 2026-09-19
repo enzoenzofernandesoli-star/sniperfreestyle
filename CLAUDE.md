@@ -43,9 +43,27 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
   `ATUALIZACOES`. Acrescentar uma entrada zera o placar mundial e o local. Não crie botão de
   zerar placar.
 - **O ESPECTADOR** (`secreto: true`) é invencível por regra: `receberDano` devolve sem tocar
-  na barra. Não "conserte" isso, não dê vida balanceada a ele e não o coloque no rodízio.
-  Quem o chama é `Jogo.abrirSegredo()`, depois do CEIFADOR cair — e a vitória das 100 ondas é
-  registrada antes dele aparecer.
+  na barra. Não "conserte" isso, não dê vida balanceada a ele e não o coloque em rodízio
+  nenhum. Ele aparece duas vezes: na onda 100, no Interstício, onde **conversa e não luta**
+  (durante `segredo.fase === 'conversa'` o laço nem chama o `atualizar` dele), e na onda 200,
+  onde luta e não pode ser vencido. A vitória das 100 ondas continua sendo registrada antes
+  da primeira aparição.
+
+- **`Jogo.onda` conta 1 a 200 corrido e não reinicia.** A contagem que recomeça no Ato II é só
+  a da tela (`Jogo.ondaDoAto`, `Jogo.rotuloDaOnda`, `UI.rotuloOnda`). Reiniciar o número de
+  verdade quebraria de uma vez a escala de vida, a chance de elite e o encontro de boss.
+
+- **Ato II conta no ranking** (pedido do Enzo, 18/09/2026). Quem atravessou a fenda venceu a
+  Arena: `Jogo.atravessou` faz a morte em NÁDIR registrar `venceu: true`. A run entra duas
+  vezes de propósito — uma na onda 100, quando a vitória é ganha, e outra no fim real, com
+  mais pontos. Teto de onda do placar é 200 na API **e** no banco (migração 005): baixar um
+  sem o outro recusa em silêncio justamente as melhores runs.
+
+- **Em NÁDIR cresce a pressão, não a `dureza`.** `dureza` manda em volume de projétil, leque e
+  quantos ataques a fase libera, medidos no teto do Ato I; esticar para 1,9 dá anel de 89
+  projéteis. O que sobe é `Boss.pressao` (1,0 → 1,4), que é frequência de ataque, mais a vida
+  (~1,12× por encontro, ancorada nos 154.392 do CEIFADOR) e `Boss.pesoDoNivel` (até +30% de
+  vida pelo nível do jogador, só no Ato II).
 - **`HISTORIA.md` é a fonte da verdade da narrativa.** Nome de inimigo, fala, cor de ato,
   quem aparece em qual região: sai de lá. Inventar narrativa fora dela cria contradição —
   se algo precisa mudar, muda o arquivo primeiro.
