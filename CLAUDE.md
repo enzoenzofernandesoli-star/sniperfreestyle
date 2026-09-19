@@ -14,6 +14,7 @@ Repositório: `https://github.com/enzoenzofernandesoli-star/sniperfreestyle`
 | `COOPERATIVO.md` | Qualquer coisa de sala, online, multiplayer ou snapshot |
 | `src/versao.js` | Publicar versão, mexer no histórico ou na temporada do ranking |
 | `GOOGLE-PLAY.md` | Publicação Android, PWA, ícones, política |
+| `HISTORIA.md` | Qualquer coisa de narrativa: nome, fala, personagem, região, ato |
 
 O roteiro de trabalho e os próximos passos ficam no Segundo Cérebro, em
 `Desktop\Segundo cerebro\Playbooks\Sniper-Cooperativo.md`.
@@ -45,6 +46,20 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
   na barra. Não "conserte" isso, não dê vida balanceada a ele e não o coloque no rodízio.
   Quem o chama é `Jogo.abrirSegredo()`, depois do CEIFADOR cair — e a vitória das 100 ondas é
   registrada antes dele aparecer.
+- **`HISTORIA.md` é a fonte da verdade da narrativa.** Nome de inimigo, fala, cor de ato,
+  quem aparece em qual região: sai de lá. Inventar narrativa fora dela cria contradição —
+  se algo precisa mudar, muda o arquivo primeiro.
+
+- **Os atos não se misturam.** `ato: 1` é a Arena Neon (ondas 1–100), `ato: 2` é NÁDIR
+  (101–200). `Jogo.tiposDaOnda` é a única porta de sorteio de inimigo, e ela filtra por ato:
+  nenhum bicho do Ato I aparece em NÁDIR e nenhuma ruína vaza para a Arena. Isso é pedido do
+  Enzo, de 18/09/2026, e um teste varre as 200 ondas. Inimigo novo nasce com `ato` — sem ele
+  o filtro assume Ato I e o bicho vaza para a Arena em silêncio.
+
+- **As cinco ruínas são as classes jogáveis apodrecidas**, uma por classe, com o jeito de
+  lutar preservado: quem jogou de SNIPER reconhece o tiro que está tomando. Corpo comido vem
+  de `podre: true`, sorteado **uma vez** no construtor (`mordidas`), nunca no desenho.
+
 - **O aviso de atualização é obrigatório.** Pedido do Enzo em 18/09/2026: saiu versão nova, a
   faixa desce na tela sozinha, sem o jogador ir procurar. Duas coisas a sustentam e quebram em
   silêncio: `sw.js` deixa passar direto todo pedido com `?atualizacao=` na query, e nenhum

@@ -872,60 +872,134 @@ class Projetil {
 const TIPOS_INIMIGO = {
   corredor: {
     nome: 'CORREDOR', cor: '#ff5470', cor2: '#7a0f27', raio: 17, vida: 30, velocidade: 150,
-    dano: 1, xp: 8, pontos: 10, lados: 3, comportamento: 'perseguir', desde: 1
+    dano: 1, xp: 8, pontos: 10, lados: 3, comportamento: 'perseguir', ato: 1, desde: 1
   },
   atirador: {
     nome: 'ATIRADOR', cor: '#c874ff', cor2: '#4b177a', raio: 19, vida: 54, velocidade: 115,
-    dano: 1, xp: 16, pontos: 25, lados: 5, comportamento: 'atirar', desde: 2,
+    dano: 1, xp: 16, pontos: 25, lados: 5, comportamento: 'atirar', ato: 1, desde: 2,
     distanciaIdeal: 320, recarga: 2.2, projetilVel: 360
   },
   bruto: {
     nome: 'BRUTO', cor: '#ff8c42', cor2: '#7a3a0f', raio: 30, vida: 140, velocidade: 74,
-    dano: 2, xp: 22, pontos: 30, lados: 6, comportamento: 'perseguir', desde: 3, resiste: 0.65
+    dano: 2, xp: 22, pontos: 30, lados: 6, comportamento: 'perseguir', ato: 1, desde: 3, resiste: 0.65
   },
   kamikaze: {
     nome: 'KAMIKAZE', cor: '#ffe14d', cor2: '#7a6a0f', raio: 15, vida: 26, velocidade: 255,
-    dano: 2, xp: 15, pontos: 22, lados: 4, comportamento: 'kamikaze', desde: 4, raioExplosao: 88
+    dano: 2, xp: 15, pontos: 22, lados: 4, comportamento: 'kamikaze', ato: 1, desde: 4, raioExplosao: 88
   },
   divisor: {
     nome: 'DIVISOR', cor: '#4dffc3', cor2: '#0f7a5c', raio: 24, vida: 82, velocidade: 105,
-    dano: 1, xp: 19, pontos: 28, lados: 8, comportamento: 'perseguir', desde: 5, divideEm: 2
+    dano: 1, xp: 19, pontos: 28, lados: 8, comportamento: 'perseguir', ato: 1, desde: 5, divideEm: 2
   },
   orbitador: {
     nome: 'ORBITADOR', cor: '#4da6ff', cor2: '#0f3d7a', raio: 20, vida: 72, velocidade: 175,
-    dano: 1, xp: 21, pontos: 32, lados: 7, comportamento: 'orbitar', desde: 6,
+    dano: 1, xp: 21, pontos: 32, lados: 7, comportamento: 'orbitar', ato: 1, desde: 6,
     distanciaIdeal: 240, recarga: 1.8, projetilVel: 310
   },
   couraca: {
     nome: 'COURAÇA', cor: '#9aa7b5', cor2: '#3a4450', raio: 26, vida: 110, velocidade: 96,
-    dano: 2, xp: 26, pontos: 40, lados: 4, comportamento: 'perseguir', desde: 7,
+    dano: 2, xp: 26, pontos: 40, lados: 4, comportamento: 'perseguir', ato: 1, desde: 7,
     escudoFrontal: true, escudoVida: 26
   },
   // Da onda 8 em diante cada onda ainda estreia um jeito novo de atacar: não é
   // só mais bicho na tela, é um problema diferente para resolver.
   lanceiro: {
     nome: 'LANCEIRO', cor: '#ff3d3d', cor2: '#6b0d0d', raio: 22, vida: 88, velocidade: 130,
-    dano: 2, xp: 24, pontos: 38, lados: 3, comportamento: 'investir', desde: 8,
+    dano: 2, xp: 24, pontos: 38, lados: 3, comportamento: 'investir', ato: 1, desde: 8,
     alcanceInvestida: 460, forcaInvestida: 3.1
   },
   tecelao: {
     nome: 'TECELÃO', cor: '#ff9edb', cor2: '#6b1f52', raio: 21, vida: 78, velocidade: 88,
-    dano: 1, xp: 25, pontos: 42, lados: 6, comportamento: 'espiral', desde: 9,
+    dano: 1, xp: 25, pontos: 42, lados: 6, comportamento: 'espiral', ato: 1, desde: 9,
     distanciaIdeal: 400, recarga: 0.34, projetilVel: 240
   },
   fantasma: {
     nome: 'FANTASMA', cor: '#a0f0ff', cor2: '#164a58', raio: 18, vida: 60, velocidade: 165,
-    dano: 1, xp: 26, pontos: 44, lados: 5, comportamento: 'piscar', desde: 10,
+    dano: 1, xp: 26, pontos: 44, lados: 5, comportamento: 'piscar', ato: 1, desde: 10,
     recarga: 2.4
   },
   enxame: {
     nome: 'ENXAME', cor: '#c6ff4d', cor2: '#3d6b0f', raio: 13, vida: 34, velocidade: 235,
-    dano: 1, xp: 12, pontos: 18, lados: 3, comportamento: 'zigue', desde: 11
+    dano: 1, xp: 12, pontos: 18, lados: 3, comportamento: 'zigue', ato: 1, desde: 11
   },
   torreta: {
     nome: 'TORRETA', cor: '#ffc14d', cor2: '#6b4a09', raio: 24, vida: 130, velocidade: 34,
-    dano: 1, xp: 30, pontos: 50, lados: 8, comportamento: 'rajada', desde: 12,
+    dano: 1, xp: 30, pontos: 50, lados: 8, comportamento: 'rajada', ato: 1, desde: 12,
     recarga: 2.8, projetilVel: 420, resiste: 0.5
+  },
+
+  /* --------------------------- ATO II — NÁDIR ---------------------------- */
+  /* Nenhum inimigo do Ato I atravessa a fenda: a Arena ficou para trás e os
+     bichos de lá com ela. É o que `ato` separa — a onda sorteia só entre os
+     tipos do ato em que a campanha está.
+
+     Cinco destes são **ruínas**: o que sobrou dos Condutores que cairam, com o
+     jeito de lutar da classe preservado e o corpo apodrecido (`podre`). Quem
+     jogou de SNIPER reconhece o tiro que está tomando. Os outros cinco são de
+     NÁDIR mesmo, e não imitam ninguém.
+
+     Vida base fica na faixa do Ato I de propósito: na onda 101 o
+     `multiplicadorVida` já está perto de 5×, e é ele que faz o Ato II doer. */
+
+  // A mira que não esqueceu: fica longe, atira pouco e acerta forte.
+  ruinaSniper: {
+    nome: 'RUÍNA DO SNIPER', cor: '#b06cff', cor2: '#2a0d4d', raio: 18, vida: 70, velocidade: 124,
+    dano: 2, xp: 34, pontos: 60, lados: 5, comportamento: 'atirar', ato: 2, desde: 101, podre: true,
+    distanciaIdeal: 500, recarga: 2.1, projetilVel: 560
+  },
+  // Andou com escudo tanto tempo que apodreceu segurando: lento e de frente.
+  ruinaGuardiao: {
+    nome: 'RUÍNA DO GUARDIÃO', cor: '#8f8aa8', cor2: '#2b2740', raio: 28, vida: 190, velocidade: 88,
+    dano: 2, xp: 40, pontos: 72, lados: 4, comportamento: 'perseguir', ato: 2, desde: 102, podre: true,
+    escudoFrontal: true, escudoVida: 46, resiste: 0.6
+  },
+  // Some e volta mais perto, como em vida. A diferença é que agora não cansa.
+  ruinaEspectro: {
+    nome: 'RUÍNA DO ESPECTRO', cor: '#e14dff', cor2: '#3d0a4d', raio: 17, vida: 58, velocidade: 210,
+    dano: 1, xp: 36, pontos: 64, lados: 5, comportamento: 'piscar', ato: 2, desde: 103, podre: true,
+    recarga: 1.7
+  },
+  // A espiral continua saindo dela sozinha, mesmo sem ninguém mandando.
+  ruinaArcano: {
+    nome: 'RUÍNA DO ARCANO', cor: '#ff4da6', cor2: '#4d0f2e', raio: 22, vida: 96, velocidade: 96,
+    dano: 1, xp: 38, pontos: 68, lados: 6, comportamento: 'espiral', ato: 2, desde: 104, podre: true,
+    distanciaIdeal: 420, recarga: 0.3, projetilVel: 265
+  },
+  // Não briga: repovoa. Mantém distância e cospe larvas enquanto puder.
+  ruinaInvocador: {
+    nome: 'RUÍNA DO INVOCADOR', cor: '#6f4dff', cor2: '#1a0f4d', raio: 24, vida: 130, velocidade: 92,
+    dano: 1, xp: 44, pontos: 80, lados: 7, comportamento: 'invocar', ato: 2, desde: 105, podre: true,
+    distanciaIdeal: 440, recarga: 2.6, invoca: 'larvaNadir', teto: 4
+  },
+
+  // Bicho de NÁDIR, não ruína de ninguém: nasce da névoa e corre em zigue.
+  larvaNadir: {
+    nome: 'LARVA DE NÁDIR', cor: '#c9a0ff', cor2: '#2e1a4d', raio: 12, vida: 40, velocidade: 250,
+    dano: 1, xp: 14, pontos: 22, lados: 3, comportamento: 'zigue', ato: 2, desde: 106
+  },
+  // Jardim de Ossos: costela solta que se atira como lança.
+  costelaViva: {
+    nome: 'COSTELA VIVA', cor: '#d9cdbb', cor2: '#4a3f33', raio: 21, vida: 104, velocidade: 140,
+    dano: 2, xp: 36, pontos: 62, lados: 3, comportamento: 'investir', ato: 2, desde: 107,
+    alcanceInvestida: 520, forcaInvestida: 3.4
+  },
+  // Cidade Invertida: orbita ao contrário de quem olha, e atira no meio disso.
+  oInvertido: {
+    nome: 'O INVERTIDO', cor: '#b84dff', cor2: '#2e0a4d', raio: 20, vida: 88, velocidade: 190,
+    dano: 1, xp: 38, pontos: 66, lados: 7, comportamento: 'orbitar', ato: 2, desde: 108,
+    distanciaIdeal: 230, recarga: 1.5, projetilVel: 340
+  },
+  // Mar Sem Fundo: quase parado, quase preto, e castiga quem fica no aberto.
+  afogado: {
+    nome: 'AFOGADO', cor: '#6a57b5', cor2: '#120d24', raio: 26, vida: 200, velocidade: 40,
+    dano: 2, xp: 46, pontos: 84, lados: 8, comportamento: 'rajada', ato: 2, desde: 109,
+    recarga: 2.5, projetilVel: 430, resiste: 0.5
+  },
+  // Trono Ausente: não ataca, se entrega. O estouro é o ataque.
+  vigiaDoTrono: {
+    nome: 'VIGIA DO TRONO', cor: '#ff2e8a', cor2: '#4d0020', raio: 19, vida: 66, velocidade: 268,
+    dano: 2, xp: 40, pontos: 70, lados: 4, comportamento: 'kamikaze', ato: 2, desde: 110,
+    raioExplosao: 112
   }
 };
 
@@ -964,6 +1038,14 @@ class Inimigo {
       : 0;
     this.escudoVida = this.escudoVidaMax;
     this.escudoFlash = 0;
+    // Corpo apodrecido das ruínas: cada vértice recua um tanto diferente, e o
+    // tanto é sorteado uma vez aqui — no desenho seria alocação por quadro, e
+    // o bicho ficaria tremendo em vez de parecer comido.
+    this.mordidas = null;
+    if (t.podre) {
+      this.mordidas = new Array(t.lados);
+      for (let i = 0; i < t.lados; i++) this.mordidas[i] = Mat.aleatorio(0.58, 1.06);
+    }
   }
 
   atualizar(dt) {
@@ -1109,6 +1191,21 @@ class Inimigo {
         }
         break;
       }
+      // A ruína do invocador não luta: ela repovoa. Mantém distância e cospe
+      // larvas, com teto de ninhada — sem teto, uma onda de NÁDIR nunca
+      // terminaria, porque o spawn correria atrás do abate para sempre.
+      case 'invocar': {
+        const alvo = this.def.distanciaIdeal;
+        const dir = dist > alvo + 50 ? 1 : dist < alvo - 50 ? -1 : 0;
+        this.vx = Mat.suave(this.vx, Math.cos(angJog) * dir * this.velocidade, 4, dt);
+        this.vy = Mat.suave(this.vy, Math.sin(angJog) * dir * this.velocidade, 4, dt);
+        this.recarga -= dt;
+        if (this.recarga <= 0) {
+          this.recarga = this.def.recarga * Jogo.ritmoInimigo() * Mat.aleatorio(0.9, 1.1);
+          if (this.ninhadaViva() < this.def.teto) this.invocar();
+        }
+        break;
+      }
       case 'kamikaze': {
         if (this.estado === 'normal') {
           this.vx = Mat.suave(this.vx, Math.cos(angJog) * this.velocidade * 0.55, 5, dt);
@@ -1170,6 +1267,26 @@ class Inimigo {
         if (this.def.comportamento === 'kamikaze') this.explodir();
       }
     }
+  }
+
+  // Só conta as larvas que ESTA ruína pôs no mundo: duas ruínas na tela são
+  // duas ninhadas, e matar as de uma libera vaga só para ela.
+  ninhadaViva() {
+    let n = 0;
+    for (const o of Jogo.inimigos) {
+      if (o.vivo && o.criadaPor === this.id) n++;
+    }
+    return n;
+  }
+
+  invocar() {
+    const a = Math.random() * Mat.TAU;
+    const cria = new Inimigo(this.def.invoca,
+      Mat.limitar(this.x + Math.cos(a) * 34, 20, Jogo.LARGURA - 20),
+      Mat.limitar(this.y + Math.sin(a) * 34, 20, Jogo.ALTURA - 20), 0.86, false);
+    cria.criadaPor = this.id;
+    Jogo.inimigos.push(cria);
+    Particulas.anel(cria.x, cria.y, this.def.cor, 30, 12);
   }
 
   explodir() {
@@ -1256,7 +1373,8 @@ class Inimigo {
     ctx.beginPath();
     for (let i = 0; i < lados; i++) {
       const a = (Mat.TAU / lados) * i;
-      const r = this.raio * (this.estado === 'carregando' ? 1 + Math.sin(Jogo.tempo * 40) * 0.12 : 1);
+      let r = this.raio * (this.estado === 'carregando' ? 1 + Math.sin(Jogo.tempo * 40) * 0.12 : 1);
+      if (this.mordidas) r *= this.mordidas[i];
       ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
     }
     ctx.closePath();

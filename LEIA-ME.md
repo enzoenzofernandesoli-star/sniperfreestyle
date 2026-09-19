@@ -158,6 +158,13 @@ busca de alvo.
 
 ## Inimigos
 
+Cada inimigo pertence a um **ato**, e o ato é uma porteira, não um rótulo: a onda sorteia
+só entre os tipos do ato em que a campanha está (`Jogo.tiposDaOnda`). Nenhum bicho da Arena
+atravessa a fenda para NÁDIR, e nenhuma ruína de NÁDIR vaza para a Arena. Um teste varre
+as 200 ondas e reprova qualquer vazamento. A narrativa disso está em `HISTORIA.md`.
+
+### Ato I — Arena Neon (ondas 1–100)
+
 Cada uma das doze primeiras ondas estreia um tipo — a onda 1 é só corredor, a 12 fecha a
 lista — e o aviso central diz o nome do estreante. Depois disso a mistura é sorteada
 entre todos.
@@ -176,6 +183,36 @@ entre todos.
 | 10 | `FANTASMA` | teleporta para o lado do jogador |
 | 11 | `ENXAME` | rápido, em zigue-zague |
 | 12 | `TORRETA` | quase parada, resiste a 50%, rajada de 3 tiros rápidos |
+
+### Ato II — NÁDIR (ondas 101–200)
+
+Dez tipos novos, nenhum deles do Ato I. Cinco são **ruínas**: o que sobrou dos Condutores
+que caíram, com o jeito de lutar da classe preservado e o corpo apodrecido. A flag é
+`podre: true` — no construtor cada vértice recebe um recuo sorteado **uma vez**
+(`this.mordidas`), e o desenho só multiplica. Sortear no desenho seria alocação por quadro,
+e o bicho tremeria em vez de parecer comido.
+
+| Onda | Tipo | O que faz |
+|---|---|---|
+| 101 | `RUÍNA DO SNIPER` | fica a 500 px, recarga longa, bala a 560 — a mira não esqueceu |
+| 102 | `RUÍNA DO GUARDIÃO` | escudo frontal de 46, resiste a 40%, devagar |
+| 103 | `RUÍNA DO ESPECTRO` | teleporta para perto sem parar, e não cansa |
+| 104 | `RUÍNA DO ARCANO` | espiral contínua enquanto recua |
+| 105 | `RUÍNA DO INVOCADOR` | não luta: cospe `LARVA DE NÁDIR`, teto de 4 por ninhada |
+| 106 | `LARVA DE NÁDIR` | rápida, em zigue-zague; também nasce invocada |
+| 107 | `COSTELA VIVA` | investida de 520 px — Jardim de Ossos |
+| 108 | `O INVERTIDO` | orbita a 230 px atirando — Cidade Invertida |
+| 109 | `AFOGADO` | quase parado, resiste a 50%, rajada pesada — Mar Sem Fundo |
+| 110 | `VIGIA DO TRONO` | kamikaze de raio 112 — Trono Ausente |
+
+O teto de ninhada (`teto: 4`) conta **só as larvas daquela ruína** (`criadaPor` guarda o id
+de quem invocou). Sem teto, a onda nunca terminaria: o spawn correria atrás do abate para
+sempre. Vida base fica na faixa do Ato I de propósito — na onda 101 o `multiplicadorVida`
+já está perto de 5×, e é ele que faz NÁDIR doer.
+
+**O que ainda não existe:** a campanha não chega à onda 101. Falta a travessia da fenda
+(o diálogo do Interstício), os bosses das cinco regiões, os personagens novos (Mara Voss,
+Íris-9, O Órfão, Véspera) e o encontro da onda 200. Ordem em `HISTORIA.md`.
 
 ## Quem é o mais forte
 
@@ -763,9 +800,11 @@ a versão.
 
 1. A vitória é **registrada primeiro** (`Jogo.abrirSegredo` chama `registrarPartida(true)`):
    quem fez 100 ondas ganhou, e o placar guarda isso antes de qualquer coisa.
-2. A arena é esvaziada, a tela estoura em branco e `Jogo.dimensao` vira `'vazio'` — outro
-   fundo inteiro (`desenharFundoVazio`): sem grade neon, com anéis nascendo do centro, raios
-   girando devagar e moldura branca. Custa 0,10 ms por quadro.
+2. A arena é esvaziada e `Jogo.dimensao` vira `'intersticio'` — o **Interstício Violeta**
+   (`desenharIntersticio`): preto-violeta sem horizonte, clarão que respira no centro,
+   estrelas mortas, anéis lentos, nervos magenta e ruínas suspensas. Nada pisca rápido de
+   propósito. Nenhuma posição é guardada em lista: vem de seno, para o fundo não alocar por
+   quadro.
 3. Quatro segundos de cinemática (`atualizarSegredo`), com dois letreiros, e ele materializa
    no centro: **O ESPECTADOR — "Esteve aqui desde a onda 1"**.
 4. Ele é **invencível por regra, não por número**: `receberDano` devolve sem tocar na barra

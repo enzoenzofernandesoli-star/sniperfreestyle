@@ -71,8 +71,9 @@ const Jogo = {
   filaDeMelhorias: 0,
   imaGlobal: 0,
 
-  // Dimensão da arena: 'normal' é o neon de sempre; 'vazio' é onde O
-  // ESPECTADOR mora, e só ele leva o jogador para lá.
+  // Dimensão da arena: 'normal' é o neon do Ato I; 'intersticio' é o
+  // Interstício Violeta, onde O ESPECTADOR espera depois da onda 100.
+  // Quem leva o jogador para lá é só ele. Ver HISTORIA.md.
   dimensao: 'normal',
   segredo: { fase: null, tempo: 0, marco: 0 },
 
@@ -156,6 +157,23 @@ const Jogo = {
     return ate40 + depois;
   },
 
+  /* ---------------------------- Ato da campanha ------------------------- */
+  /* Ato I é a Arena Neon, ondas 1 a 100. Ato II é NÁDIR, da 101 em diante.
+     Isto não é enfeite: é o que decide quais inimigos a onda pode sortear.
+     Nenhum bicho do Ato I aparece em NÁDIR, e nenhuma ruína de NÁDIR vaza
+     para a Arena. Ver HISTORIA.md. */
+  ONDAS_ATO2: 100,                       // 101 a 200
+  ato(onda) { return (onda === undefined ? Jogo.onda : onda) > Jogo.TOTAL_ONDAS ? 2 : 1; },
+  ondaFinalDaCampanha() { return Jogo.TOTAL_ONDAS + Jogo.ONDAS_ATO2; },
+
+  // Tipos que a onda de agora pode sortear: do ato certo e já estreados.
+  tiposDaOnda(onda) {
+    const o = onda === undefined ? Jogo.onda : onda;
+    const ato = Jogo.ato(o);
+    return Object.keys(TIPOS_INIMIGO).filter((k) =>
+      (TIPOS_INIMIGO[k].ato || 1) === ato && TIPOS_INIMIGO[k].desde <= o);
+  },
+
   multiplicadorVida() {
     const depoisDe40 = Math.max(0, Jogo.onda - 40);
     return 1 + Math.min(Jogo.onda - 1, 39) * 0.085 + Math.pow(depoisDe40, 0.82) * 0.032;
@@ -192,7 +210,7 @@ const Jogo = {
       const ate50 = Math.min(Jogo.onda, 50);
       const depois50 = Math.max(0, Jogo.onda - 50);
       const orcamento = Math.round(3 + ate50 * 0.9 + depois50 * 2.1);
-      const disponiveis = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].desde <= Jogo.onda);
+      const disponiveis = Jogo.tiposDaOnda(Jogo.onda);
       // O tipo que estreia nesta onda entra garantido, e em dobro: é ele que a
       // onda quer ensinar.
       const estreante = disponiveis.find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
@@ -209,7 +227,7 @@ const Jogo = {
       Mat.embaralhar(Jogo.composicao);
       Jogo.spawnRestante = Jogo.composicao.length;
       Som.intensidade = Mat.limitar(Jogo.onda / 42, 0, 0.8);
-      const novo = Object.keys(TIPOS_INIMIGO).find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
+      const novo = disponiveis.find((k) => TIPOS_INIMIGO[k].desde === Jogo.onda);
       Jogo.aviso(novo ? 'ONDA ' + Jogo.onda + ' — ' + TIPOS_INIMIGO[novo].nome : 'ONDA ' + Jogo.onda);
     }
     UI.atualizarHUD();
@@ -299,7 +317,7 @@ const Jogo = {
     Jogo.filaDeMelhorias = 0;
     Jogo.ondaLimpa = false;
     Jogo.intervaloOnda = 0;
-    Jogo.dimensao = 'vazio';
+    Jogo.dimensao = 'intersticio';
     // A arena é esvaziada: nada da corrida antiga atravessa para o outro lado.
     Jogo.inimigos.length = 0;
     Jogo.projeteis.length = 0;
@@ -1125,7 +1143,7 @@ const Jogo = {
   },
 
   desenharFundo(ctx) {
-    if (Jogo.dimensao === 'vazio') { Jogo.desenharFundoVazio(ctx); return; }
+    if (Jogo.dimensao === 'intersticio') { Jogo.desenharIntersticio(ctx); return; }
     // gradiente de base
     const g = ctx.createLinearGradient(0, 0, 0, Jogo.ALTURA);
     g.addColorStop(0, '#0a0d18');
@@ -1181,57 +1199,100 @@ const Jogo = {
      que nascem no centro e crescem, raios girando devagar, e uma moldura branca
      sem os cantos de mira — este lugar não é uma arena, é um lugar onde se
      assiste. Custa três gradientes e ~20 linhas por quadro. */
-  desenharFundoVazio(ctx) {
+  /* ------------------- O INTERSTÍCIO VIOLETA ------------------------- */
+  /* Fundo do encontro com O ESPECTADOR, e a primeira coisa que o jogador vê
+     quando a Arena racha. Não é claro nem branco: preto-violeta sem horizonte,
+     ruínas suspensas, estrelas mortas e linhas magenta que parecem nervos.
+     Nada pisca rápido aqui — tudo se move devagar, como se o lugar respirasse
+     (ver HISTORIA.md, "Interlúdio"). */
+  desenharIntersticio(ctx) {
     const t = Jogo.tempo;
     const cx = Jogo.LARGURA / 2, cy = Jogo.ALTURA / 2;
 
-    ctx.fillStyle = '#04040a';
+    ctx.fillStyle = '#05020c';
     ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
 
-    // pupila: clarão branco que respira no centro
-    const respiro = 0.10 + Math.sin(t * 0.9) * 0.035;
-    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, Jogo.LARGURA * 0.62);
-    g.addColorStop(0, 'rgba(244,246,255,' + respiro.toFixed(3) + ')');
-    g.addColorStop(0.45, 'rgba(120,130,190,.05)');
+    // O que respira no centro é ele: clarão violeta, lento, quase parado.
+    const respiro = 0.13 + Math.sin(t * 0.55) * 0.04;
+    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, Jogo.LARGURA * 0.66);
+    g.addColorStop(0, 'rgba(150, 60, 255,' + respiro.toFixed(3) + ')');
+    g.addColorStop(0.45, 'rgba(90, 20, 150,.06)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, Jogo.LARGURA, Jogo.ALTURA);
 
-    // anéis nascendo do centro
+    // Estrelas mortas: não brilham, só estão lá. Posição vem de seno para
+    // não precisar guardar lista nenhuma — fundo não aloca por quadro.
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,170,255,.30)';
+    for (let i = 0; i < 46; i++) {
+      const x = ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * Jogo.LARGURA;
+      const y = ((Math.sin(i * 78.233) * 43758.5453) % 1 + 1) % 1 * Jogo.ALTURA;
+      const r = 0.8 + ((i % 5) * 0.22);
+      ctx.globalAlpha = 0.18 + Math.sin(t * 0.3 + i) * 0.06;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Mat.TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Anéis nascendo do centro, magenta queimado e muito devagar.
     ctx.save();
     ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      const p = ((t * 0.16) + i / 6) % 1;
-      const raio = p * Jogo.LARGURA * 0.78;
-      ctx.globalAlpha = (1 - p) * 0.22;
-      ctx.strokeStyle = '#f4f6ff';
+    for (let i = 0; i < 5; i++) {
+      const p = ((t * 0.08) + i / 5) % 1;
+      const raio = p * Jogo.LARGURA * 0.8;
+      ctx.globalAlpha = (1 - p) * 0.16;
+      ctx.strokeStyle = '#c04dff';
       ctx.beginPath();
       ctx.arc(cx, cy, raio, 0, Mat.TAU);
       ctx.stroke();
     }
     ctx.restore();
 
-    // raios: doze, girando devagar, como a íris
+    // Nervos: linhas magenta que saem do centro e tremem de leve, como se o
+    // lugar fosse por dentro de alguma coisa. Porque é.
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(t * 0.06);
-    ctx.globalAlpha = 0.07;
-    ctx.strokeStyle = '#f4f6ff';
-    ctx.lineWidth = 3;
+    ctx.rotate(t * 0.03);
+    ctx.globalAlpha = 0.10;
+    ctx.strokeStyle = '#ff2ea8';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    for (let i = 0; i < 12; i++) {
-      const a = (Mat.TAU / 12) * i;
-      ctx.moveTo(Math.cos(a) * 90, Math.sin(a) * 90);
-      ctx.lineTo(Math.cos(a) * Jogo.LARGURA, Math.sin(a) * Jogo.LARGURA);
+    for (let i = 0; i < 9; i++) {
+      const a = (Mat.TAU / 9) * i;
+      const curva = Math.sin(t * 0.4 + i) * 0.18;
+      ctx.moveTo(Math.cos(a) * 110, Math.sin(a) * 110);
+      ctx.lineTo(Math.cos(a + curva) * Jogo.LARGURA, Math.sin(a + curva) * Jogo.LARGURA);
     }
     ctx.stroke();
     ctx.restore();
 
-    // moldura branca, sem cantos de mira
+    // Ruínas suspensas: blocos escuros flutuando, sem brilho, só silhueta.
     ctx.save();
-    ctx.strokeStyle = 'rgba(244,246,255,.5)';
+    for (let i = 0; i < 7; i++) {
+      const fx = ((Math.sin(i * 33.7) * 1000) % 1 + 1) % 1 * Jogo.LARGURA;
+      const fy = ((Math.sin(i * 91.3) * 1000) % 1 + 1) % 1 * Jogo.ALTURA;
+      const l = 34 + (i % 4) * 22;
+      const sobe = Math.sin(t * 0.22 + i) * 9;
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#0c0618';
+      ctx.strokeStyle = 'rgba(180,90,255,.22)';
+      ctx.lineWidth = 1.5;
+      ctx.save();
+      ctx.translate(fx, fy + sobe);
+      ctx.rotate(Math.sin(t * 0.12 + i) * 0.25);
+      ctx.fillRect(-l / 2, -l / 5, l, l / 2.5);
+      ctx.strokeRect(-l / 2, -l / 5, l, l / 2.5);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Moldura violeta: o lugar tem borda, e a borda não é saída.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(170,80,255,.45)';
     ctx.shadowBlur = Jogo.modoLeve ? 0 : 30;
-    ctx.shadowColor = '#f4f6ff';
+    ctx.shadowColor = '#a850ff';
     ctx.lineWidth = 3;
     ctx.strokeRect(2, 2, Jogo.LARGURA - 4, Jogo.ALTURA - 4);
     ctx.restore();

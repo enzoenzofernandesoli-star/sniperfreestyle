@@ -102,7 +102,7 @@ test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por te
   assert.equal(dados.apareceuNoRodizio, false, 'o secreto não pode cair em onda normal');
   assert.equal(dados.abriu, 'abertura', 'derrubar o CEIFADOR começa pela cinemática');
   assert.equal(dados.faseDepoisDaCinematica, 'luta', 'e a cinemática entrega a luta');
-  assert.equal(dados.dimensao, 'vazio', 'o segredo muda a dimensão da arena');
+  assert.equal(dados.dimensao, 'intersticio', 'o segredo leva para o Interstício Violeta');
   assert.equal(dados.id, 'espectador');
   assert.equal(dados.vidaDepois, dados.vidaAntes, 'nenhum dano entra: a barra não se move');
   assert.equal(dados.porcentagem, 1, 'a barra fica cheia por definição');
@@ -1302,4 +1302,85 @@ test('boss morto leva junto a barra e os tiros dele', () => {
   assert.equal(dados.depois.inimigos, 0, 'e as balas dele vão junto');
   assert.equal(dados.depois.meus, dados.antes.meus, 'o tiro do jogador continua lá');
   assert.ok(dados.escondeu >= 1, 'a barra do boss é escondida na morte');
+});
+
+/* Ato II — NÁDIR. A regra da história: a Arena ficou para trás e nenhum bicho
+   dela atravessa a fenda. O contrário também — ruína de NÁDIR nunca vaza para
+   uma onda do Ato I, nem por sorteio nem por estreia. */
+test('nenhum inimigo do Ato I aparece no Ato II, e nenhuma ruína vaza para a Arena', () => {
+  const dados = vm.runInContext(`(() => {
+    const ato1 = Object.keys(TIPOS_INIMIGO).filter((k) => (TIPOS_INIMIGO[k].ato || 1) === 1);
+    const ato2 = Object.keys(TIPOS_INIMIGO).filter((k) => TIPOS_INIMIGO[k].ato === 2);
+    const vazaram = [];
+    const intrusos = [];
+    // Toda onda dos dois atos, conferindo o que o sorteio pode devolver.
+    for (let o = 1; o <= Jogo.ondaFinalDaCampanha(); o++) {
+      const tipos = Jogo.tiposDaOnda(o);
+      if (!tipos.length) { intrusos.push('onda ' + o + ' sem inimigo'); continue; }
+      for (const t of tipos) {
+        const ato = TIPOS_INIMIGO[t].ato || 1;
+        if (o <= Jogo.TOTAL_ONDAS && ato !== 1) vazaram.push(t + ' na onda ' + o);
+        if (o > Jogo.TOTAL_ONDAS && ato !== 2) intrusos.push(t + ' na onda ' + o);
+      }
+    }
+    // Todo tipo do Ato II tem de ser alcançável: def sem onda de estreia é def
+    // morta, e ninguém descobre isso jogando.
+    const inalcancaveis = ato2.filter((k) =>
+      Jogo.tiposDaOnda(Jogo.ondaFinalDaCampanha()).indexOf(k) < 0);
+    const ruinas = ato2.filter((k) => TIPOS_INIMIGO[k].podre);
+    const invocadora = TIPOS_INIMIGO.ruinaInvocador;
+    return { ato1: ato1.length, ato2: ato2.length, vazaram, intrusos, inalcancaveis,
+      ruinas: ruinas.length, ato101: Jogo.ato(101), ato100: Jogo.ato(100),
+      final: Jogo.ondaFinalDaCampanha(),
+      invoca: invocadora.invoca, tetoNinhada: invocadora.teto,
+      criaEhAto2: (TIPOS_INIMIGO[invocadora.invoca] || {}).ato };
+  })()`, contexto);
+
+  assert.deepEqual(Array.from(dados.vazaram), [], 'ruína de NÁDIR na Arena Neon');
+  assert.deepEqual(Array.from(dados.intrusos), [], 'bicho do Ato I dentro de NÁDIR');
+  assert.deepEqual(Array.from(dados.inalcancaveis), [], 'tipo do Ato II que nenhuma onda sorteia');
+  assert.equal(dados.ato100, 1, 'a onda 100 ainda é a Arena');
+  assert.equal(dados.ato101, 2, 'da 101 em diante é NÁDIR');
+  assert.equal(dados.final, 200, 'a campanha inteira vai até a onda 200');
+  assert.equal(dados.ato1, 12, 'os doze inimigos da Arena continuam só dela');
+  assert.equal(dados.ato2, 10);
+  assert.equal(dados.ruinas, 5, 'cinco ruínas, uma por classe jogável');
+  assert.equal(dados.invoca, 'larvaNadir');
+  assert.equal(dados.criaEhAto2, 2, 'a ruína não pode invocar bicho do Ato I');
+  assert.ok(dados.tetoNinhada > 0, 'ninhada sem teto é onda que nunca termina');
+});
+
+/* A ninhada tem teto por ruína, e o teto conta só as larvas daquela ruína. */
+test('a ruína do invocador respeita o teto da própria ninhada', () => {
+  const mundo = vm.createContext({ console, Math });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    Jogo.LARGURA = 1280; Jogo.ALTURA = 720; Jogo.onda = 105; Jogo.tempo = 0;
+    Jogo.inimigos = [];
+    Particulas.iniciar();
+    const ruina = new Inimigo('ruinaInvocador', 300, 300, 1, false);
+    const outra = new Inimigo('ruinaInvocador', 900, 300, 1, false);
+    Jogo.inimigos.push(ruina, outra);
+    for (let i = 0; i < 40; i++) ruina.invocar();
+    const daRuina = () => Jogo.inimigos.filter((e) => e.criadaPor === ruina.id).length;
+    const antes = daRuina();
+    // Mata metade da ninhada: a conta tem de cair, senão o teto nunca libera.
+    let mortas = 0;
+    for (const e of Jogo.inimigos) {
+      if (e.criadaPor === ruina.id && mortas < 5) { e.vivo = false; mortas++; }
+    }
+    return { antes, vivasDepois: ruina.ninhadaViva(), daOutra: outra.ninhadaViva(),
+      tipoDaCria: Jogo.inimigos.find((e) => e.criadaPor === ruina.id).tipo,
+      mordidas: ruina.mordidas ? ruina.mordidas.length : 0,
+      larvaPodre: !!TIPOS_INIMIGO.larvaNadir.podre };
+  })()`, mundo);
+
+  assert.equal(dados.antes, 40, 'invocar() não é quem segura o teto — quem segura é o comportamento');
+  assert.equal(dados.vivasDepois, 35, 'larva morta libera vaga na ninhada');
+  assert.equal(dados.daOutra, 0, 'a ninhada de uma ruína não conta para a outra');
+  assert.equal(dados.tipoDaCria, 'larvaNadir');
+  assert.equal(dados.mordidas, 7, 'ruína tem um recuo sorteado por vértice, e só uma vez');
+  assert.equal(dados.larvaPodre, false, 'bicho nascido em NÁDIR não é ruína de ninguém');
 });
