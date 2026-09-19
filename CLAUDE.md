@@ -45,6 +45,12 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
   na barra. Não "conserte" isso, não dê vida balanceada a ele e não o coloque no rodízio.
   Quem o chama é `Jogo.abrirSegredo()`, depois do CEIFADOR cair — e a vitória das 100 ondas é
   registrada antes dele aparecer.
+- **O aviso de atualização é obrigatório.** Pedido do Enzo em 18/09/2026: saiu versão nova, a
+  faixa desce na tela sozinha, sem o jogador ir procurar. Duas coisas a sustentam e quebram em
+  silêncio: `sw.js` deixa passar direto todo pedido com `?atualizacao=` na query, e nenhum
+  comentário de `src/versao.js` pode conter uma linha na forma `    versao: '...'` — o
+  verificador lê a primeira que encontra. Teste guarda a segunda.
+
 - **Partida encerrada não se reescreve**: `derrota()` sai fora se o estado já é `gameover` ou
   `vitoria`. Sem isso, a segunda chamada no mesmo quadro trocava o final do segredo por um
   GAME OVER comum.

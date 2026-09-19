@@ -3,6 +3,8 @@
 Twin-stick shooter roguelite em canvas 2D puro. Sem build, sem npm, sem dependência:
 é só abrir o `index.html` no navegador. O placar mundial requer site publicado com API e banco.
 
+História canônica, diálogos e plano da campanha 101–200: [`HISTORIA.md`](HISTORIA.md).
+
 ## A corrida
 
 - **100 ondas**. Boss a cada 5 até a onda 40 e a cada 10 daí em diante. Depois do oitavo a rotação recomeça em versões
@@ -715,6 +717,29 @@ do servidor com parâmetro anti-cache. Carteira, cosméticos e nome não são to
 
 Um selo verde **NOVO** acende no botão quando a versão mudou desde a última vez que aquele
 navegador abriu o jogo. Ver a lista apaga o selo.
+
+### Aviso de versão nova na tela
+
+O jogador não precisa entrar em tela nenhuma para saber que saiu atualização: uma faixa desce
+no topo do palco, por cima do HUD e das telas, dizendo qual versão está no ar e qual ele está
+jogando, com **ATUALIZAR AGORA** e **depois**. Em partida em andamento a faixa avisa que
+atualizar encerra a partida.
+
+Como o jogo descobre isso: `JOGO.versaoDoServidor()` busca `src/versao.js?atualizacao=...` e
+lê a **primeira** linha `versao:` do arquivo (`/^ {4}versao: '...'/m`). `JOGO.comparar()`
+compara número por número, porque como texto `2.10.0` viria antes de `2.9.0`.
+
+Dois detalhes que fazem o aviso funcionar, e que quebram em silêncio se mexerem:
+
+- `sw.js` deixa passar direto qualquer pedido com `?atualizacao=` na query. Sem isso o service
+  worker responderia do cache e o jogo leria a própria versão de volta, para sempre.
+- Nenhum comentário de `src/versao.js` pode conter uma linha na forma `    versao: '...'`: o
+  verificador leria o comentário no lugar da versão de verdade. O teste
+  *"o verificador de atualização lê a versão de verdade, não um comentário"* guarda a regra.
+
+Quando pergunta (`UI.ligarAvisoAtualizacao`): 15 s depois de abrir, a cada 5 min, quando a aba
+volta a ficar visível depois de 2 min fora, e no `updatefound` do service worker. **depois**
+silencia por 5 min. Em `file://` o aviso não liga, porque não há servidor a quem perguntar.
 
 ### Temporada: atualizar zera o ranking
 

@@ -10,6 +10,16 @@
    que mudou no código: ninguém liga para refatoração.
    =========================================================================== */
 
+/* Este arquivo é lido de fora, por requisição, para descobrir se o servidor já
+   tem versão mais nova que a que está rodando na tela do jogador — é assim que
+   o aviso de atualização aparece sem ninguém ir procurar (JOGO.versaoDoServidor).
+
+   O verificador procura a PRIMEIRA linha que começa com quatro espaços e o
+   campo de versão, que é exatamente como a lista abaixo é escrita. Por isso:
+   mantenha a versão mais recente no topo, com a indentação de sempre, e não
+   escreva esse campo em comentário nenhum deste arquivo — comentário com a
+   mesma forma seria lido no lugar da versão de verdade, e o aviso pararia de
+   funcionar em silêncio. Um teste guarda essa regra. */
 const ATUALIZACOES = [
   {
     versao: '2.0.0',
@@ -21,6 +31,7 @@ const ATUALIZACOES = [
       'Emoji comprado na loja virou o seu corpo: você É o emoji, ele não fica mais flutuando em cima da nave.',
       'Lojinha ficou mais caro em tudo: de duas a três vezes o preço antigo.',
       'Botão ATUALIZAR no menu, com o histórico completo de versões.',
+      'Saiu versão nova? Um aviso desce na tela sozinho, no menu ou no meio da luta.',
       'Ranking agora tem temporada: cada atualização começa um placar novo, mundial e local.'
     ]
   },
@@ -79,6 +90,50 @@ const JOGO = {
     try { anterior = localStorage.getItem(JOGO.CHAVE); } catch (e) { anterior = null; }
     if (!anterior) return 'primeira';
     return anterior === JOGO.versao ? 'igual' : 'nova';
+  },
+
+  /* --------------------- Versão nova no servidor ---------------------- */
+  /* Compara duas versões 'x.y.z' número por número. Devolve 1 se `a` é mais
+     nova, -1 se é mais velha, 0 se são iguais. Comparar como texto erraria:
+     '2.10.0' é maior que '2.9.0', mas vem antes na ordem alfabética. */
+  comparar(a, b) {
+    const pa = String(a || '').split('.').map((n) => parseInt(n, 10) || 0);
+    const pb = String(b || '').split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const x = pa[i] || 0, y = pb[i] || 0;
+      if (x !== y) return x > y ? 1 : -1;
+    }
+    return 0;
+  },
+
+  /* Lê a versão que está NO SERVIDOR agora. Dois cuidados:
+
+     - `?atualizacao=` no endereço: é o sinal que faz o service worker deixar o
+       pedido passar direto para a rede. Sem isso ele responde do cache e o
+       jogo rodando nunca descobriria que saiu versão nova — que é justamente o
+       que este código existe para descobrir.
+     - `cache: 'no-store'`: o mesmo cuidado, do lado do navegador.
+
+     Devolve null quando não deu (sem rede, arquivo movido, resposta estranha):
+     não saber a versão do servidor nunca pode virar erro na cara de quem joga. */
+  async versaoDoServidor() {
+    try {
+      const resposta = await fetch('src/versao.js?atualizacao=' + Date.now(), { cache: 'no-store' });
+      if (!resposta.ok) return null;
+      const texto = await resposta.text();
+      const achou = texto.match(/^ {4}versao: '([0-9]+(?:\.[0-9]+)*)'/m);
+      return achou ? achou[1] : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /* true quando o servidor tem versão mais nova que a que está rodando. */
+  async temAtualizacao() {
+    const doServidor = await JOGO.versaoDoServidor();
+    if (!doServidor) return false;
+    JOGO.versaoNoServidor = doServidor;
+    return JOGO.comparar(doServidor, JOGO.versao) > 0;
   },
 
   anotarVersao() {

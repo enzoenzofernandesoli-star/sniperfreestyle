@@ -38,6 +38,8 @@ const UI = {
       statusPlacar: g('statusPlacar'),
       recordeMenu: g('recordeMenu'),
       seloVersao: g('seloVersao'),
+      avisoAtualizacao: g('avisoAtualizacao'),
+      avaDetalhe: g('avaDetalhe'),
       versaoAtual: g('versaoAtual'),
       temporadaAtual: g('temporadaAtual'),
       listaAtualizacoes: g('listaAtualizacoes'),
@@ -63,6 +65,7 @@ const UI = {
     Toque.iniciar();
     UI.montarRecordes();
     UI.marcarVersao();
+    UI.ligarAvisoAtualizacao();
 
     g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
     g('btCriarSala').onclick = () => { Som.clique(); UI.abrirSala('criar'); };
@@ -363,6 +366,85 @@ const UI = {
     return String(texto === null || texto === undefined ? '' : texto)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\u0022/g, '&quot;').replace(/\u0027/g, '&#39;');
+  },
+
+  /* --------------- Aviso de atualização disponível -------------------- */
+  /* O jogador não deve precisar entrar em tela nenhuma para descobrir que saiu
+     versão nova: o jogo pergunta ao servidor de tempo em tempo e, quando a
+     versão de lá é mais nova que a que está rodando, a faixa desce na tela —
+     no menu, na loja ou no meio de uma luta de boss.
+
+     Três gatilhos, porque um só falha:
+       1. 15 s depois de abrir (dá tempo de o jogo carregar sem competir por rede);
+       2. a cada 5 minutos enquanto o jogo estiver aberto;
+       3. quando a aba volta a ficar visível, se a última checagem passou de 2 min.
+     Mais o sinal do service worker, que avisa quando encontra casco novo. */
+  ESPERA_AVISO: 5 * 60 * 1000,        // de quanto em quanto tempo pergunta
+  ADIAMENTO_AVISO: 5 * 60 * 1000,     // quanto tempo o "depois" silencia
+
+  ligarAvisoAtualizacao() {
+    if (typeof JOGO === 'undefined' || !UI.el.avisoAtualizacao) return;
+    // Em file:// não existe servidor para perguntar: o aviso simplesmente não liga.
+    if (location.protocol.indexOf('http') !== 0) return;
+
+    UI._avisoAdiadoAte = 0;
+    UI._ultimaChecagem = 0;
+
+    document.getElementById('btAvisoAtualizar').onclick = () => {
+      Som.clique();
+      JOGO.atualizarAgora();
+    };
+    document.getElementById('btAvisoDepois').onclick = () => {
+      Som.clique();
+      UI._avisoAdiadoAte = Date.now() + UI.ADIAMENTO_AVISO;
+      UI.el.avisoAtualizacao.hidden = true;
+    };
+
+    setTimeout(UI.verificarAtualizacao, 15000);
+    setInterval(UI.verificarAtualizacao, UI.ESPERA_AVISO);
+    addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      if (Date.now() - UI._ultimaChecagem > 2 * 60 * 1000) UI.verificarAtualizacao();
+    });
+
+    // O service worker sabe antes de todos: ele busca o sw.js sozinho e, se o
+    // conteúdo mudou, instala um novo. Isso é sinal de que saiu deploy.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (!reg) return;
+        reg.addEventListener('updatefound', () => UI.verificarAtualizacao());
+      }).catch(() => { /* sem service worker: os outros gatilhos bastam */ });
+    }
+  },
+
+  async verificarAtualizacao() {
+    if (typeof JOGO === 'undefined') return;
+    UI._ultimaChecagem = Date.now();
+    // Pede ao service worker para conferir o casco também, senão ele só olharia
+    // sozinho de vez em quando.
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && reg.update) reg.update();
+      }
+    } catch (e) { /* não impede a checagem por versão */ }
+
+    if (await JOGO.temAtualizacao()) UI.mostrarAvisoAtualizacao();
+  },
+
+  mostrarAvisoAtualizacao() {
+    const faixa = UI.el.avisoAtualizacao;
+    if (!faixa) return;
+    if (Date.now() < (UI._avisoAdiadoAte || 0)) return;   // o jogador pediu "depois"
+
+    const nova = JOGO.versaoNoServidor || '';
+    let texto = 'A versão ' + nova + ' está no ar. Você está jogando a ' + JOGO.versao + '.';
+    // Aviso honesto: atualizar recarrega o jogo, e partida em andamento morre.
+    if (Jogo.estado === 'jogando' || Jogo.estado === 'pausado' || Jogo.estado === 'melhoria') {
+      texto += ' Atualizar agora encerra a partida atual.';
+    }
+    UI.el.avaDetalhe.textContent = texto;
+    faixa.hidden = false;
   },
 
   /* Acende o selo verde no botão ATUALIZAR quando a versão mudou desde a

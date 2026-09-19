@@ -1349,3 +1349,62 @@ body.toque #btPausar {
   animation: piscaEspectador 3.4s ease-in-out infinite;
 }
 @keyframes piscaEspectador { 50% { opacity: .78; } }
+
+/* ==================== Aviso de atualização disponível ==================== */
+/* Acima de tudo (HUD é 4, telas são 6) porque o recado vale em qualquer lugar
+   do jogo: menu, loja, meio de uma onda ou luta de boss. */
+#avisoAtualizacao {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 16px);
+  max-width: min(94%, 680px);
+  padding: 10px clamp(12px, 1.6vw, 20px);
+  border: 1px solid var(--verde);
+  border-top: 0;
+  border-radius: 0 0 var(--raio) var(--raio);
+  background: rgba(6, 26, 18, .97);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .6), 0 0 34px rgba(92, 255, 157, .14);
+  animation: desceAviso .34s ease-out;
+}
+#avisoAtualizacao[hidden] { display: none; }
+@keyframes desceAviso { from { transform: translate(-50%, -100%); opacity: 0; } }
+
+.ava-pulso {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--verde);
+  box-shadow: 0 0 12px var(--verde);
+  animation: pulsaAviso 1.6s ease-in-out infinite;
+}
+@keyframes pulsaAviso { 50% { opacity: .25; transform: scale(.7); } }
+
+.ava-texto { display: grid; gap: 1px; min-width: 0; }
+.ava-texto b {
+  font-family: Orbitron, sans-serif;
+  font-size: clamp(10px, .95vw, 13px);
+  letter-spacing: .12em;
+  color: var(--verde);
+}
+.ava-texto span {
+  font-size: clamp(10px, .9vw, 13px);
+  color: #c3d3e4;
+  overflow-wrap: anywhere;
+}
+
+#avisoAtualizacao .bt { flex: none; padding: 8px 14px; font-size: clamp(9px, .85vw, 12px); }
+#avisoAtualizacao .bt.principal { background: linear-gradient(135deg, #5cff9d, #1d9e5c); }
+#avisoAtualizacao .bt.fantasma { padding: 8px 8px; text-transform: lowercase; letter-spacing: .04em; }
+
+@media (max-height: 560px) {
+  #avisoAtualizacao { padding: 6px 10px; gap: 8px; }
+  .ava-texto b { font-size: 9px; }
+  .ava-texto span { font-size: 9px; }
+  #avisoAtualizacao .bt { padding: 6px 10px; font-size: 9px; }
+}

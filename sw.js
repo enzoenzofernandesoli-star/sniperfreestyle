@@ -11,7 +11,7 @@
    Pra publicar uma versão nova basta subir o VERSAO: o cache antigo é apagado.
    =========================================================================== */
 
-const VERSAO = 'sniper-freestyle-v45';
+const VERSAO = 'sniper-freestyle-v46';
 
 const CASCO = [
   './',
@@ -63,6 +63,11 @@ self.addEventListener('fetch', (evento) => {
 
   // placar sempre na rede
   if (url.pathname.indexOf('/api/') === 0) return;
+
+  // Consulta de versão sempre na rede. Se este pedido fosse respondido do
+  // cache, o jogo aberto leria a própria versão de volta e nunca descobriria
+  // que saiu atualização — o aviso na tela nunca apareceria.
+  if (url.searchParams.has('atualizacao')) return;
 
   const mesmaOrigem = url.origin === self.location.origin;
   const fonteGoogle = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';

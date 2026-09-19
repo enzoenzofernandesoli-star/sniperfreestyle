@@ -111,6 +111,22 @@ test('O ESPECTADOR só vem depois do CEIFADOR, é imortal e troca de fase por te
   assert.equal(dados.estado, 'vitoria', 'cair para ele não apaga a vitória das 100 ondas');
 });
 
+test('o verificador de atualização lê a versão de verdade, não um comentário', () => {
+  const fonte = fs.readFileSync(path.join(raiz, 'src/versao.js'), 'utf8');
+
+  // A MESMA expressão que JOGO.versaoDoServidor usa. Se ela mudar lá, muda aqui.
+  const achou = fonte.match(/^ {4}versao: '([0-9]+(?:\.[0-9]+)*)'/m);
+  assert.ok(achou, 'o arquivo tem que ter a linha de versão na forma esperada');
+
+  const mundo = vm.createContext({ console, Math });
+  vm.runInContext(fonte, mundo, { filename: 'src/versao.js' });
+  const declarada = vm.runInContext('JOGO.versao', mundo);
+
+  assert.equal(achou[1], declarada,
+    'o que o verificador lê tem que ser a versão que o jogo roda — um comentário ' +
+    'contendo a mesma forma seria lido no lugar e o aviso de atualização morreria calado');
+});
+
 test('cada atualização abre temporada nova e o recorde local segue a temporada', () => {
   const guardado = {};
   const mundo = vm.createContext({ console, Math, localStorage: {
