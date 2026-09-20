@@ -1686,6 +1686,119 @@ body.toque #btPausar {
   .cc-destrancar { margin-top: 2px; padding: 9px 8px; }
 }
 
+/* ================= Escala real para celular deitado ==================== */
+/* O jogo exige paisagem. Em telefones, a altura útil costuma ficar entre
+   320 e 430 px; por isso a escala precisa responder à altura, não à largura. */
+@media (pointer: coarse) and (max-height: 560px) {
+  :root { --raio: 9px; }
+
+  .tela {
+    gap: 4px;
+    padding: max(5px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+             max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  .menu-caixa, .menu-caixa.largo, .painel { max-height: 96%; }
+  .tag-topo { margin-bottom: 1px; font-size: 7px; }
+  .titulo { font-size: clamp(24px, 10vh, 36px); }
+  .titulo-menor, .cabecalho-tela h2 { font-size: clamp(15px, 5vh, 19px); }
+  .subtitulo { margin-top: 2px; font-size: 9px; }
+  .recorde-linha { margin-top: 4px; font-size: 8px; }
+  .creditos, .moeda-linha, .temporada-linha { font-size: 8px; }
+  .menu-botoes { gap: 5px; margin-top: 5px; }
+
+  /* Visual menor; superfície de toque preservada em 44 px. */
+  .bt {
+    min-height: 44px;
+    padding: 6px 12px;
+    font-size: 9px;
+    letter-spacing: .1em;
+  }
+  .menu-botoes.coluna { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+  .menu-botoes.coluna .bt:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .caixa-nome { gap: 6px; padding: 3px 8px; }
+  .caixa-nome label { font-size: 7px; }
+  .caixa-nome input,
+  .linha input[type=text],
+  .sala-codigo {
+    min-height: 44px;
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+  #avisoNome { font-size: 8px; }
+
+  .grade-classes { gap: 6px; padding-bottom: 3px; }
+  .cartao-classe { flex-basis: min(78%, 480px); padding: 6px 9px; column-gap: 9px; }
+  .cc-icone { width: 25px; height: 25px; font-size: 12px; }
+  .cartao-classe h3 { font-size: 11px; }
+  .cc-apelido, .cc-desc, .cc-lista li { font-size: 8px; }
+  .cc-desc { margin: 2px 0; }
+  .attr span, .cc-ult b, .cc-ult span { font-size: 7px; }
+  .cc-attr, .cc-lista { margin-bottom: 2px; }
+  .cc-jogar, .cc-loja, .cc-destrancar { min-height: 44px; margin-top: 2px; padding: 5px 8px; font-size: 8px; }
+  .dica-arraste, .aviso-classes { font-size: 8px; }
+
+  .grade-dificuldade { gap: 7px; padding: 2px; }
+  .cartao-dificuldade {
+    flex-basis: min(58vw, 230px);
+    min-height: 142px;
+    gap: 4px;
+    padding: 10px;
+  }
+  .cartao-dificuldade b { font-size: 17px; }
+  .cartao-dificuldade > span:not(.dif-selo) { font-size: 9px; }
+  .dif-selo { font-size: 7px; }
+
+  .grade-melhorias { gap: 5px; }
+  .cartao-melhoria { min-height: 0; padding: 7px 6px 5px; }
+  .cm-icone { margin: 1px 0; font-size: 17px; }
+  .cartao-melhoria h3 { font-size: 9px; }
+  .cartao-melhoria p { margin-top: 2px; font-size: 8px; line-height: 1.15; }
+  .cm-nivel, .cm-raridade { font-size: 7px; }
+
+  .sala-painel { gap: 5px; width: min(390px, 72vw); }
+  .sala-bloco { gap: 5px; padding: 7px; }
+  .sala-alerta, .sala-dica { padding: 5px 7px; font-size: 9px; line-height: 1.2; }
+  .sala-codigo-grande { padding: 5px 8px; font-size: 17px; }
+  .sala-vaga { padding: 4px 7px; font-size: 10px; }
+
+  .loja-topo { gap: 4px 8px; }
+  .loja-carteira { padding: 4px 9px; }
+  .loja-carteira b { font-size: 12px; }
+  .loja-carteira span { font-size: 8px; }
+  .loja-abas { gap: 4px; }
+  .loja-aba, .li-bt { min-height: 44px; font-size: 8px; }
+  .loja-grade, .loja-grade.pacotes { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 5px; }
+  .loja-item { gap: 3px; padding: 5px; }
+  .li-previa { height: 35px; }
+  .li-previa canvas { width: 70px; height: 52px; }
+  .li-emoji { font-size: 23px; }
+  .li-nome, .li-preco, .pa-selo, .loja-nota, .loja-aviso { font-size: 8px; }
+  .pa-moeda { width: 34px; height: 34px; }
+
+  .historia-conteudo { gap: 10px; width: min(620px, 84%); }
+  .historia-conteudo small { font-size: 7px; }
+  #historiaTexto { font-size: clamp(14px, 5.5vh, 22px); line-height: 1.18; }
+  #btFecharHistoria { min-height: 44px; padding: 5px 14px; font-size: 8px; }
+
+  #hud { padding: 4px 6px; }
+  .bloco { padding: 3px 6px; }
+  #coracoes span { font-size: 10px; }
+  .onda-caixa b { font-size: 11px; }
+  .pontuacao strong { font-size: 15px; }
+  .hud-moedas, .pontuacao small { font-size: 8px; }
+
+  #toque .stick { width: clamp(68px, 19vh, 86px); }
+  #toque .lado-direito { right: 2.5%; bottom: 6%; gap: 6px; }
+  #toque #stickMover { left: 2.5%; bottom: 8%; }
+  #toque .fila-habilidades, #toque .fila-tiro { gap: 6px; }
+  #toque .hab-toque { width: clamp(44px, 12vh, 56px); font-size: 15px; }
+  #toque .bt-toque.tiro { width: clamp(54px, 16vh, 70px); font-size: 9px; }
+  #toque .stick span { bottom: -12px; font-size: 7px; }
+  body.toque #btPausar { bottom: 8%; width: 44px; height: 44px; }
+  body.toque .xp-caixa { bottom: 2%; width: 28%; }
+}
+
 /* ===================== O APLICATIVO EM NÁDIR ============================= */
 /* Atravessar a fenda repinta tudo: menu, lojinha, placar, ajuda, HUD. O ciano
    da Arena dá lugar ao violeta, e o fundo escurece para o preto-violeta do
