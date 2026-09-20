@@ -1704,6 +1704,19 @@ test('história aparece nos marcos canônicos e pausa a transição da onda', ()
   assert.equal(dados.foraDoMarco, false);
 });
 
+test('trilha tenebrosa liga em boss ou história e pode voltar ao normal', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout, clearTimeout });
+  vm.runInContext(fs.readFileSync(path.join(raiz, 'src/nucleo.js'), 'utf8'), mundo, { filename: 'src/nucleo.js' });
+  const estados = vm.runInContext(`(() => {
+    const inicial = Som.tenebroso;
+    Som.ativarTenebroso();
+    const ativo = Som.tenebroso;
+    Som.desativarTenebroso();
+    return [inicial, ativo, Som.tenebroso];
+  })()`, mundo);
+  assert.deepEqual(Array.from(estados), [false, true, false]);
+});
+
 /* Qualidade adaptativa do celular: desce quando o FPS cai, sobe quando sobra, e
    nunca fica piscando entre duas escalas. */
 test('a escala de render desce com FPS baixo e sobe com folga, sem oscilar', () => {

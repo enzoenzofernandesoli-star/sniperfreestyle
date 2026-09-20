@@ -287,6 +287,18 @@ const Som = {
   passoMusica: 0,
   proximaNota: 0,
   intensidade: 0, // 0 = calmo, 1 = boss
+  tenebroso: false,
+
+  ativarTenebroso() {
+    Som.tenebroso = true;
+    Som.passoMusica = 0;
+    if (Som.pronto && Som.ctx) Som.proximaNota = Som.ctx.currentTime + 0.04;
+  },
+  desativarTenebroso() {
+    Som.tenebroso = false;
+    Som.passoMusica = 0;
+    if (Som.pronto && Som.ctx) Som.proximaNota = Som.ctx.currentTime + 0.04;
+  },
 
   destravar() {
     if (Som.pronto) return;
@@ -521,7 +533,10 @@ const Som = {
     if (!Som.pronto || Config.volumeMusica <= 0) return;
     const faixa = Som.TRILHAS[Som.trilha] || Som.TRILHAS[0];
     const t = Som.ctx.currentTime;
-    const bpm = 96 + faixa.bpm + Som.intensidade * 44;
+    // Boss e transmissão narrativa trocam a pulsação acelerada por um ritual
+    // grave: andamento lento, semitom instável e trítono. Continua procedural.
+    const sombrio = Som.tenebroso;
+    const bpm = sombrio ? 54 : 96 + faixa.bpm + Som.intensidade * 44;
     const passoSeg = 60 / bpm / 2;
     if (Som.proximaNota < t) Som.proximaNota = t + 0.05;
     let guarda = 0;
@@ -529,12 +544,21 @@ const Som = {
       const p = Som.passoMusica;
       const escala = faixa.escala;
       const raiz = faixa.raiz;
-      if (p % 4 === 0) Som._agendar(raiz, faixa.baixo, Som.proximaNota, passoSeg * 2.2, 0.15);
-      if (p % 2 === 0 || Som.intensidade > 0.5) {
+      if (sombrio) {
+        if (p % 8 === 0) {
+          Som._agendar(raiz * 0.5, 'sawtooth', Som.proximaNota, passoSeg * 7.5, 0.18);
+          Som._agendar(raiz * Math.pow(2, 6 / 12), 'sine', Som.proximaNota, passoSeg * 6.5, 0.08);
+        }
+        if (p % 8 === 5) Som._agendar(raiz * 2 * Math.pow(2, 1 / 12), 'triangle', Som.proximaNota, passoSeg * 2.8, 0.045);
+        if (p % 16 === 12) Som._agendarRuido(Som.proximaNota, passoSeg * 2.5, 0.035);
+      } else {
+        if (p % 4 === 0) Som._agendar(raiz, faixa.baixo, Som.proximaNota, passoSeg * 2.2, 0.15);
+        if (p % 2 === 0 || Som.intensidade > 0.5) {
         const grau = escala[(Math.floor(p / 2) + (p % 3)) % escala.length];
         Som._agendar(raiz * 4 * Math.pow(2, grau / 12), faixa.lead, Som.proximaNota, passoSeg * 1.2, 0.06);
+        }
+        if (p % 8 === 4) Som._agendarRuido(Som.proximaNota, 0.09, 0.09);
       }
-      if (p % 8 === 4) Som._agendarRuido(Som.proximaNota, 0.09, 0.09);
       Som.passoMusica = (p + 1) % 32;
       Som.proximaNota += passoSeg;
     }

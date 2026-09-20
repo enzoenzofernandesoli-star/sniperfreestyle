@@ -170,6 +170,7 @@ const UI = {
     UI.el.historiaOrigem.textContent = marco.origem || 'TRANSMISSÃO DA ARENA';
     UI.el.historiaTexto.textContent = marco.texto;
     UI.el.historiaTexto.dataset.texto = marco.texto;
+    Som.ativarTenebroso();
     tela.hidden = false;
     requestAnimationFrame(() => tela.classList.add('ativa'));
     UI._podeFecharHistoria = false;
@@ -186,6 +187,7 @@ const UI = {
       tela.hidden = true;
       tela.classList.remove('ativa', 'saindo');
       Jogo.historiaAtiva = false;
+      if (!Jogo.boss) Som.desativarTenebroso();
     }, 420);
   },
 

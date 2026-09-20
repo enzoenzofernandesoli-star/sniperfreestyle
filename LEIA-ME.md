@@ -574,6 +574,10 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   faixas de `Som.TRILHAS`: raiz, escala, timbre do baixo, timbre do lead e BPM
   mudam de uma para a outra. Cada boss morto deixa a música diferente do que
   estava antes.
+- **Presença tenebrosa.** Quando um boss aparece ou uma transmissão narrativa
+  ocupa a tela, a trilha entra num modo próprio: 54 BPM, drone subgrave, semitom
+  instável, trítono e ruído distante. Ao terminar a fala ou derrotar o boss, a
+  música procedural normal retorna sem carregar arquivo novo.
 
 ## CEIFADOR ABSOLUTO — onda 100
 

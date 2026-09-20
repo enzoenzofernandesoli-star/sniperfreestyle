@@ -544,10 +544,14 @@ const Coop = {
       },
       (c, d) => Coop.absorverSimples(c, d));
 
-    if (!estado.boss) Jogo.boss = null;
+    if (!estado.boss) {
+      Jogo.boss = null;
+      if (!Jogo.historiaAtiva) Som.desativarTenebroso();
+    }
     else {
       if (!Jogo.boss || Jogo.boss.id !== estado.boss.id) {
         Jogo.boss = Coop.recriar(Boss, { vivo: true, direcao: 1, anguloEspiral: 0 });
+        Som.ativarTenebroso();
         Jogo.boss.x = estado.boss.x; Jogo.boss.y = estado.boss.y;
       }
       const def = BOSSES.find((b) => b.id === estado.boss.defId) || BOSSES[0];

@@ -179,6 +179,7 @@ const Jogo = {
     Jogo.historiaAtiva = false;
     Jogo.estado = 'jogando';
     Som.intensidade = 0;
+    Som.desativarTenebroso();
     Jogo.prepararOnda();
     UI.el.classeNome.textContent = Jogo.jogador.classe.nome;
     document.documentElement.style.setProperty('--cor-classe', Jogo.jogador.skin.cor);
@@ -356,6 +357,7 @@ const Jogo = {
       def = final ? BOSSES.find((b) => b.final) : rodizio[encontro % rodizio.length];
     }
     Jogo.boss = new Boss(def, Jogo.onda);
+    Som.ativarTenebroso();
     Jogo.flashTela(final ? 0.9 : 0.5, def.cor);
     Camera.bater(final ? 40 : 20);
     Som.bossEntra();
@@ -394,6 +396,7 @@ const Jogo = {
     // longo prazo; boss já paga em XP, melhoria garantida e pontuação.
     Jogo.coletaveis.push(new Coletavel('moeda', Jogo.boss.x, Jogo.boss.y, 1));
     Jogo.boss = null;
+    Som.desativarTenebroso();
     // Cair o CEIFADOR não acaba o jogo: acaba a parte que estava no jogo.
     if (eraFinal && !Jogo.segredo.fase) { Jogo.abrirSegredo(); return; }
     Jogo.filaDeMelhorias += 1;
@@ -494,6 +497,7 @@ const Jogo = {
     if (primeiraVez && typeof UI !== 'undefined' && UI.anunciarAto2) UI.anunciarAto2();
     Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
     Jogo.boss = null;
+    Som.desativarTenebroso();
     UI.esconderBarraBoss();
     Jogo.dimensao = 'nadir';
     Jogo.onda = Jogo.TOTAL_ONDAS + 1;
