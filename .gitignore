@@ -7,3 +7,6 @@ node_modules/
 *.pem
 *.key
 api/conexao-local.js
+
+.vercel
+.env*

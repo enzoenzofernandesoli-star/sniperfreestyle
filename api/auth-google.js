@@ -2,6 +2,12 @@ const crypto = require('node:crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { banco, criarSessao } = require('../servidor/conta');
 
+function contaDeDesenvolvedor(email) {
+  const autorizados = String(process.env.DESENVOLVEDOR_EMAILS || '')
+    .split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
+  return autorizados.includes(String(email || '').trim().toLowerCase());
+}
+
 module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).json({ erro: 'método não suportado' }); return; }
@@ -28,9 +34,21 @@ module.exports = async function (req, res) {
         nome = excluded.nome, email = excluded.email, foto = excluded.foto, atualizado_em = now()
       returning id, nome, email, foto, nucleus, classes_desbloqueadas as classes
     `;
+    if (contaDeDesenvolvedor(email) && !contas[0].classes.includes('classe-desenvolvedor')) {
+      const atualizadas = await sql`
+        update public.contas_jogador
+        set classes_desbloqueadas = array_append(classes_desbloqueadas, 'classe-desenvolvedor'),
+            atualizado_em = now()
+        where id = ${contas[0].id}
+        returning classes_desbloqueadas as classes
+      `;
+      contas[0].classes = atualizadas[0].classes;
+    }
     await criarSessao(res, contas[0].id);
     res.status(200).json({ conta: contas[0] });
   } catch (e) {
     res.status(401).json({ erro: 'não foi possível validar a conta Google' });
   }
 };
+
+module.exports.contaDeDesenvolvedor = contaDeDesenvolvedor;

@@ -49,6 +49,16 @@ test('recordes acompanham a conta Google sem perder o histórico local', () => {
   assert.match(migracao, /references public\.contas_jogador/i);
 });
 
+test('DESENVOLVEDOR pode ser liberado somente pela allowlist privada do servidor', () => {
+  const anterior = process.env.DESENVOLVEDOR_EMAILS;
+  process.env.DESENVOLVEDOR_EMAILS = 'dono@example.com, outro@example.com';
+  const auth = require(path.join(raiz, 'api/auth-google.js'));
+  assert.equal(auth.contaDeDesenvolvedor('DONO@example.com'), true);
+  assert.equal(auth.contaDeDesenvolvedor('jogador@example.com'), false);
+  if (anterior === undefined) delete process.env.DESENVOLVEDOR_EMAILS;
+  else process.env.DESENVOLVEDOR_EMAILS = anterior;
+});
+
 test('o Ato I termina na onda 100 e o boss final fica fora do rodízio', () => {
   assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 100);
   assert.equal(vm.runInContext('Jogo.ondaFinalDaCampanha()', contexto), 200);
