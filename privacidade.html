@@ -104,6 +104,15 @@
     identificador da instalação, o número do pedido quando fornecido e a data. Dados de cartão
     e cobrança ficam com o Google e nunca chegam ao jogo.
   </p>
+
+  <h2>CONTA GOOGLE E COMPRAS NO WEBAPP</h2>
+  <p>
+    O login usa Google Identity Services. Depois da validação, guardamos o identificador
+    estável fornecido pelo Google, nome, e-mail, foto, saldo de NUCLEUS e uma sessão com prazo
+    de validade. Compras feitas no site são processadas pelo Stripe Checkout. O servidor recebe
+    apenas a confirmação da compra e seu identificador; dados completos do cartão permanecem
+    com a Stripe.
+  </p>
   <table>
     <thead><tr><th>Dado</th><th>Para quê</th></tr></thead>
     <tbody>
@@ -128,6 +137,8 @@
     <li><strong>Vercel Inc.</strong> — hospedagem do jogo e da função que recebe o placar.</li>
     <li><strong>Neon Inc.</strong> — banco de dados do placar, em servidor na região de São Paulo.</li>
     <li><strong>Google Play</strong> — processamento e confirmação das compras feitas no aplicativo Android.</li>
+    <li><strong>Google</strong> — autenticação da conta; recebemos identificador da conta, nome, e-mail e foto.</li>
+    <li><strong>Stripe</strong> — processamento das compras feitas no WebApp. Dados de cartão ficam com a Stripe e não chegam ao jogo.</li>
     <li><strong>Google Fonts</strong> — as duas fontes do jogo são baixadas do servidor do Google, que
       nesse pedido vê o IP da conexão. Sem internet, o jogo usa fonte do próprio aparelho e roda igual.</li>
   </ul>

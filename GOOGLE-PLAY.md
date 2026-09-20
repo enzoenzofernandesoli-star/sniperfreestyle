@@ -74,8 +74,8 @@ RECORDES. Declare "sim" para interação entre usuários no questionário de cla
 
 A LOJINHA tem uma aba de **NUCLEUS com preço em reais**: 700 por R$ 5,90,
 1.500 por R$ 9,90 e 2.200 por R$ 14,90. NUCLEUS só libera personagens e não
-cai nas runs. O aplicativo usa Digital Goods API + Google Play Billing. No navegador
-comum, o botão informa que a compra está disponível somente no app instalado pela Play.
+cai nas runs. O aplicativo usa Digital Goods API + Google Play Billing. O WebApp vendido
+fora da Play usa Stripe Checkout; esse caminho não aparece dentro do aplicativo da Play.
 
 - **Pagamentos:** bem digital vendido dentro de app na Play **tem** que passar
   pelo Google Play Billing. Preço em R$ anunciado na tela, com qualquer outro
@@ -90,21 +90,6 @@ Antes do teste fechado:
 3. Definir `GOOGLE_PLAY_SERVICE_ACCOUNT`, `GOOGLE_PLAY_PACKAGE_NAME` e `DATABASE_URL` na Vercel.
 4. Dar à conta de serviço acesso às compras no Play Console.
 5. Gerar o TWA com Play Billing habilitado e testar usando conta de testador licenciado.
-
-### 2.8 O áudio de terceiros
-
-O jogo toca quatro arquivos de voz: `assets/sixseven.mp3` e as três falas
-`assets/encaixa-*.m4a`. Todo o resto do som é sintetizado no navegador, sem
-arquivo — esses quatro são a exceção.
-
-**Preciso saber de onde eles vieram.** Se forem recorte de vídeo, música ou
-áudio de outra pessoa (o "six seven" e o "encaixa" são bordões que circulam em
-vídeo), publicar comercialmente na Play expõe você a reclamação de direito
-autoral, e a Play derruba o app primeiro e pergunta depois.
-
-- Se **você gravou**, está resolvido: só me diga e eu registro isso no projeto.
-- Se **não**, o caminho seguro é gravar você mesmo dizendo as falas (fica até
-  mais engraçado) ou sintetizar no WebAudio como o resto do jogo.
 
 ## 3. Como empacotar (o caminho mais curto)
 
@@ -142,7 +127,7 @@ Sniper Freestyle: Arena Neon
 
 **Descrição curta** (máx. 80) — 79 caracteres:
 ```
-Twin-stick roguelite neon: 5 classes, 14 bosses, 100 ondas e placar mundial.
+Twin-stick roguelite neon: 6 classes, 14 bosses, 200 ondas e placar mundial.
 ```
 
 **Descrição completa** (máx. 4000):

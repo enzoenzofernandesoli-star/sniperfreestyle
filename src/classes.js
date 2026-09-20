@@ -1,5 +1,5 @@
 /* ===========================================================================
-   CLASSES.JS — as 4 classes jogáveis e a árvore de melhorias (roguelite).
+   CLASSES.JS — classes jogáveis e a árvore de melhorias (roguelite).
    =========================================================================== */
 
 /* Estrutura de atributos usada pelo Jogador:
@@ -130,11 +130,32 @@ const CLASSES = [
       dashRecarga: 1.5, escudoRecarga: 10, escudoDuracao: 2.8, ultRecarga: 24,
       ima: 200, regen: 0, orbes: 0, lacaios: 2
     }
+  },
+  {
+    id: 'desenvolvedor',
+    nome: 'DESENVOLVEDOR',
+    apelido: 'Falha na Matriz',
+    cor: '#ffffff',
+    cor2: '#00ff88',
+    icone: '⌘',
+    descricao: 'O criador entrou no próprio código. Não respeita balanceamento, limites de dano nem a invencibilidade dos bosses.',
+    forcas: ['6 corações', 'Rajada de 7 projéteis', 'Dano e cadência absurdos', 'Ignora proteção dos bosses', 'Pode zerar a campanha'],
+    fraquezas: ['Nenhuma. É quebrado de propósito.'],
+    somTiro: 'arcano',
+    ult: { nome: 'ROOT ACCESS', descricao: 'Apaga todos os inimigos e força qualquer boss, até o CEIFADOR, a aceitar dano total.' },
+    atributos: {
+      vidaMax: 6, velocidade: 520, cadencia: 0.07, dano: 180, projeteis: 7,
+      espalhamento: 0.22, balaVel: 1900, balaRaio: 10, perfuracao: 99, ricochete: 4,
+      homing: 0.9, critChance: 0.65, critMult: 4,
+      dashRecarga: 0.28, escudoRecarga: 2, escudoDuracao: 8, ultRecarga: 8,
+      ima: 900, regen: 0.8, orbes: 6, lacaios: 4
+    },
+    quebraMatriz: true
   }
 ];
 
 // A cor da nave não pertence mais à classe: ela é um item da loja, comprado
-// com moeda e válido para as cinco. `skinDaClasse` continua existindo com a
+// com moeda e válido para todas. `skinDaClasse` continua existindo com a
 // mesma assinatura porque o cooperativo ainda fala em "skin" no protocolo.
 function skinDaClasse(classeId, skinId) {
   if (skinId) {

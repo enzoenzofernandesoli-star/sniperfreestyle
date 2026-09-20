@@ -2,7 +2,7 @@
    LOJA.JS — moedas, catálogo de cosméticos e a tela da lojinha.
 
    A cor deixou de pertencer à classe: agora tudo que é aparência sai daqui e
-   vale para as cinco classes. Quem paga é a moeda, que cai do inimigo morto.
+   vale para todas as classes. Quem paga é a moeda, que cai do inimigo morto.
    Nada aqui mexe em atributo, dano ou pontuação — é só aparência.
    =========================================================================== */
 
@@ -82,7 +82,7 @@ const Carteira = {
 };
 
 /* --------------------------- Classes trancadas --------------------------- */
-/* Três classes vêm de graça. Duas não: ESPECTRO e INVOCADOR se compram com
+/* Três classes vêm de graça. ESPECTRO, INVOCADOR e DESENVOLVEDOR se compram com
    NUCLEUS, moeda premium que não cai durante as runs. Moeda comum fica
    exclusiva para cosméticos da lojinha.
 
@@ -91,7 +91,8 @@ const Carteira = {
    em atributo — classe travada é só classe que não dá para escolher. */
 const CLASSES_TRANCADAS = {
   espectro: { item: 'classe-espectro', preco: 700 },
-  invocador: { item: 'classe-invocador', preco: 1500 }
+  invocador: { item: 'classe-invocador', preco: 1500 },
+  desenvolvedor: { item: 'classe-desenvolvedor', preco: 5000 }
 };
 
 const Classes = {
@@ -479,7 +480,7 @@ const Loja = {
     const nota = document.createElement('p');
     nota.className = 'loja-nota';
     nota.textContent = 'NUCLEUS serve somente para liberar personagens e não cai durante as runs. '
-      + 'Compras são processadas com segurança pelo Google Play.';
+      + 'No site, compras usam Stripe. No aplicativo da Google Play, usam Play Billing.';
     grade.appendChild(nota);
   },
 

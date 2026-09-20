@@ -81,7 +81,6 @@ const Jogo = {
   atravessou: false,
 
   flash: { alpha: 0, cor: '#fff' },
-  festa67: null,        // o 67 gigante que aparece a cada boss derrubado
   avisoTexto: '',
   avisoTimer: 0,
 
@@ -162,7 +161,6 @@ const Jogo = {
     Particulas.limpar();
     Textos.limpar();
     Jogo.boss = null;
-    Jogo.festa67 = null;
     Jogo.onda = 1;
     Jogo.pontos = 0;
     Jogo.combo = 0;
@@ -671,109 +669,6 @@ const Jogo = {
     }
   },
 
-  // Cada boss derrubado cospe um 67 gigante na tela, e o estilo muda de um
-  // para o outro: o índice vem da posição do boss na tabela, então o mesmo
-  // boss sempre traz o mesmo 67.
-  ESTILOS_67: [
-    { id: 'neon',    cor: '#31e0ff', cor2: '#093a4d', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
-    { id: 'lava',    cor: '#ff8e45', cor2: '#5c1a00', fonte: '900 320px Impact, Arial Black, sans-serif' },
-    { id: 'vidro',   cor: '#eaf6ff', cor2: '#33556b', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
-    { id: 'ouro',    cor: '#ffd34d', cor2: '#6b4a00', fonte: '900 330px Impact, Arial Black, sans-serif' },
-    { id: 'toxico',  cor: '#c6ff4d', cor2: '#2f5c00', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
-    { id: 'jade',    cor: '#56f0b0', cor2: '#0d4d38', fonte: '900 310px Impact, Arial Black, sans-serif' },
-    { id: 'fantasma',cor: '#b9b2ff', cor2: '#2d2160', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
-    { id: 'rosa',    cor: '#ff5cae', cor2: '#5c0d38', fonte: '900 330px Impact, Arial Black, sans-serif' },
-    { id: 'ferro',   cor: '#cfdbe8', cor2: '#3a4756', fonte: '900 320px Impact, Arial Black, sans-serif' },
-    { id: 'gelo',    cor: '#7ef9ff', cor2: '#0e4a57', fonte: '900 300px Orbitron, Arial Black, sans-serif' },
-    { id: 'raio',    cor: '#ffe14d', cor2: '#5c4c00', fonte: '900 330px Impact, Arial Black, sans-serif' },
-    { id: 'abismo',  cor: '#ff2e6e', cor2: '#3d001a', fonte: '900 320px Orbitron, Arial Black, sans-serif' },
-    { id: 'arauto',  cor: '#ff5252', cor2: '#4d0000', fonte: '900 340px Impact, Arial Black, sans-serif' },
-    { id: 'final',   cor: '#ffffff', cor2: '#7a0010', fonte: '900 360px Impact, Arial Black, sans-serif' }
-  ],
-
-  // A queda do segundo boss (onda 10) tem festa própria: texto no lugar do 67 e
-  // uma das falas gravadas.
-  ESTILO_ENCAIXA: { id: 'encaixa', cor: '#7cff9b', cor2: '#0b4d22', fonte: '900 220px Impact, Arial Black, sans-serif' },
-
-  comemorar67(def) {
-    // O final tem o 67 branco reservado; os outros seguem a posição na tabela.
-    const indice = def && def.final
-      ? Jogo.ESTILOS_67.length - 1
-      : Math.max(0, BOSSES.indexOf(def)) % (Jogo.ESTILOS_67.length - 1);
-    // Os dois primeiros encontros têm festa com nome e som próprios: o da onda 5
-    // grita SIX SEVEN, o da onda 10 grita ENCAIXA!. Do terceiro em diante é o 67.
-    const encontro = def.final ? 0 : Jogo.encontroDeBoss(Jogo.onda);
-    const estilo = encontro === 2 ? Jogo.ESTILO_ENCAIXA : Jogo.ESTILOS_67[indice];
-    const texto = encontro === 1 ? 'SIX SEVEN' : encontro === 2 ? 'ENCAIXA!' : '67';
-    // Tempo de tela casado com a fala: a do 67 tem 1,9 s, as da onda 10 têm
-    // 3,6 s. O letreiro fica no ar até o áudio terminar, com folga.
-    const duracao = encontro === 1 ? 4.2 : encontro === 2 ? 5.4 : 3.0;
-    Jogo.festa67 = { estilo, texto, vida: duracao, vidaMax: duracao, semente: Math.random() * 10 };
-    Jogo.flashTela(0.55, estilo.cor);
-    if (encontro === 1) Som.tocarClipe('sixseven');
-    else if (encontro === 2) Som.tocarClipe('encaixa');
-  },
-
-  desenhar67(ctx) {
-    const f = Jogo.festa67;
-    if (!f) return;
-    const p = 1 - f.vida / f.vidaMax;              // 0 no começo, 1 no fim
-    const entrada = Mat.limitar(p / 0.18, 0, 1);   // estufa na chegada
-    const saida = Mat.limitar((p - 0.75) / 0.25, 0, 1);
-    const escala = (0.4 + entrada * 0.75 - saida * 0.25) * (1 + Math.sin(Jogo.tempo * 9) * 0.02);
-    const e = f.estilo;
-
-    ctx.save();
-    ctx.globalAlpha = 1 - saida;
-    ctx.translate(Jogo.LARGURA / 2, Jogo.ALTURA / 2);
-    ctx.scale(escala, escala);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = e.fonte;
-
-    // Texto comprido não pode vazar da arena: encolhe a fonte até caber. O
-    // limite desconta a escala da animação, senão "SIX SEVEN" mede certo aqui
-    // e sai pelas beiradas depois do ctx.scale.
-    const texto = f.texto || '67';
-    const largura = ctx.measureText(texto).width;
-    const limite = (Jogo.LARGURA * 0.82) / Math.max(0.2, escala);
-    if (largura > limite) {
-      // o número que importa é o do "px", não o peso da fonte
-      const tamanho = parseInt((e.fonte.match(/(\d+)px/) || [])[1], 10) || 300;
-      ctx.font = e.fonte.replace(/\d+px/, Math.max(60, Math.round(tamanho * (limite / largura))) + 'px');
-    }
-
-    // tremor curto na entrada, para o número "bater" na tela
-    if (p < 0.2) {
-      const t = (0.2 - p) * 26;
-      ctx.translate(Mat.aleatorio(-t, t), Mat.aleatorio(-t, t));
-    }
-    ctx.rotate(Math.sin(Jogo.tempo * 2 + f.semente) * 0.03);
-
-    // sombra chapada atrás
-    ctx.fillStyle = e.cor2;
-    ctx.fillText(texto, 14, 16);
-
-    // corpo com brilho
-    ctx.shadowBlur = Jogo.modoLeve ? 0 : 60;
-    ctx.shadowColor = e.cor;
-    ctx.fillStyle = e.cor;
-    ctx.fillText(texto, 0, 0);
-
-    // contorno e faixa de leitura, cada estilo com o seu acabamento
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = (1 - saida) * 0.85;
-    ctx.strokeText(texto, 0, 0);
-
-    ctx.globalAlpha = (1 - saida) * 0.28;
-    ctx.fillStyle = '#000000';
-    const meia = Math.max(320, ctx.measureText(texto).width / 2 + 30);
-    for (let y = -170; y < 170; y += 12) ctx.fillRect(-meia, y, meia * 2, 4);
-    ctx.restore();
-  },
-
   aplicarRaioBoss(x, y, angulo, cor) {
     const dx = Math.cos(angulo), dy = Math.sin(angulo);
     for (const j of Jogo.jogadores()) {
@@ -876,10 +771,7 @@ const Jogo = {
     if (Input.apertou('KeyP') || Input.apertou('Escape')) { Jogo.pausar(); return; }
     if (Jogo.historiaAtiva) return;
 
-    // A festa do boss manda na tela: enquanto o letreiro estiver no ar, nada
-    // aparece por cima dele. A carta de melhoria espera na fila e abre assim
-    // que o SIX SEVEN, o ENCAIXA! ou o 67 terminarem — junto com a fala.
-    if (Jogo.filaDeMelhorias > 0 && !Jogo.festa67) { Jogo.abrirMelhoria(); return; }
+    if (Jogo.filaDeMelhorias > 0) { Jogo.abrirMelhoria(); return; }
 
     if (Jogo.jogador.vida > 0) Jogo.jogador.atualizar(dt);
     for (const [id, outro] of Jogo.outros) {
@@ -901,7 +793,6 @@ const Jogo = {
       Jogo.atualizarSegredo(dtReal);
     } else if (Jogo.intervaloOnda > 0) {
       Jogo.intervaloOnda -= dtReal;
-      if (Jogo.festa67) Jogo.intervaloOnda = Math.max(Jogo.intervaloOnda, 0.4);
       if (Jogo.intervaloOnda <= 0 && Jogo.ondaLimpa) {
         // A 100 não encerra mais nada: derrubar o CEIFADOR abre o Interstício, e
         // de lá a campanha atravessa para NÁDIR. Este ramo existe para a onda
@@ -1102,14 +993,6 @@ const Jogo = {
     Particulas.atualizar(dt);
     Textos.atualizar(dtReal);
     Jogo.flash.alpha = Math.max(0, Jogo.flash.alpha - dtReal * 2.6);
-    if (Jogo.festa67) {
-      Jogo.festa67.vida -= dtReal;
-      if (Jogo.festa67.vida <= 0) {
-        Jogo.festa67 = null;
-        // acabou o letreiro: a carta que estava esperando entra agora
-        if (Jogo.filaDeMelhorias > 0 && Jogo.estado === 'jogando') Jogo.abrirMelhoria();
-      }
-    }
     Jogo.intervaloHUD -= dtReal;
     if (Jogo.intervaloHUD <= 0) {
       UI.atualizarHUD();
@@ -1328,7 +1211,6 @@ const Jogo = {
     }
 
     // Por último, por cima de tudo: o letreiro do boss derrubado.
-    Jogo.desenhar67(ctx);
   },
 
   desenharFundo(ctx) {

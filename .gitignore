@@ -1,4 +1,9 @@
 node_modules/
 .vercel/
 .DS_Store
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
 api/conexao-local.js

@@ -323,16 +323,23 @@ const UI = {
       : 'Toque em DESBLOQUEAR para liberar ' + c.nome);
   },
 
-  comprarClasse(c) {
-    if (Classes.destrancar(c.id) === 'sem-nucleus') {
-      UI.avisoNaTela('Faltam ' + Classes.falta(c.id).toLocaleString('pt-BR') +
-        ' NUCLEUS para liberar ' + c.nome);
+  async comprarClasse(c) {
+    if (typeof Conta !== 'undefined' && Conta.atual) {
+      try {
+        await Conta.desbloquearClasse(c.id);
+      } catch (e) {
+        UI.avisoNaTela(String(e.message || 'Não foi possível desbloquear.'));
+        Som.erro();
+        return;
+      }
+    } else {
+      UI.avisoNaTela('Entre com Google no menu antes de desbloquear ' + c.nome + '.');
       Som.erro();
       return;
     }
     Som.subirNivel();
-    UI.avisoNaTela(c.nome + ' liberada. Ela é sua para sempre.');
-    UI.montarClasses();                          // o cartão volta jogável
+    UI.avisoNaTela(c.nome + ' liberada e salva na sua conta.');
+    UI.montarClasses();
     if (UI.atualizarMoedas) UI.atualizarMoedas();
   },
 

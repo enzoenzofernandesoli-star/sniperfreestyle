@@ -187,6 +187,38 @@ const Recordes = {
     catch (e) { /* ignora */ }
   },
 
+  mesclarDaConta(entradas) {
+    if (!Array.isArray(entradas)) return;
+    const chave = (r) => [r.temporada || 'T1', r.pontos, r.classe, r.onda, r.tempo, r.abates].join('|');
+    const existentes = new Set(Recordes.historico.map(chave));
+    for (const registro of entradas) {
+      const entrada = {
+        nome: registro.nome, pontos: Number(registro.pontos) || 0, classe: registro.classe,
+        onda: Number(registro.onda) || 1, ato: Number(registro.onda) > 100 ? 2 : 1,
+        nivel: Number(registro.nivel) || 1, tempo: Number(registro.tempo) || 0,
+        abates: Number(registro.abates) || 0, venceu: registro.venceu === true,
+        temporada: registro.temporada || 'T1',
+        data: String(registro.criado_em || '').slice(0, 10)
+      };
+      if (!existentes.has(chave(entrada))) {
+        Recordes.historico.push(entrada);
+        existentes.add(chave(entrada));
+      }
+    }
+    const porTemporada = {};
+    Recordes.historico = Recordes.historico.sort((a, b) => b.pontos - a.pontos).filter((r) => {
+      const t = r.temporada || 'T1';
+      porTemporada[t] = (porTemporada[t] || 0) + 1;
+      return porTemporada[t] <= 8;
+    });
+    Recordes.recortarTemporada();
+    try { localStorage.setItem('sniper.recordes', JSON.stringify(Recordes.historico)); } catch (e) {}
+    if (typeof UI !== 'undefined') {
+      UI.atualizarMenu();
+      UI.montarRecordes();
+    }
+  },
+
   melhor() { return Recordes.lista.length ? Recordes.lista[0].pontos : 0; },
   melhorDeTodas() {
     return Recordes.historico.reduce((m, r) => Math.max(m, r.pontos || 0), 0);
@@ -316,7 +348,6 @@ const Som = {
     Som.aplicarVolumes();
     Som.pronto = true;
     Som.proximaNota = Som.ctx.currentTime + 0.1;
-    Som.prepararClipes();   // decodifica as falas antes de precisarem tocar
   },
 
   aplicarVolumes() {
@@ -449,71 +480,6 @@ const Som = {
   // trilha: baixo + arpejo em escala menor; acelera e abre o filtro no boss
   // Cada boss derrubado troca a trilha: raiz, escala e timbre mudam juntos, e
   // a faixa 0 é a de sempre. É a mesma música procedural — o que muda é o modo.
-  /* Clipes gravados. O resto do áudio do jogo é sintetizado no WebAudio; estes
-     são a exceção: falas curtas que tocam na queda de certos bosses. Cada lista
-     é sorteada na hora, então a mesma fase pode soar diferente a cada partida.
-
-     `ganho` é o quanto o clipe é amplificado. Um elemento <audio> comum trava
-     em 1.0; passando pelo WebAudio dá para ir além, que é o que deixa a fala
-     estourando por cima da música. O arquivo do 67 já veio alto e fica em 1,2;
-     os da onda 10 sobem para 2,4. */
-  CLIPES: {
-    sixseven: { ganho: 1.2, arquivos: ['assets/sixseven.mp3'] },
-    encaixa: { ganho: 2.4, arquivos: ['assets/encaixa-1.m4a', 'assets/encaixa-2.m4a', 'assets/encaixa-3.m4a'] }
-  },
-  _buffers: {},
-
-  async _carregarClipe(caminho) {
-    if (Som._buffers[caminho]) return Som._buffers[caminho];
-    const resposta = await fetch(caminho);
-    const dados = await resposta.arrayBuffer();
-    const buffer = await Som.ctx.decodeAudioData(dados);
-    Som._buffers[caminho] = buffer;
-    return buffer;
-  },
-
-  tocarClipe(nome) {
-    const grupo = Som.CLIPES[nome];
-    if (!grupo || Config.volumeEfeitos <= 0) return;
-    const caminho = Mat.escolher(grupo.arquivos);
-
-    // O navegador só libera áudio depois de um gesto, e o contexto pode ter
-    // adormecido no meio da partida: acorda antes de tentar tocar.
-    Som.destravar();
-    if (Som.ctx && Som.ctx.state === 'suspended' && Som.ctx.resume) Som.ctx.resume();
-    if (!Som.pronto || !Som.ctx) { Som._tocarClipeSimples(caminho); return; }
-
-    Som._carregarClipe(caminho).then((buffer) => {
-      const fonte = Som.ctx.createBufferSource();
-      fonte.buffer = buffer;
-      const ganho = Som.ctx.createGain();
-      // Vai direto ao destino, e não pelo mixer de efeitos, justamente para
-      // poder passar de 1.0 — é o que faz a fala estourar por cima do jogo.
-      ganho.gain.value = grupo.ganho * Mat.limitar(Config.volumeEfeitos * 2.2, 0, 3);
-      fonte.connect(ganho).connect(Som.ctx.destination);
-      fonte.start();
-    }).catch(() => Som._tocarClipeSimples(caminho));
-  },
-
-  // Deixa os clipes decodificados antes da hora, para a fala não atrasar quando
-  // o boss cai.
-  prepararClipes() {
-    if (!Som.pronto || !Som.ctx) return;
-    for (const nome of Object.keys(Som.CLIPES)) {
-      for (const caminho of Som.CLIPES[nome].arquivos) Som._carregarClipe(caminho).catch(() => {});
-    }
-  },
-
-  // Reserva para quando o WebAudio ainda não acordou.
-  _tocarClipeSimples(caminho) {
-    try {
-      const audio = new Audio(caminho);
-      audio.volume = Mat.limitar(Config.volumeEfeitos * 1.8, 0, 1);
-      const p = audio.play();
-      if (p && p.catch) p.catch(() => { /* sem gesto do usuário ainda */ });
-    } catch (e) { /* sem áudio: o jogo segue igual */ }
-  },
-
   TRILHAS: [
     { raiz: 55, escala: [0, 3, 5, 7, 10, 12, 15], baixo: 'sawtooth', lead: 'triangle', bpm: 0 },
     { raiz: 49, escala: [0, 2, 3, 7, 8, 12, 14], baixo: 'square', lead: 'triangle', bpm: 6 },

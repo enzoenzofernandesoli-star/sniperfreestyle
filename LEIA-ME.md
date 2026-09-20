@@ -13,7 +13,7 @@ História canônica, diálogos e plano da campanha 101–200: [`HISTORIA.md`](HI
 - **Teto de 6 corações.** Nenhuma classe, melhoria ou cura passa disso
   (`Jogador.VIDA_MAXIMA`), então nenhuma build vira esponja.
 - **Lojinha.** Aparência não pertence mais à classe: cor da nave, cor do tiro,
-  acessório e emoji são itens comprados com moeda e valem para as cinco classes.
+  acessório e emoji são itens comprados com moeda e valem para todas as classes.
   Nada na loja mexe em atributo, dano ou pontuação. A moeda cai de todo inimigo
   morto, e o saldo fica neste navegador. NUCLEUS usa compra no app pelo Google Play.
 - Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
@@ -119,6 +119,7 @@ então dá pra jogar com um dedo só, andando e apertando ATIRAR.
 | **ESPECTRO** | **a classe mais forte, e só de perto**: escopeta de 5×13, dash que corta, cura 2,5% por abate | **CARNIFICINA** — 5 s intangível, foice de 175 px valendo 10× o tiro, 40% mais rápido, e cada abate estende |
 | **ARCANO** | projétil teleguiado, 2 orbes orbitais, ímã de XP enorme | **SINGULARIDADE** — buraco negro de 480 px que explode numa onda de 700 |
 | **INVOCADOR** | 3 corações, tiro teleguiado e 2 drones que caçam sozinhos | **LEGIÃO** — 3 drones extras por 10 s, tropa inteira mais rápida |
+| **DESENVOLVEDOR** | Falha na Matriz: 6 corações, rajada absurda, ignora limites e proteção dos bosses | **ROOT ACCESS** — apaga inimigos e força qualquer boss a aceitar dano total |
 
 O INVOCADOR continua forte, mas deixou de dominar todas as classes. Cada drone orbita a
 78 px, procura alvo num raio de 760 px e atira com **65% do dano do dono**, quase
@@ -221,18 +222,22 @@ Mar Sem Fundo). Véspera já existe, como boss da onda 180. Ordem em `HISTORIA.m
 
 ## Classes trancadas
 
-Três classes vêm de graça. **ESPECTRO custa 700 NUCLEUS e INVOCADOR 1.500 NUCLEUS**.
+Três classes vêm de graça. **ESPECTRO custa 700 NUCLEUS, INVOCADOR 1.500 NUCLEUS e
+DESENVOLVEDOR 5.000 NUCLEUS**. O DESENVOLVEDOR é propositalmente quebrado e capaz de zerar
+o jogo, inclusive ignorando invencibilidade e limites de dano de boss.
 NUCLEUS é moeda premium exclusiva dos personagens: não cai em run e não compra cosmético.
 Moeda comum continua exclusiva da lojinha; cada inimigo morto vale exatamente **1 moeda**,
 sem bônus por elite, onda ou tipo, e boss também vale 1.
 
 Pacotes cadastrados no cliente: 700 por R$ 5,90; 1.500 por R$ 9,90; 2.200 por R$ 14,90. O último libera
 ESPECTRO e INVOCADOR juntos, exatamente. Com taxa de 15% da Google Play, o pacote dos dois
-deixa R$ 12,67 antes de impostos e estornos. No Android, a compra usa Google Play Billing e
-o NUCLEUS só entra depois da validação do token no servidor.
+deixa R$ 12,67 antes de impostos e estornos. No WebApp, a compra usa Stripe Checkout; no
+Android da Play, usa Google Play Billing. Nos dois casos o NUCLEUS só entra após webhook ou
+validação server-side.
 
 - Quem manda é `CLASSES_TRANCADAS` em `src/loja.js`, e o desbloqueio mora na **mesma carteira
-  dos cosméticos** (`Carteira.itens`, com id `classe-espectro` / `classe-invocador`): quem
+  dos cosméticos** (`Carteira.itens`, com ids `classe-espectro`, `classe-invocador` e
+  `classe-desenvolvedor`): quem
   comprou não perde ao atualizar o jogo.
 - O cartão trancado continua mostrando atributo, ultimate e fraqueza — é vitrine. Ganha
   cadeado, hachura diagonal e o botão **DESBLOQUEAR**. Tocar nele não joga: o cartão nega com
@@ -534,7 +539,7 @@ fase (`1 + dureza × (n-1)`), então boss de encontro baixo não usa o repertór
 inteiro; e o `laser` não cria projétil, então contar balas por segundo
 subestima quem ataca de laser.
 
-## Escudo de fase, trilha e o 67
+## Escudo de fase e trilha
 
 Duas coisas acontecem em toda luta de boss, do primeiro ao último:
 
@@ -543,29 +548,6 @@ Duas coisas acontecem em toda luta de boss, do primeiro ao último:
   `2 + índice da fase × 0,8` segundos — 2,8 s na segunda fase, 3,6 s na terceira,
   4,4 s na quarta. O contador roda em tempo de relógio, então hitstop não
   encurta. Enquanto durar, nada entra: nem ultimate, nem crítico.
-- **O letreiro manda na tela.** Enquanto ele estiver no ar nada aparece por
-  cima: a carta de melhoria fica esperando na fila e só abre quando o letreiro
-  acaba, a virada de onda segura, e o desenho dele é o último da lista — passa
-  por cima até do aviso central. O tempo de tela é casado com a fala: 4,2 s no
-  SIX SEVEN (fala de 1,9 s), 5,4 s no ENCAIXA! (falas de 3,6 s) e 3,0 s no 67.
-- **SIX SEVEN** e **ENCAIXA!** Os dois primeiros bosses têm letreiro e som
-  próprios: o da onda 5 grita **SIX SEVEN** com `assets/sixseven.mp3`, e o da
-  onda 10 grita **ENCAIXA!** com uma das três falas de `assets/encaixa-*.m4a`,
-  sorteada na hora — a mesma fase pode soar diferente a cada partida. São os
-  únicos arquivos de som do projeto; o resto do áudio continua sintetizado.
-- Os clipes passam pelo WebAudio com `GainNode` ligado direto ao destino — não
-  por um `<audio>` comum nem pelo mixer de efeitos — justamente para poder
-  estourar acima de 1.0: `CLIPES[nome].ganho` é 1,2 no 67 (o arquivo já veio
-  alto) e 2,4 nas falas da onda 10, multiplicado por `volumeEfeitos * 2,2`.
-  Medido com um analisador no destino: pico de 1,45, bem acima do teto de 1,0
-  que um `<audio>` permitiria.
-- `Som.prepararClipes()` decodifica os quatro arquivos assim que o áudio
-  destrava, e `tocarClipe` acorda o contexto antes de tocar — sem isso a fala
-  saía muda quando o navegador tinha suspendido o áudio no meio da partida.
-- **67.** Qualquer outro boss derrubado enche a tela com um **67 gigante** por 2,6 segundos, e
-  o estilo muda de boss para boss — cor, fonte, sombra e faixa de leitura vêm de
-  `Jogo.ESTILOS_67`, escolhidos pela posição do boss na tabela. O CEIFADOR tem o
-  branco reservado só para ele.
 - **A trilha muda junto.** `Som.proximaTrilha()` avança para a próxima das sete
   faixas de `Som.TRILHAS`: raiz, escala, timbre do baixo, timbre do lead e BPM
   mudam de uma para a outra. Cada boss morto deixa a música diferente do que
@@ -641,13 +623,17 @@ src/placar.js       Perfil (nome) e Placar (envio e leitura do placar mundial)
 src/placar-config.js  endereço do placar — o único arquivo a mexer pra ligar/desligar
 api/placar.js       função da Vercel: valida a run e grava no Postgres do Neon
 src/loja.js         Carteira (moedas), catálogo de cosméticos e a tela da lojinha
-src/pagamento.js    Google Play Billing via Digital Goods API e validação no servidor
+src/conta.js        login Google, sessão e sincronização do saldo NUCLEUS
+src/pagamento.js    roteia Stripe no WebApp e Google Play Billing no aplicativo
 src/classes.js      CLASSES[] e MELHORIAS[] (dados puros — mexa aqui pra balancear)
 src/entidades.js    Jogador, Projetil, Inimigo, Boss, Coletavel
 src/jogo.js         estado, loop, ondas, colisões, efeitos de tela, render da arena
 src/ui.js           telas, HUD, barra de boss e cartas de melhoria
 src/solo.js         compatibilidade interna do motor no produto exclusivamente solo
 api/compra-google.js valida recibo do Google Play antes de liberar NUCLEUS
+api/stripe-checkout.js cria Checkout Stripe autenticado
+api/stripe-webhook.js confirma pagamento e credita NUCLEUS de forma idempotente
+api/meus-recordes.js devolve o histórico ligado à conta Google
 _original/          a versão antiga, intacta
 ```
 

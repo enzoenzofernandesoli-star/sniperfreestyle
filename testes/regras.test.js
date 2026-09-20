@@ -23,6 +23,32 @@ test('pacotes NUCLEUS usam os mesmos SKUs no cliente e servidor', () => {
   assert.deepEqual(Object.fromEntries(Array.from(pacotes, (par) => Array.from(par))), produtos);
 });
 
+test('WebApp exige conta Google e credita Stripe somente por webhook', () => {
+  const html = fs.readFileSync(path.join(raiz, 'index.html'), 'utf8');
+  const conta = fs.readFileSync(path.join(raiz, 'src/conta.js'), 'utf8');
+  const checkout = fs.readFileSync(path.join(raiz, 'api/stripe-checkout.js'), 'utf8');
+  const webhook = fs.readFileSync(path.join(raiz, 'api/stripe-webhook.js'), 'utf8');
+  assert.match(html, /id="googleLogin"/);
+  assert.match(conta, /\/api\/auth-google/);
+  assert.match(checkout, /contaDaRequisicao/);
+  assert.doesNotMatch(checkout, /set nucleus =/i);
+  assert.match(webhook, /constructEvent/);
+  assert.match(webhook, /set nucleus = c\.nucleus \+ nova\.nucleus/);
+});
+
+test('recordes acompanham a conta Google sem perder o histórico local', () => {
+  const conta = fs.readFileSync(path.join(raiz, 'src/conta.js'), 'utf8');
+  const nucleo = fs.readFileSync(path.join(raiz, 'src/nucleo.js'), 'utf8');
+  const placar = fs.readFileSync(path.join(raiz, 'api/placar.js'), 'utf8');
+  const meusRecordes = fs.readFileSync(path.join(raiz, 'api/meus-recordes.js'), 'utf8');
+  const migracao = fs.readFileSync(path.join(raiz, 'banco/migracoes/009_recordes_por_conta.sql'), 'utf8');
+  assert.match(conta, /\/api\/meus-recordes/);
+  assert.match(nucleo, /mesclarDaConta/);
+  assert.match(placar, /conta_id/);
+  assert.match(meusRecordes, /where conta_id =/i);
+  assert.match(migracao, /references public\.contas_jogador/i);
+});
+
 test('o Ato I termina na onda 100 e o boss final fica fora do rodízio', () => {
   assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 100);
   assert.equal(vm.runInContext('Jogo.ondaFinalDaCampanha()', contexto), 200);
@@ -291,8 +317,8 @@ test('cosmético é da conta, não da classe, e não encosta em atributo', () =>
   assert.equal(dados.unicos, dados.total, 'nenhum id de cosmético repetido');
   assert.equal(dados.gratisPorVitrine, 4, 'uma opção grátis por vitrine');
   assert.ok(dados.gratisSaoOsIniciais, 'o que é grátis já vem desbloqueado');
-  assert.deepEqual(Array.from(dados.vidas), [2, 4, 2, 2, 3], 'a vida das classes não mudou');
-  assert.ok(dados.mesmoCascoParaTodas, 'a cor vale para as cinco classes');
+  assert.deepEqual(Array.from(dados.vidas), [2, 4, 2, 2, 3, 6], 'a vida das classes não mudou');
+  assert.ok(dados.mesmoCascoParaTodas, 'a cor vale para todas as classes');
   assert.equal(dados.idInvalidoCaiNoEquipado, 'casco-original');
   for (const campo of dados.campos) {
     assert.ok(!['dano', 'vidaMax', 'velocidade', 'cadencia', 'pontos'].includes(campo),
@@ -500,7 +526,7 @@ test('o tiro do ESPECTRO fica na faixa das outras classes', () => {
     // Serve para comparar classes entre si; o número absoluto sai da bancada
     // em ferramentas/medir-dano.js.
     const dps = {};
-    for (const c of CLASSES) {
+    for (const c of CLASSES.filter((classe) => !classe.quebraMatriz)) {
       const a = c.atributos;
       const critMedio = 1 + a.critChance * (a.critMult - 1);
       dps[c.id] = a.projeteis * a.dano * critMedio / a.cadencia;
@@ -1207,7 +1233,7 @@ test('o CEIFADOR é invencível por regra: nem build máxima derruba a barra', (
   assert.ok(dados.voltouPara >= dados.vidaMax * 0.99, 'a barra volta ao topo sozinha');
 });
 
-test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => {
+test('boss ergue escudo a cada fase nova', () => {
   const mundo = vm.createContext({ console, Math, setTimeout });
   for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
     vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
@@ -1231,66 +1257,14 @@ test('boss ergue escudo a cada fase nova e o 67 muda de estilo por boss', () => 
     b.receberDano(300, true, 0, 0);
     const levouDepois = antes2 - b.vida;
 
-    const estilos = BOSSES.map((def) => {
-      Jogo.comemorar67(def);
-      return Jogo.festa67.estilo.id;
-    });
-    const doFinal = (() => { Jogo.comemorar67(BOSSES.find((x) => x.final)); return Jogo.festa67.estilo.id; })();
-
-    return { imuneNaTroca, levouImune, levouDepois, estilos, doFinal,
-      trilhas: Som.TRILHAS.length };
+    return { imuneNaTroca, levouImune, levouDepois, trilhas: Som.TRILHAS.length };
   })()`, mundo);
 
   // o escudo cresce com a campanha: curto no boss da onda 20, longo no da 90
   assert.ok(dados.imuneNaTroca > 1, 'a fase nova começa com escudo');
   assert.equal(dados.levouImune, 0, 'nada passa pelo escudo de fase');
   assert.equal(dados.levouDepois, 300, 'passado o escudo, o dano volta a valer');
-  assert.equal(new Set(Array.from(dados.estilos)).size >= 8, true, 'os 67 não são todos iguais');
-  assert.equal(dados.doFinal, 'final', 'o boss final tem o 67 reservado dele');
   assert.ok(dados.trilhas >= 5, 'há trilha suficiente para rodar a cada boss');
-});
-
-test('a carta de melhoria espera o letreiro do boss terminar', () => {
-  const mundo = vm.createContext({ console, Math, setTimeout });
-  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
-    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
-  }
-  vm.runInContext(`var UI = { el: { classeNome: {}, onda: {}, buffs: {} }, aviso() {}, mostrarBarraBoss() {},
-    atualizarBarraBoss() {}, montarEquipe() {}, mostrarTela() {}, atualizarHUD() {}, montarMelhorias() {},
-    esconderBarraBoss() {}, mostrarMelhorias() {} };
-    var Coop = { ativo: () => false, convidado: () => false, anfitriao: () => false };
-    var document = { documentElement: { style: { setProperty() {} } } };
-    var window = {};`, mundo);
-
-  const dados = vm.runInContext(`(() => {
-    Jogo.jogador = new Jogador('sniper', 'original');
-    Jogo.estado = 'jogando';
-    Jogo.onda = 5;
-    Jogo.inimigos.length = 0;
-    Jogo.projeteis.length = 0;
-    Jogo.ondaLimpa = true;
-    Jogo.intervaloOnda = 99;
-    Jogo.comemorar67(BOSSES[0]);          // letreiro do primeiro boss
-    Jogo.filaDeMelhorias = 1;             // uma carta esperando
-
-    const duracao = Jogo.festa67.vidaMax;
-    // metade do letreiro: a carta não pode ter aberto
-    for (let i = 0; i < Math.round((duracao / 2) / 0.016); i++) Jogo.atualizar(0.016);
-    const noMeio = { festa: !!Jogo.festa67, estado: Jogo.estado, fila: Jogo.filaDeMelhorias };
-
-    // passa do fim
-    for (let i = 0; i < Math.round((duracao / 2 + 0.4) / 0.016); i++) Jogo.atualizar(0.016);
-    const depois = { festa: !!Jogo.festa67, estado: Jogo.estado, fila: Jogo.filaDeMelhorias };
-
-    return { duracao, texto: 'SIX SEVEN', noMeio, depois };
-  })()`, mundo);
-
-  assert.ok(dados.duracao >= 4, 'o letreiro do primeiro boss dura o tempo da fala');
-  assert.equal(dados.noMeio.festa, true, 'no meio do letreiro ele ainda está no ar');
-  assert.equal(dados.noMeio.estado, 'jogando', 'e a carta de melhoria não abriu por cima');
-  assert.equal(dados.noMeio.fila, 1, 'a carta continua esperando na fila');
-  assert.equal(dados.depois.festa, false, 'terminado o letreiro');
-  assert.equal(dados.depois.estado, 'melhoria', 'aí sim a carta entra');
 });
 
 test('boss morto leva junto a barra e os tiros dele', () => {
@@ -1559,10 +1533,10 @@ test('run de NÁDIR conta no ranking, e morrer lá não apaga a vitória da Aren
   assert.equal(dados.noAto2.venceu, true);
 });
 
-/* Duas classes se compram com NUCLEUS. O que este teste guarda é a separação:
+/* Três classes se compram com NUCLEUS. O que este teste guarda é a separação:
    moeda normal nunca libera classe, comprar sem NUCLEUS não libera nada e
    classe já comprada não cobra de novo. */
-test('ESPECTRO e INVOCADOR só abrem com NUCLEUS, e a tranca não tem atalho', () => {
+test('classes premium só abrem com NUCLEUS, e a tranca não tem atalho', () => {
   const guardado = {};
   const mundo = vm.createContext({ console, Math,
     localStorage: {
@@ -1592,12 +1566,13 @@ test('ESPECTRO e INVOCADOR só abrem com NUCLEUS, e a tranca não tem atalho', (
 
     const item = Carteira.itens.filter((i) => i.indexOf('classe-') === 0);
     return { precos, livresDeGraca, pobre, aindaTrancada, naoGastou, comprou, sobrou,
-      liberada, deNovo, sobrouDepois, item, invocadorTrancado: Classes.trancada('invocador') };
+      liberada, deNovo, sobrouDepois, item, invocadorTrancado: Classes.trancada('invocador'),
+      desenvolvedorTrancado: Classes.trancada('desenvolvedor') };
   })()`, mundo);
 
-  assert.deepEqual(Array.from(dados.precos).map((p) => p[0]).sort(), ['espectro', 'invocador']);
+  assert.deepEqual(Array.from(dados.precos).map((p) => p[0]).sort(), ['desenvolvedor', 'espectro', 'invocador']);
   assert.equal(dados.livresDeGraca, true, 'três classes continuam de graça');
-  assert.deepEqual(Array.from(dados.precos).map((p) => p[1]), [700, 1500]);
+  assert.deepEqual(Array.from(dados.precos).map((p) => p[1]), [700, 1500, 5000]);
   assert.equal(dados.pobre, 'sem-nucleus');
   assert.equal(dados.aindaTrancada, true, 'sem pagar, continua trancada');
   assert.equal(dados.naoGastou, 699, 'compra recusada não tira NUCLEUS');
@@ -1608,6 +1583,28 @@ test('ESPECTRO e INVOCADOR só abrem com NUCLEUS, e a tranca não tem atalho', (
   assert.equal(dados.sobrouDepois, 100, 'classe já comprada não cobra de novo');
   assert.deepEqual(Array.from(dados.item), ['classe-espectro']);
   assert.equal(dados.invocadorTrancado, true, 'comprar uma não libera a outra');
+  assert.equal(dados.desenvolvedorTrancado, true, 'DESENVOLVEDOR exige 5.000 NUCLEUS');
+});
+
+test('DESENVOLVEDOR é a Falha na Matriz mais forte e custa 5.000 NUCLEUS', () => {
+  const dados = vm.runInContext(`(() => {
+    const dev = classePorId('desenvolvedor');
+    const normais = CLASSES.filter((classe) => classe.id !== 'desenvolvedor');
+    return {
+      nome: dev.nome, apelido: dev.apelido, quebraMatriz: dev.quebraMatriz,
+      preco: CLASSES_TRANCADAS.desenvolvedor.preco,
+      maiorDano: dev.atributos.dano > Math.max(...normais.map((classe) => classe.atributos.dano)),
+      maiorVida: dev.atributos.vidaMax > Math.max(...normais.map((classe) => classe.atributos.vidaMax)),
+      maisRapido: dev.atributos.velocidade > Math.max(...normais.map((classe) => classe.atributos.velocidade))
+    };
+  })()`, contexto);
+  assert.equal(dados.nome, 'DESENVOLVEDOR');
+  assert.equal(dados.apelido, 'Falha na Matriz');
+  assert.equal(dados.quebraMatriz, true);
+  assert.equal(dados.preco, 5000);
+  assert.equal(dados.maiorDano, true);
+  assert.equal(dados.maiorVida, true);
+  assert.equal(dados.maisRapido, true);
 });
 
 test('R$ 14,90 de NUCLEUS libera os dois personagens', () => {

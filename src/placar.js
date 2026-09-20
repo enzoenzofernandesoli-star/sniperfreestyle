@@ -124,6 +124,7 @@ const Placar = {
   // Lembrança por aparelho: neste endereço o placar mora no banco, não num
   // servidor. Vale por um dia, para voltar a testar o servidor de vez em quando.
   _preferirBanco() {
+    if (typeof Conta !== 'undefined' && Conta.atual) return false;
     try {
       const ate = Number(localStorage.getItem('sniper.placarDireto') || 0);
       return ate > Date.now();
@@ -178,12 +179,13 @@ const Placar = {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify({
+          body: JSON.stringify({
         nome: entrada.nome, pontos: entrada.pontos, classe: entrada.classe,
         onda: entrada.onda, nivel: entrada.nivel, tempo: entrada.tempo,
         abates: entrada.abates, venceu: entrada.venceu === true,
-        temporada: Placar.temporada()
-      })
+            temporada: Placar.temporada()
+          }),
+          credentials: 'same-origin'
     });
     return resposta.ok;
   },

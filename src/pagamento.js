@@ -70,6 +70,10 @@ const Pagamento = {
 
   async iniciar(pacote) {
     if (!pacote || !PACOTES_NUCLEUS.some((p) => p.id === pacote.id)) return;
+    if (!('getDigitalGoodsService' in window)) {
+      if (typeof Conta !== 'undefined') await Conta.comprarStripe(pacote);
+      return;
+    }
     Loja.avisar('ABRINDO GOOGLE PLAY…');
     if (!(await Pagamento.preparar())) {
       Loja.avisar('COMPRAS DISPONÍVEIS SOMENTE NO APP INSTALADO PELA GOOGLE PLAY.');

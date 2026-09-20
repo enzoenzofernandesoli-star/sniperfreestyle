@@ -476,6 +476,20 @@ class Jogador {
       this.reposicionarLacaios();
       Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 520, dano: this.attr.dano * 3, cor: this.classe.cor, atingidos: new Set(), empurrao: 760 });
       Particulas.anel(this.x, this.y, this.classe.cor, 110, 30);
+    } else if (this.classe.id === 'desenvolvedor') {
+      for (const inimigo of Jogo.inimigos) {
+        if (inimigo.vivo) Jogo.danificarInimigo(inimigo, inimigo.vidaMax * 10, true, inimigo.x, inimigo.y);
+      }
+      if (Jogo.boss && Jogo.boss.vivo) {
+        Jogo.boss.imune = 0;
+        Jogo.boss.receberDano(Jogo.boss.vidaMax * 10, true, Jogo.boss.x, Jogo.boss.y);
+      }
+      Jogo.projeteis = Jogo.projeteis.filter((p) => p.dono === 'jogador');
+      Jogo.ondasChoque.push({ x: this.x, y: this.y, raio: 10, raioMax: 1800,
+        dano: this.attr.dano * 20, cor: this.classe.cor, atingidos: new Set(),
+        empurrao: 2400, limpaTiros: true });
+      this.vida = this.attr.vidaMax;
+      this.invulneravel = 6;
     } else {
       // SINGULARIDADE: buraco negro que pega quase metade da arena
       Jogo.singularidades.push({ x: this.x, y: this.y, vida: 2.8, vidaMax: 2.8, raio: 480, dano: this.attr.dano * 9, cor: this.classe.cor, explodiu: false });
@@ -2391,9 +2405,10 @@ class Boss {
 
   receberDano(q, crit, fx, fy) {
     if (!this.vivo || this.entrando > 0) return;
+    const quebraMatriz = !!(Jogo.jogador && Jogo.jogador.classe && Jogo.jogador.classe.quebraMatriz);
     // Invencível de verdade: a barra não existe para ser reduzida. Nem o
     // TRAÇANTE, nem crítico somado, nem dano por segundo — nada entra aqui.
-    if (this.def.invencivel) {
+    if (this.def.invencivel && !quebraMatriz) {
       this.absorveu = 0.3;
       if (fx !== undefined && Mat.chance(0.12)) {
         Textos.criar(fx, fy, 'IMUNE', '#f4f6ff', 15);
@@ -2401,12 +2416,12 @@ class Boss {
       }
       return;
     }
-    if (this.imune > 0) {
+    if (this.imune > 0 && !quebraMatriz) {
       this.absorveu = 0.3;
       if (fx !== undefined && Mat.chance(0.3)) Particulas.faisca(fx, fy, Math.random() * Mat.TAU, '#8fe3ff');
       return;
     }
-    if (this.def.tetoDeDano) {
+    if (this.def.tetoDeDano && !quebraMatriz) {
       const teto = this.vidaMax * this.def.tetoDeDano;
       if (q > teto) {
         q = teto;
@@ -2417,7 +2432,7 @@ class Boss {
     // limitado, mas uma build de muitos projéteis somava acertos até passar da
     // regeneração. Agora a barra tem um máximo de dano por segundo, e esse
     // máximo é menor que o quanto ela recupera no mesmo segundo.
-    if (this.def.tetoPorSegundo) {
+    if (this.def.tetoPorSegundo && !quebraMatriz) {
       const agora = Jogo.tempoJogo;
       if (agora - (this.janelaDano || 0) >= 1) { this.janelaDano = agora; this.danoNaJanela = 0; }
       const restante = Math.max(0, this.vidaMax * this.def.tetoPorSegundo - (this.danoNaJanela || 0));
@@ -2435,7 +2450,6 @@ class Boss {
 
   morrer() {
     this.vivo = false;
-    Jogo.comemorar67(this.def);
     Som.proximaTrilha();
     Jogo.pararTempo(0.5);
     Camera.bater(34);

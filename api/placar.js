@@ -16,6 +16,7 @@
    =========================================================================== */
 
 const { neon } = require('@neondatabase/serverless');
+const { contaDaRequisicao } = require('../servidor/conta');
 
 // Ordem de busca da credencial:
 //   1. DATABASE_URL (Vercel → Settings → Environment Variables) — o jeito certo;
@@ -26,7 +27,7 @@ if (!CONEXAO) {
   try { CONEXAO = require('./conexao-local.js'); } catch (e) { CONEXAO = ''; }
 }
 
-const CLASSES = ['SNIPER', 'GUARDIÃO', 'ESPECTRO', 'ARCANO', 'INVOCADOR'];
+const CLASSES = ['SNIPER', 'GUARDIÃO', 'ESPECTRO', 'ARCANO', 'INVOCADOR', 'DESENVOLVEDOR'];
 // Temporada do ranking: 'T' e até três dígitos. Quem não manda entra em T1,
 // que é onde ficou tudo que foi jogado antes desta regra existir.
 const TEMPORADA_VALIDA = /^T[0-9]{1,3}$/;
@@ -136,6 +137,8 @@ module.exports = async function (req, res) {
     }
 
     try {
+      let conta = null;
+      try { conta = await contaDaRequisicao(req); } catch (e) { conta = null; }
       // trava de envio duplicado (clique duplo, reenvio de rede)
       const repetido = await sql`
         select 1 from public.placar_sobrecarga
@@ -149,9 +152,9 @@ module.exports = async function (req, res) {
       const temporada = TEMPORADA_VALIDA.test(bruta) ? bruta : 'T1';
       await sql`
         insert into public.placar_sobrecarga
-          (nome, pontos, classe, onda, nivel, tempo, abates, venceu, temporada)
+          (nome, pontos, classe, onda, nivel, tempo, abates, venceu, temporada, conta_id)
         values
-          (${nome}, ${pontos}, ${classe}, ${onda}, ${nivel}, ${tempo}, ${abates}, ${venceu}, ${temporada})
+          (${nome}, ${pontos}, ${classe}, ${onda}, ${nivel}, ${tempo}, ${abates}, ${venceu}, ${temporada}, ${conta && conta.id ? conta.id : null})
       `;
       res.status(201).json({ ok: true, nome: nome });
     } catch (e) {
