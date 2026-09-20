@@ -1,10 +1,9 @@
 # Avaliação para publicar no Google Play
 
 **Jogo:** Sniper Freestyle — Arena Neon
-**Conferido em:** 18/09/2026, testando cada item de fora (curl no site publicado)
-**Veredito:** o site já está no ar e o pacote de PWA está completo. Faltam
-**4 itens técnicos** (dois deles de 5 minutos) e **2 decisões de conteúdo** que
-podem reprovar o app se forem ignoradas. Nada aqui é impeditivo de engenharia.
+**Atualizado em:** 20/09/2026
+**Veredito:** app solo e integração de compra prontos no código. Falta configurar
+Play Console, credencial do serviço, produtos, banco, assinatura e publicação do AAB.
 
 ---
 
@@ -30,9 +29,8 @@ podem reprovar o app se forem ignoradas. Nada aqui é impeditivo de engenharia.
 |---|---|---|
 | `.well-known/assetlinks.json` | ❌ 404 — sem ele o app abre com a barra do Chrome | sai do PWABuilder |
 | `DATABASE_URL` na Vercel | ❌ `/api/placar` responde 503 | você, no painel |
-| Pacotes de NUCLEUS com preço em R$ | ⚠️ **risco de reprovação** até integrar Billing (ver 2.7) | decisão sua |
+| Google Play Billing | ✅ cliente e validação no servidor implementados; falta configurar Console | você + painel |
 | Áudio de terceiros no jogo | ⚠️ **risco de direito autoral** (ver 2.8) | decisão sua |
-| Servidor de salas (co-op) | ⚠️ Render grátis: 15 s de cold start | decisão sua |
 | Conta Play Console | ❌ US$ 25, uma vez | você |
 | Capturas de tela | ❌ 2 a 8 imagens | você, 5 min |
 
@@ -72,12 +70,12 @@ RECORDES. Declare "sim" para interação entre usuários no questionário de cla
 
 ---
 
-### 2.7 Pacotes de NUCLEUS: o maior risco de reprovação hoje
+### 2.7 Pacotes de NUCLEUS — integração pronta, configuração pendente
 
 A LOJINHA tem uma aba de **NUCLEUS com preço em reais**: 700 por R$ 5,90,
 1.500 por R$ 9,90 e 2.200 por R$ 14,90. NUCLEUS só libera personagens e não
-cai nas runs. O botão COMPRAR hoje só avisa "ainda não está no ar". Isso encosta
-em duas políticas ao mesmo tempo:
+cai nas runs. O aplicativo usa Digital Goods API + Google Play Billing. No navegador
+comum, o botão informa que a compra está disponível somente no app instalado pela Play.
 
 - **Pagamentos:** bem digital vendido dentro de app na Play **tem** que passar
   pelo Google Play Billing. Preço em R$ anunciado na tela, com qualquer outro
@@ -85,16 +83,13 @@ em duas políticas ao mesmo tempo:
 - **Funcionalidade mínima:** botão de compra que não compra é feature quebrada,
   e revisor reprova por isso sozinho.
 
-**Três saídas, em ordem de esforço:**
+Antes do teste fechado:
 
-1. **Esconder a aba de NUCLEUS** até existir pagamento. É uma linha em
-   `VITRINES`/`Loja.abrirAba` e resolve os dois problemas de uma vez. É o que eu
-   recomendo para publicar logo.
-2. Trocar preço em R$ por **texto sem valor** ("em breve") — reduz o problema de
-   pagamento, mas continua sendo feature incompleta.
-3. Implementar **Google Play Billing** de verdade. Isso é projeto próprio: exige
-   backend validando o recibo, e num TWA a compra não é trivial (precisa da
-   Digital Goods API, que só funciona dentro do app, não no site).
+1. Criar produtos de consumo `nucleus_700`, `nucleus_1500` e `nucleus_2200` no Play Console.
+2. Aplicar `banco/migracoes/006_compras_google_play.sql` no Neon.
+3. Definir `GOOGLE_PLAY_SERVICE_ACCOUNT`, `GOOGLE_PLAY_PACKAGE_NAME` e `DATABASE_URL` na Vercel.
+4. Dar à conta de serviço acesso às compras no Play Console.
+5. Gerar o TWA com Play Billing habilitado e testar usando conta de testador licenciado.
 
 ### 2.8 O áudio de terceiros
 
@@ -110,14 +105,6 @@ autoral, e a Play derruba o app primeiro e pergunta depois.
 - Se **você gravou**, está resolvido: só me diga e eu registro isso no projeto.
 - Se **não**, o caminho seguro é gravar você mesmo dizendo as falas (fica até
   mais engraçado) ou sintetizar no WebAudio como o resto do jogo.
-
-### 2.9 Co-op no Render grátis
-
-O servidor de salas dorme e leva **~15 segundos** para acordar (medido hoje).
-Quem abrir CRIAR SALA no primeiro acesso vai achar que está quebrado — e revisor
-também. Opções: aceitar e avisar na tela ("acordando o servidor…", que já pode
-existir), usar um plano que não dorme, ou esconder o co-op na primeira versão
-publicada e ligar depois.
 
 ## 3. Como empacotar (o caminho mais curto)
 
@@ -189,9 +176,6 @@ LOJINHA DE APARÊNCIA
 Moeda cai de todo inimigo que você mata e vira cor de nave, cor de tiro, acessório e emoji —
 com emoji equipado, o emoji é o seu corpo na arena. Nada disso muda atributo: é só aparência.
 
-COOPERATIVO ATÉ 4
-Abra uma sala, passe o código e joguem a mesma arena juntos.
-
 PLACAR MUNDIAL POR TEMPORADA
 Escreva seu apelido e sua pontuação entra no placar que todo mundo vê. Cada atualização do jogo
 abre uma temporada nova e o ranking recomeça do zero.
@@ -232,7 +216,7 @@ Feito por LODCH.
 "Todas as funcionalidades estão disponíveis sem restrição de acesso".
 
 **Anúncios:** o app não contém anúncios.
-**Compras no app:** nenhuma.
+**Compras no app:** sim — pacotes consumíveis de NUCLEUS processados pelo Google Play.
 
 ---
 

@@ -74,18 +74,14 @@ const UI = {
     UI.ligarAvisoAtualizacao();
     g('btFecharHistoria').onclick = () => UI.fecharHistoria();
 
-    g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
-    g('btCriarSala').onclick = () => { Som.clique(); UI.abrirSala('criar'); };
-    g('btEntrarSala').onclick = () => { Som.clique(); UI.abrirSala('entrar'); };
-    g('btSairSala').onclick = () => { Som.clique(); Coop.sair(); };
-    UI.ligarSala();
+    g('btJogar').onclick = () => { Som.clique(); UI.mostrarTela('classes'); };
     document.querySelectorAll('[data-dificuldade]').forEach((botao) => {
       botao.onclick = () => UI.confirmarDificuldade(botao.dataset.dificuldade);
     });
     g('btVoltarDificuldade').onclick = () => {
       Som.clique();
       UI.runPendente = null;
-      UI.mostrarTela(Coop.ativo() ? 'sala' : 'classes');
+      UI.mostrarTela('classes');
     };
     g('btComoJogar').onclick = () => { Som.clique(); UI.mostrarTela('ajuda'); };
     g('btConfig').onclick = () => { Som.clique(); UI.mostrarTela('config'); };
@@ -102,7 +98,6 @@ const UI = {
     document.querySelectorAll('[data-voltar]').forEach((b) => {
       b.onclick = () => {
         Som.clique();
-        if (Coop.ativo()) Coop.sair();      // sair da tela da sala solta a conexao
         UI.mostrarTela('menu');
       };
     });

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>SNIPER FREESTYLE — Arena Neon</title>
-<meta name="description" content="Twin-stick shooter roguelite: 4 classes, 12 skins, 8 bosses com fases, 22 melhorias e 40 ondas numa arena neon. Joga no navegador, no PC ou no celular." />
+<meta name="description" content="Twin-stick shooter roguelite solo: 5 classes, 200 ondas, bosses em múltiplas fases e controles para celular e PC." />
 <meta name="theme-color" content="#05060b" />
 <meta name="color-scheme" content="dark" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -33,12 +33,10 @@
         <span class="rotulo" id="classeNome">—</span>
         <div id="coracoes"></div>
         <div id="buffs"></div>
-        <div id="salaEquipe" class="sala-equipe" hidden></div>
       </div>
 
       <div class="bloco central">
         <div class="onda-caixa"><span class="rotulo">ONDA</span><b id="onda">1/40</b></div>
-        <p id="salaEspera" class="sala-espera" hidden></p>
         <div id="bossBarra">
           <div class="boss-cabecalho">
             <span id="bossNome">BOSS</span>
@@ -69,8 +67,6 @@
       </div>
 
       <div class="rodape-info">
-        <span id="salaHud" class="sala-status"></span>
-        <button id="btSairSala" class="bt-sair-sala" title="Sair da sala">SAIR DA SALA</button>
         <button id="btPausar" title="Pausar">❚❚</button>
         <span>FPS <b id="fps">60</b></span>
         <span class="dica">P = pausar</span>
@@ -134,10 +130,6 @@
       </div>
       <div class="menu-acoes">
         <button id="btJogar" class="bt principal menu-jogar"><small>INICIAR PROTOCOLO</small>JOGAR</button>
-        <div class="menu-coop">
-          <button id="btCriarSala" class="bt">CRIAR SALA</button>
-          <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
-        </div>
         <div class="menu-utilidades">
           <button id="btComoJogar" class="bt">COMO JOGAR</button>
           <button id="btLoja" class="bt">LOJINHA</button>
@@ -150,7 +142,6 @@
       <span id="marcaAto" class="marca-ato">ATO II · NÁDIR LIBERADO</span>
       <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
       <p class="moeda-linha"><i class="moeda-mini"></i><b id="moedasMenu">0</b> MOEDAS</p>
-      <p id="salaStatus" class="sala-status" role="status" aria-live="polite"></p>
       <p class="creditos">Feito por <b>LODCH</b></p>
     </div>
   </section>
@@ -219,56 +210,6 @@
     </div>
     <p id="lojaAviso" class="loja-aviso" role="status" aria-live="polite"></p>
     <div id="lojaGrade" class="loja-grade"></div>
-    <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
-  </section>
-
-  <!-- SALA COOPERATIVA -->
-  <section class="tela" data-tela="sala">
-    <div class="cabecalho-tela">
-      <h2 id="salaTitulo">SALA COOPERATIVA</h2>
-      <p>Até 4 jogadores na mesma arena. Quem abre a sala hospeda a partida.</p>
-    </div>
-
-    <div class="sala-painel">
-      <p id="avisoServidor" class="sala-alerta" hidden>Este endereço não hospeda salas: a Vercel não aceita WebSocket. Rode <b>npm run salas</b> e jogue pelo endereço dele, ou cole o endereço do seu servidor em SERVIDOR DE SALAS (AVANÇADO), logo abaixo.</p>
-
-      <div class="sala-bloco" id="blocoCriar" hidden>
-        <label class="sala-rotulo" for="campoCodigoNovo">CÓDIGO DA SALA</label>
-        <div class="sala-linha">
-          <input id="campoCodigoNovo" class="sala-codigo" maxlength="8" autocomplete="off" spellcheck="false" />
-          <button id="btSortearCodigo" class="bt fantasma" title="Sortear outro código">SORTEAR</button>
-        </div>
-        <p class="sala-dica">De 4 a 8 letras ou números. É esse código que seus amigos vão digitar.</p>
-        <button id="btAbrirSala" class="bt principal">ABRIR A SALA</button>
-      </div>
-
-      <div class="sala-bloco" id="blocoEntrar" hidden>
-        <label class="sala-rotulo" for="campoCodigoEntrar">CÓDIGO DO ANFITRIÃO</label>
-        <input id="campoCodigoEntrar" class="sala-codigo" maxlength="8" placeholder="EX.: K7M2PQ" autocomplete="off" spellcheck="false" />
-        <p class="sala-dica">Peça o código para quem abriu a sala.</p>
-        <button id="btConectarSala" class="bt principal">ENTRAR</button>
-      </div>
-
-      <div class="sala-bloco" id="blocoSala" hidden>
-        <span class="sala-rotulo">CÓDIGO PARA CONVIDAR</span>
-        <div class="sala-linha">
-          <b id="codigoSala" class="sala-codigo-grande">------</b>
-          <button id="btCopiarCodigo" class="bt fantasma">COPIAR</button>
-        </div>
-        <div id="listaSala" class="sala-lista"></div>
-        <button id="btMinhaClasse" class="bt">ESCOLHER MINHA CLASSE</button>
-        <button id="btComecarSala" class="bt principal">COMEÇAR A PARTIDA</button>
-        <p id="salaAviso" class="sala-dica"></p>
-      </div>
-
-      <details class="sala-avancado">
-        <summary>SERVIDOR DE SALAS (AVANÇADO)</summary>
-        <input id="campoServidor" class="sala-codigo servidor" placeholder="wss://meu-servidor/sala" autocomplete="off" spellcheck="false" />
-        <p class="sala-dica">Vazio usa o servidor do próprio endereço onde o jogo está aberto. O site na Vercel não hospeda salas: para jogar online por lá, rode <b>npm run salas</b> em um servidor com WebSocket e cole aqui o endereço dele.</p>
-      </details>
-    </div>
-
-    <p id="salaStatusTela" class="sala-status" role="status" aria-live="polite"></p>
     <button class="bt fantasma" data-voltar>◂ VOLTAR</button>
   </section>
 
@@ -426,10 +367,11 @@
 <script src="src/placar-config.js"></script>
 <script src="src/placar.js"></script>
 <script src="src/loja.js"></script>
+<script src="src/pagamento.js"></script>
 <script src="src/classes.js"></script>
 <script src="src/entidades.js"></script>
 <script src="src/jogo.js"></script>
-<script src="src/coop.js"></script>
+<script src="src/solo.js"></script>
 <script src="src/ui.js"></script>
 <script>
   Jogo.iniciar();

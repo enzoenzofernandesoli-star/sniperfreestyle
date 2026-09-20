@@ -1,8 +1,7 @@
 # SNIPER FREESTYLE — instruções do projeto
 
 Twin-stick shooter roguelite em canvas 2D vanilla. Sem build, sem framework, sem npm no
-navegador: `index.html` abre no duplo clique. O `npm` aqui serve só ao servidor de salas e
-aos testes.
+navegador: `index.html` abre no duplo clique. O `npm` aqui serve aos testes.
 
 Repositório: `https://github.com/enzoenzofernandesoli-star/sniperfreestyle`
 
@@ -11,22 +10,17 @@ Repositório: `https://github.com/enzoenzofernandesoli-star/sniperfreestyle`
 | Arquivo | Quando |
 |---|---|
 | `LEIA-ME.md` | Sempre. Arquitetura, controles, classes, bosses e a tabela "Onde balancear" |
-| `COOPERATIVO.md` | Qualquer coisa de sala, online, multiplayer ou snapshot |
 | `GOOGLE-PLAY.md` | Publicação Android, PWA, ícones, política |
 
 O roteiro de trabalho e os próximos passos ficam no Segundo Cérebro, em
-`Desktop\Segundo cerebro\Playbooks\Sniper-Cooperativo.md`.
+`Desktop\Segundo cerebro\Playbooks\Sniper-Google-Play.md`.
 
 ## Comandos
 
 ```
 npm install
-npm run salas      # jogo + salas cooperativas em http://localhost:8123
-npm test           # 16 testes (node --test), incluindo WebSocket real
+npm test           # testes Node
 ```
-
-Sala cooperativa na mão: abrir `http://localhost:8123` em duas abas, CRIAR SALA numa,
-ENTRAR NA SALA na outra com o código de 8 dígitos.
 
 ## Convenções
 
@@ -39,22 +33,10 @@ ENTRAR NA SALA na outra com o código de 8 dígitos.
 - Arte é vetorial, desenhada em código. Imagem só nos ícones da loja.
 - Migration de banco sempre versionada em `banco/migracoes/`, nunca SQL solto.
 
-## Invariantes do cooperativo
+## Modo de jogo
 
-Quebrar qualquer um destes quebra o modo online:
-
-- A autoridade é o **anfitrião**. Ele simula tudo e manda snapshot; `servidor/salas.js` só
-  encaminha e não guarda estado de jogo.
-- `Jogador.moverPrevisto` (previsão local do convidado) **nunca** cria projétil nem mexe em
-  temporizador de combate. Tiro, dano, dash e progressão são sempre do anfitrião.
-- Toda entidade nova recebe `id` no construtor via `Jogo.proximoId()`. Sem id não há
-  interpolação — a entidade é recriada a cada pacote e teletransporta.
-- Nada vindo da rede entra cru na simulação: comando de convidado passa por
-  `Coop.validarControle` (faixa e frequência) antes de tocar em qualquer coisa.
-- Partida cooperativa não entra em ranking nenhum, nem no recorde local, enquanto a
-  autoridade for o navegador do anfitrião.
-- Não trafega o que o convidado remonta sozinho: `def` de inimigo, `classe`, `skin` e rastro
-  são reconstruídos do lado dele a partir do `tipo`.
+O produto publicado é exclusivamente solo. `src/solo.js` mantém a interface interna esperada
+pelo motor sem abrir WebSocket, criar sala ou alterar a simulação.
 
 ## Cores de tiro
 

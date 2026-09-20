@@ -69,6 +69,15 @@ const Carteira = {
     Carteira.salvar();
     if (typeof UI !== 'undefined' && UI.atualizarMoedas) UI.atualizarMoedas();
     return true;
+  },
+
+  creditarNucleus(n) {
+    const q = Math.max(0, Math.round(Number(n) || 0));
+    if (!q) return false;
+    Carteira.nucleus += q;
+    Carteira.salvar();
+    if (typeof UI !== 'undefined' && UI.atualizarMoedas) UI.atualizarMoedas();
+    return true;
   }
 };
 
@@ -187,9 +196,9 @@ const VITRINES = [
 // NUCLEUS só entra por compra. O meio de pagamento entra depois:
 // aqui fica só a vitrine e o gancho `Pagamento.iniciar`, que ainda não existe.
 const PACOTES_NUCLEUS = [
-  { id: 'nucleus-700', nucleus: 700, precoCentavos: 590, preco: 'R$ 5,90', selo: 'LIBERA ESPECTRO' },
-  { id: 'nucleus-1500', nucleus: 1500, precoCentavos: 990, preco: 'R$ 9,90', selo: 'LIBERA INVOCADOR' },
-  { id: 'nucleus-2200', nucleus: 2200, precoCentavos: 1490, preco: 'R$ 14,90', selo: 'LIBERA OS DOIS' }
+  { id: 'nucleus_700', nucleus: 700, precoCentavos: 590, preco: 'R$ 5,90', selo: 'LIBERA ESPECTRO' },
+  { id: 'nucleus_1500', nucleus: 1500, precoCentavos: 990, preco: 'R$ 9,90', selo: 'LIBERA INVOCADOR' },
+  { id: 'nucleus_2200', nucleus: 2200, precoCentavos: 1490, preco: 'R$ 14,90', selo: 'LIBERA OS DOIS' }
 ];
 
 /* --------------------------- Consultas rápidas --------------------------- */
@@ -462,7 +471,7 @@ const Loja = {
         '<div class="pa-moeda nucleus"></div>' +
         '<b class="li-nome">' + p.nucleus.toLocaleString('pt-BR') + ' NUCLEUS</b>' +
         (p.selo ? '<span class="pa-selo">' + p.selo + '</span>' : '<span class="pa-selo vazio"></span>') +
-        '<span class="li-preco">' + p.preco + '</span>' +
+        '<span class="li-preco">' + (typeof Pagamento !== 'undefined' ? Pagamento.preco(p) : p.preco) + '</span>' +
         '<button type="button" class="li-bt">COMPRAR</button>';
       card.querySelector('.li-bt').onclick = () => Loja.comprarNucleus(p);
       grade.appendChild(card);
@@ -470,7 +479,7 @@ const Loja = {
     const nota = document.createElement('p');
     nota.className = 'loja-nota';
     nota.textContent = 'NUCLEUS serve somente para liberar personagens e não cai durante as runs. '
-      + 'O pagamento entra numa atualização — por enquanto o botão só avisa.';
+      + 'Compras são processadas com segurança pelo Google Play.';
     grade.appendChild(nota);
   },
 

@@ -456,7 +456,7 @@ body.em-jogo #hud { display: flex; }
 }
 @keyframes giraBrilho { to { transform: rotate(360deg); } }
 
-.menu-caixa { position: relative; text-align: center; max-width: 780px; }
+.menu-caixa { position: relative; text-align: center; width: min(780px, 100%); max-width: 780px; overflow-x: clip; }
 .menu-caixa.estreito { max-width: 420px; }
 .menu-caixa.largo { max-width: 900px; width: 100%; }
 
@@ -509,8 +509,6 @@ body.em-jogo #hud { display: flex; }
   animation: varreMenu 4.6s ease-in-out infinite;
 }
 .menu-jogar small { display: block; margin-bottom: 2px; font-size: 7px; letter-spacing: .32em; opacity: .65; }
-.menu-coop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.menu-coop .bt { border-color: rgba(92, 255, 157, .26); }
 .menu-utilidades { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .menu-utilidades .bt { padding: 9px 7px; font-size: 9px; color: var(--tinta-fraca); }
 @keyframes varreMenu { 0%, 72% { transform: translateX(-110%); } 100% { transform: translateX(110%); } }
@@ -1770,7 +1768,6 @@ body.toque #btPausar {
   .menu-acoes { width: min(540px, 88vw); gap: 4px; }
   .menu-jogar { min-height: 44px; font-size: 12px; }
   .menu-jogar small { display: none; }
-  .menu-coop { gap: 4px; }
   .menu-utilidades { gap: 4px; }
   .menu-utilidades .bt { padding: 5px 3px; font-size: 7px; letter-spacing: .06em; }
   .menu-botoes { gap: 5px; margin-top: 5px; }

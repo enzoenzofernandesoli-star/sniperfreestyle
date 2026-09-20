@@ -15,15 +15,12 @@ História canônica, diálogos e plano da campanha 101–200: [`HISTORIA.md`](HI
 - **Lojinha.** Aparência não pertence mais à classe: cor da nave, cor do tiro,
   acessório e emoji são itens comprados com moeda e valem para as cinco classes.
   Nada na loja mexe em atributo, dano ou pontuação. A moeda cai de todo inimigo
-  morto, o saldo fica neste navegador e comprar moeda com dinheiro de verdade é
-  um botão que ainda avisa que não está no ar.
+  morto, e o saldo fica neste navegador. NUCLEUS usa compra no app pelo Google Play.
 - Arena de 1760×990 unidades, toda visível de uma vez: a câmera fica no centro
   e só treme e dá zoom, nunca acompanha o jogador. O CSS encolhe o canvas para
   caber na tela, então o espaço de fuga cresceu sem ninguém sair do quadro. No
   celular a renderização interna cai para 75% para preservar desempenho.
-- Cooperativo: CRIAR SALA abre a tela da sala com código editável e lista de quem
-  está dentro; ENTRAR NA SALA pede o código do anfitrião. Detalhes e limites em
-  `COOPERATIVO.md`.
+- O jogo publicado é solo. Não abre conexão de sala nem depende de servidor WebSocket.
 - Vida inicial: Sniper 2, Guardião 4, Espectro 2, Arcano 2, Invocador 4 corações.
   Bosses anteriores também têm menos vida; o aumento por onda é mais lento.
 - Placar mundial, em três degraus: `/api/placar` do próprio endereço → servidor
@@ -136,8 +133,7 @@ balanceamento original. **MUITO FÁCIL** usa 50% menos inimigos, 50% menos vida 
 e metade da frequência de ataques. **FÁCIL** usa 25% menos inimigos, 25% menos vida de boss e
 intervalos 25% maiores. **DIFÍCIL** usa 35% mais inimigos, 40% mais vida de boss e
 reduz o intervalo para 72% do normal. **HARD** usa 50% mais inimigos, 50% mais vida
-de boss e ataques 50% mais frequentes. No cooperativo, o
-anfitrião escolhe e a mesma dificuldade vale para toda a sala.
+de boss e ataques 50% mais frequentes.
 
 ## Emoji é o corpo, não enfeite
 
@@ -160,11 +156,10 @@ Escudo, aura de ultimate e rastro não mudam. O emoji não altera raio, hitbox n
 
 Existia uma mecânica de possuir inimigo com vida baixa apertando `E`. Ela saiu em 18/09/2026,
 por pedido — junto com tudo que ela arrastava: `corpoPossuido`, o cálculo de facção do inimigo,
-o campo no pacote do cooperativo, os dois botões no HUD e os cinco testes dela.
+o antigo estado compartilhado, os dois botões no HUD e os cinco testes dela.
 
 A tecla `E` ficou livre e virou **atalho da ultimate**, ao lado de `SHIFT`. Não reintroduza a
-possessão sem refazer os invariantes do cooperativo: era ela que exigia o "corpo é aliado" na
-busca de alvo.
+possessão sem refazer as regras de alvo: era ela que exigia o "corpo é aliado" na busca.
 
 ## Inimigos
 
@@ -231,9 +226,10 @@ NUCLEUS é moeda premium exclusiva dos personagens: não cai em run e não compr
 Moeda comum continua exclusiva da lojinha; cada inimigo morto vale exatamente **1 moeda**,
 sem bônus por elite, onda ou tipo, e boss também vale 1.
 
-Pacotes planejados: 700 por R$ 5,90; 1.500 por R$ 9,90; 2.200 por R$ 14,90. O último libera
+Pacotes cadastrados no cliente: 700 por R$ 5,90; 1.500 por R$ 9,90; 2.200 por R$ 14,90. O último libera
 ESPECTRO e INVOCADOR juntos, exatamente. Com taxa de 15% da Google Play, o pacote dos dois
-deixa R$ 12,67 antes de impostos e estornos. O botão permanece informativo até integrar Billing.
+deixa R$ 12,67 antes de impostos e estornos. No Android, a compra usa Google Play Billing e
+o NUCLEUS só entra depois da validação do token no servidor.
 
 - Quem manda é `CLASSES_TRANCADAS` em `src/loja.js`, e o desbloqueio mora na **mesma carteira
   dos cosméticos** (`Carteira.itens`, com id `classe-espectro` / `classe-invocador`): quem
@@ -312,7 +308,7 @@ normal até a 200.
 Nos marcos 1, 10, 20, 25, 50, 60, 70, 75, 120, 150, 180 e 199, a transição para antes
 do spawn e abre uma tela preta com a frase canônica de `HISTORIA.md`. Ela fecha sozinha ou
 por CONTINUAR depois de 900 ms; a saída usa 420 ms de interferência/glitch. O combate não é
-interrompido no meio, e no cooperativo o convidado dispara o mesmo marco ao receber a nova onda.
+interrompido no meio.
 
 ### O orçamento da onda recomeça
 
@@ -645,12 +641,13 @@ src/placar.js       Perfil (nome) e Placar (envio e leitura do placar mundial)
 src/placar-config.js  endereço do placar — o único arquivo a mexer pra ligar/desligar
 api/placar.js       função da Vercel: valida a run e grava no Postgres do Neon
 src/loja.js         Carteira (moedas), catálogo de cosméticos e a tela da lojinha
+src/pagamento.js    Google Play Billing via Digital Goods API e validação no servidor
 src/classes.js      CLASSES[] e MELHORIAS[] (dados puros — mexa aqui pra balancear)
 src/entidades.js    Jogador, Projetil, Inimigo, Boss, Coletavel
 src/jogo.js         estado, loop, ondas, colisões, efeitos de tela, render da arena
-src/ui.js           telas, HUD, barra de boss, cartas de melhoria, painel de equipe
-src/coop.js         cooperativo online: snapshot, previsão local e interpolação
-servidor/salas.js   servidor de salas (WebSocket) + servidor local de arquivos
+src/ui.js           telas, HUD, barra de boss e cartas de melhoria
+src/solo.js         compatibilidade interna do motor no produto exclusivamente solo
+api/compra-google.js valida recibo do Google Play antes de liberar NUCLEUS
 _original/          a versão antiga, intacta
 ```
 
@@ -665,69 +662,10 @@ Decisões que sustentam isso:
 
 ---
 
-## Cooperativo online (2 a 4 pessoas)
+## Modo solo
 
-Está jogável e roda local. Quem simula a partida é o **anfitrião**, no navegador dele:
-ondas, inimigos, bosses, colisões, dano e drops. O servidor de salas só encaminha
-mensagem — ele não sabe nada de jogo. Isso deixa a hospedagem barata e faz o modo
-rodar em qualquer host que aceite WebSocket.
-
-### Rodar
-
-```
-npm install
-npm run salas          # ou: node servidor/salas.js 8123
-```
-
-Abra `http://localhost:8123` (a mesma porta serve o jogo e as salas).
-Anfitrião: **CRIAR SALA COOPERATIVA** → escolhe classe → aparece o código de 8 dígitos.
-Convidado: digita o código no menu → **ENTRAR NA SALA** → escolhe classe.
-
-Para jogar pela internet, suba `servidor/salas.js` num host com WebSocket e aponte o
-cliente com `window.COOP_URL = 'wss://SEU-HOST/sala'` antes de `src/coop.js`. A função
-serverless do placar (`api/placar.js`) não serve pra isso: ela não guarda estado de
-partida entre requisições.
-
-### Como não fica aos trancos
-
-O snapshot sai 20 vezes por segundo e a tela roda a 60. Entre um pacote e outro o
-convidado faz duas coisas:
-
-1. **Dead reckoning** — empurra o alvo de cada entidade pela velocidade que ela tinha.
-2. **Interpolação** — puxa a posição desenhada até esse alvo (salto acima de 260 px
-   corta direto, senão dash e respawn viravam deslize pela arena).
-
-A nave do próprio convidado ainda é **prevista localmente** com o input dele
-(`Jogador.moverPrevisto`), então o movimento responde na hora; a correção vem depois,
-puxando devagar para onde o anfitrião disse. Previsão local nunca cria projétil nem
-mexe em temporizador de combate — tiro, dano e progressão são sempre do anfitrião.
-
-Cada entidade leva um `id` (`Jogo.proximoId()`) para o convidado reconhecer a mesma
-nave entre dois snapshots. Sem isso não existe interpolação, só teletransporte.
-
-### O que trafega
-
-Só o que o convidado não consegue refazer: `def` de inimigo, `classe`, `skin` e os
-rastros ficam de fora e são remontados do lado dele a partir do `tipo`. Uma partida
-de 4 inimigos dá ~1,9 KB por snapshot (~37 KB/s por convidado).
-
-### Regras da sala
-
-- 4 jogadores no máximo; o quinto recebe "a sala já está cheia".
-- Anfitrião cai ou fecha a aba → a sala morre e os convidados voltam ao menu avisados.
-- Convidado não pausa a partida dos outros; quando o anfitrião abre uma carta de
-  melhoria, o convidado vê "O ANFITRIÃO ESTÁ ESCOLHENDO UMA MELHORIA…".
-- Ping/pong derruba conexão morta; sala sem anfitrião ou parada há 30 min é apagada.
-- Comando de convidado é limitado a 40/s e sempre validado por faixa no anfitrião
-  (`Coop.validarControle`) — nada do que chega da rede entra cru na simulação.
-
-### O que ainda falta
-
-- **Placar de equipe**: partida cooperativa não entra no ranking solo (nem em recorde
-  local). O placar de time precisa ser gravado pelo servidor da partida, não pelo
-  navegador — hoje o `api/placar.js` aceita pontuação enviada pelo cliente.
-- **Reconexão**: cair derruba pra valer, não devolve o jogador à sala.
-- **Hospedagem**: o serviço de salas ainda não tem host escolhido.
+O produto publicado é exclusivamente solo. `src/solo.js` preserva a interface interna
+esperada pelo motor sem abrir WebSocket, criar sala ou alterar a simulação.
 
 ---
 

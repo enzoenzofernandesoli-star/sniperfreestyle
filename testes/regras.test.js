@@ -10,6 +10,19 @@ for (const arquivo of ['src/loja.js', 'src/classes.js', 'src/entidades.js', 'src
   vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), contexto, { filename: arquivo });
 }
 
+test('produto publicado é solo e carrega pagamento Google Play', () => {
+  const html = fs.readFileSync(path.join(raiz, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /btCriarSala|btEntrarSala|src\/coop\.js/);
+  assert.match(html, /src\/solo\.js/);
+  assert.match(html, /src\/pagamento\.js/);
+});
+
+test('pacotes NUCLEUS usam os mesmos SKUs no cliente e servidor', () => {
+  const produtos = require(path.join(raiz, 'api/compra-google.js')).PRODUTOS;
+  const pacotes = vm.runInContext('PACOTES_NUCLEUS.map((p) => [p.id, p.nucleus])', contexto);
+  assert.deepEqual(Object.fromEntries(Array.from(pacotes, (par) => Array.from(par))), produtos);
+});
+
 test('o Ato I termina na onda 100 e o boss final fica fora do rodízio', () => {
   assert.equal(vm.runInContext('Jogo.TOTAL_ONDAS', contexto), 100);
   assert.equal(vm.runInContext('Jogo.ondaFinalDaCampanha()', contexto), 200);
@@ -928,7 +941,7 @@ test('previsão local move a nave sem simular tiro nem dano', () => {
   assert.equal(r.recargaIgual, true, 'previsão local não mexe em temporizador de combate');
 });
 
-test('serviço de salas encaminha comandos, lota em 4 e recusa o quinto', async () => {
+test.skip('legado removido: serviço de salas', async () => {
   process.env.PORT = '8791';
   const WebSocket = require('ws');
   const { servidor, salas } = require(path.join(raiz, 'servidor/salas.js'));

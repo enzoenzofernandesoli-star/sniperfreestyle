@@ -60,7 +60,7 @@
 <body>
 <main>
   <h1>Política de Privacidade</h1>
-  <p class="sub">SNIPER FREESTYLE — ARENA NEON · ATUALIZADA EM 10/09/2026</p>
+  <p class="sub">SNIPER FREESTYLE — ARENA NEON · ATUALIZADA EM 20/09/2026</p>
 
   <p>
     Sniper Freestyle é um jogo de navegador feito por <strong>Enzo Fernandes (LODCH)</strong>.
@@ -86,12 +86,23 @@
     <li>o apelido que você digita para o placar;</li>
     <li>suas 8 melhores partidas (pontos, classe, onda, tempo);</li>
     <li>preferências: volume, tremor de tela, partículas, números de dano, controles de toque.</li>
+    <li>saldo de moedas, NUCLEUS, itens e personagens desbloqueados;</li>
+    <li>identificador aleatório da instalação e comprovantes já processados.</li>
   </ul>
 
   <h2>O QUE VAI PARA O PLACAR MUNDIAL</h2>
   <p>
-    Ao terminar uma partida, o jogo envia uma linha para o placar público — é o único envio
-    que existe. Vai apenas isto:
+    Ao terminar uma partida, o jogo envia uma linha para o placar público. Vai apenas isto:
+  </p>
+
+  <h2>COMPRAS NO GOOGLE PLAY</h2>
+  <p>
+    No aplicativo Android, compras de NUCLEUS são processadas pelo Google Play. O jogo envia
+    ao servidor o identificador do produto, o token da compra e um identificador aleatório da
+    instalação para validar a compra e impedir crédito duplicado. O servidor guarda somente
+    uma versão criptograficamente resumida do token, o produto, a quantidade entregue, o
+    identificador da instalação, o número do pedido quando fornecido e a data. Dados de cartão
+    e cobrança ficam com o Google e nunca chegam ao jogo.
   </p>
   <table>
     <thead><tr><th>Dado</th><th>Para quê</th></tr></thead>
@@ -116,6 +127,7 @@
   <ul>
     <li><strong>Vercel Inc.</strong> — hospedagem do jogo e da função que recebe o placar.</li>
     <li><strong>Neon Inc.</strong> — banco de dados do placar, em servidor na região de São Paulo.</li>
+    <li><strong>Google Play</strong> — processamento e confirmação das compras feitas no aplicativo Android.</li>
     <li><strong>Google Fonts</strong> — as duas fontes do jogo são baixadas do servidor do Google, que
       nesse pedido vê o IP da conexão. Sem internet, o jogo usa fonte do próprio aparelho e roda igual.</li>
   </ul>
