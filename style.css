@@ -109,6 +109,84 @@ body { width: 100%; }
   z-index: 3;
 }
 
+/* ------------------------ Interferências da história -------------------- */
+#historiaInterferencia {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  opacity: 0;
+  transform: scale(1.015);
+  transition: opacity 600ms cubic-bezier(.05,.7,.1,1), transform 700ms cubic-bezier(.05,.7,.1,1);
+}
+#historiaInterferencia[hidden] { display: none; }
+#historiaInterferencia.ativa { opacity: 1; transform: scale(1); }
+.historia-conteudo {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(880px, 86%);
+  text-align: center;
+}
+.historia-conteudo small {
+  color: #7c6390;
+  font: 700 clamp(8px, .8vw, 11px) Orbitron, sans-serif;
+  letter-spacing: .35em;
+}
+#historiaTexto {
+  position: relative;
+  color: #ebe5f0;
+  font: 900 clamp(20px, 3.4vw, 48px)/1.25 Orbitron, sans-serif;
+  letter-spacing: .1em;
+  text-shadow: 0 0 28px rgba(176, 109, 255, .35);
+  animation: historiaEntra 900ms cubic-bezier(.05,.7,.1,1) both;
+}
+#btFecharHistoria {
+  padding: 9px 18px;
+  border: 1px solid rgba(176, 109, 255, .28);
+  border-radius: 6px;
+  color: #786b83;
+  background: transparent;
+  font: 700 9px Orbitron, sans-serif;
+  letter-spacing: .22em;
+  cursor: pointer;
+}
+.historia-ruido {
+  position: absolute;
+  inset: 0;
+  opacity: .16;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(176, 109, 255, .12) 3px 4px);
+  animation: historiaRuido 2.4s steps(2) infinite;
+}
+#historiaInterferencia.saindo { animation: historiaErro 420ms steps(2) both; }
+#historiaInterferencia.saindo #historiaTexto::before,
+#historiaInterferencia.saindo #historiaTexto::after {
+  content: attr(data-texto);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+#historiaInterferencia.saindo #historiaTexto::before { color: #ff2e8a; transform: translateX(-9px); clip-path: inset(8% 0 58%); }
+#historiaInterferencia.saindo #historiaTexto::after { color: #31e0ff; transform: translateX(8px); clip-path: inset(54% 0 12%); }
+@keyframes historiaEntra { from { opacity: 0; transform: translateY(18px); letter-spacing: .22em; } }
+@keyframes historiaRuido { 50% { transform: translateY(3px); opacity: .09; } }
+@keyframes historiaErro {
+  0% { opacity: 1; transform: translate(0) scale(1); filter: none; }
+  25% { transform: translate(-9px, 2px) scale(1.015); filter: contrast(1.8); }
+  50% { transform: translate(11px, -3px) scale(.995); filter: hue-rotate(70deg) contrast(2); }
+  75% { transform: translate(-5px, 1px); filter: invert(.15) contrast(1.8); }
+  100% { opacity: 0; transform: scale(1.04); filter: contrast(2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #historiaInterferencia, #historiaTexto, .historia-ruido { animation: none; transition-duration: 1ms; }
+  #historiaInterferencia.saindo { animation: none; opacity: 0; }
+}
+
 /* ---------------------------------- HUD --------------------------------- */
 #hud {
   position: absolute;

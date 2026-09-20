@@ -74,8 +74,8 @@ RECORDES. Declare "sim" para interação entre usuários no questionário de cla
 
 ### 2.7 Pacotes de NUCLEUS: o maior risco de reprovação hoje
 
-A LOJINHA tem uma aba de **NUCLEUS com preço em reais**: 700 por R$ 39,90,
-1.600 por R$ 79,90 e 3.500 por R$ 149,90. NUCLEUS só libera personagens e não
+A LOJINHA tem uma aba de **NUCLEUS com preço em reais**: 700 por R$ 5,90,
+1.500 por R$ 9,90 e 2.200 por R$ 14,90. NUCLEUS só libera personagens e não
 cai nas runs. O botão COMPRAR hoje só avisa "ainda não está no ar". Isso encosta
 em duas políticas ao mesmo tempo:
 

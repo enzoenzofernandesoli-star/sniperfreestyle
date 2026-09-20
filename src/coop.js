@@ -561,7 +561,9 @@ const Coop = {
     Jogo.ondasChoque = estado.ondasChoque || [];
     Jogo.singularidades = estado.singularidades || [];
     Jogo.raios = estado.raios || [];
+    const ondaAnterior = Jogo.onda;
     Jogo.onda = estado.onda;
+    if (estado.onda !== ondaAnterior) Jogo.iniciarHistoriaDaOnda(estado.onda);
     Jogo.pontos = estado.pontos;
     Jogo.tempo = estado.tempo;
     Jogo.tempoJogo = estado.tempoJogo;

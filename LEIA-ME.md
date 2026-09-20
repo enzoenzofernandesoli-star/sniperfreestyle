@@ -229,9 +229,9 @@ NUCLEUS é moeda premium exclusiva dos personagens: não cai em run e não compr
 Moeda comum continua exclusiva da lojinha; cada inimigo morto vale exatamente **1 moeda**,
 sem bônus por elite, onda ou tipo, e boss também vale 1.
 
-Pacotes planejados: 700 por R$ 39,90; 1.600 por R$ 79,90; 3.500 por R$ 149,90. Com taxa
-de 15% da Google Play, deixam respectivamente R$ 33,92, R$ 67,92 e R$ 127,42 antes de
-impostos, estornos e variação cambial. O botão permanece informativo até integrar Google Play Billing.
+Pacotes planejados: 700 por R$ 5,90; 1.500 por R$ 9,90; 2.200 por R$ 14,90. O último libera
+ESPECTRO e INVOCADOR juntos, exatamente. Com taxa de 15% da Google Play, o pacote dos dois
+deixa R$ 12,67 antes de impostos e estornos. O botão permanece informativo até integrar Billing.
 
 - Quem manda é `CLASSES_TRANCADAS` em `src/loja.js`, e o desbloqueio mora na **mesma carteira
   dos cosméticos** (`Carteira.itens`, com id `classe-espectro` / `classe-invocador`): quem
@@ -304,6 +304,13 @@ laço de entidades nem chama o `atualizar` dele. É o único momento do jogo ass
 No fim da conversa, `Jogo.atravessarFenda()`: mesma partida, mesma build, mesmos pontos,
 `dimensao = 'nadir'`, `onda = 101` e `atravessou = true`. Daí em diante a campanha corre
 normal até a 200.
+
+### Fragmentos entre ondas
+
+Nos marcos 1, 10, 20, 25, 50, 60, 70, 75, 120, 150, 180 e 199, a transição para antes
+do spawn e abre uma tela preta com a frase canônica de `HISTORIA.md`. Ela fecha sozinha ou
+por CONTINUAR depois de 900 ms; a saída usa 420 ms de interferência/glitch. O combate não é
+interrompido no meio, e no cooperativo o convidado dispara o mesmo marco ao receber a nova onda.
 
 ### O orçamento da onda recomeça
 

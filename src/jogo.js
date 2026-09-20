@@ -87,6 +87,21 @@ const Jogo = {
 
   estat: { abates: 0, tiros: 0, danoFeito: 0, danoRecebido: 0, melhorMulti: 1, bosses: 0 },
   dificuldade: 'normal',
+  historiaAtiva: false,
+  MARCOS_HISTORIA: {
+    1: { texto: 'ACORDE, CONDUTOR.' },
+    10: { texto: 'MOVIMENTO REGISTRADO.' },
+    20: { texto: 'VOCÊ APRENDE MAIS RÁPIDO QUE OS OUTROS.' },
+    25: { texto: 'NÃO PROCURE A SAÍDA.' },
+    50: { origem: 'TRANSMISSÃO DESCONHECIDA', texto: 'CONTINUE. QUERO VER ATÉ ONDE CHEGA QUANDO ACREDITA QUE EXISTE UM FIM.', duracao: 5200 },
+    60: { texto: 'ESTES INIMIGOS TAMBÉM ACORDARAM AQUI.' },
+    70: { texto: 'A ARENA NÃO CRIA. ELA RECORDA.' },
+    75: { texto: 'VOCÊ JÁ MORREU AQUI. MAIS DE UMA VEZ.' },
+    120: { origem: 'INTERFERÊNCIA DE NÁDIR', texto: 'VOCÊ NÃO ESCAPOU DA ARENA. TROUXE A ARENA COM VOCÊ.' },
+    150: { origem: 'INTERFERÊNCIA DE NÁDIR', texto: 'CADA MELHORIA FOI FEITA COM UMA MEMÓRIA ROUBADA.' },
+    180: { origem: 'INTERFERÊNCIA DE NÁDIR', texto: 'O ESPECTADOR NÃO É UM DEUS. É O ÚLTIMO PRISIONEIRO.' },
+    199: { origem: 'SINAL DO TRONO AUSENTE', texto: 'VOCÊ NÃO ENCONTROU O TRONO. ENTROU DENTRO DELE.', duracao: 5200 }
+  },
   DIFICULDADES: {
     facil: { inimigos: 0.75, vidaBoss: 0.75, ritmoBoss: 1.25 },
     normal: { inimigos: 1, vidaBoss: 1, ritmoBoss: 1 },
@@ -97,6 +112,13 @@ const Jogo = {
     Jogo.dificuldade = Jogo.DIFICULDADES[valor] ? valor : 'normal';
   },
   ajusteDificuldade() { return Jogo.DIFICULDADES[Jogo.dificuldade] || Jogo.DIFICULDADES.normal; },
+  iniciarHistoriaDaOnda(onda) {
+    const marco = Jogo.MARCOS_HISTORIA[onda];
+    if (!marco || typeof UI === 'undefined' || !UI.mostrarHistoria) return false;
+    Jogo.historiaAtiva = true;
+    UI.mostrarHistoria(marco);
+    return true;
+  },
 
   /* ------------------------------ Boot ------------------------------- */
   iniciar() {
@@ -152,6 +174,7 @@ const Jogo = {
     Jogo.dimensao = 'normal';
     Jogo.segredo = { fase: null, tempo: 0, marco: 0 };
     Jogo.atravessou = false;
+    Jogo.historiaAtiva = false;
     Jogo.estado = 'jogando';
     Som.intensidade = 0;
     Jogo.prepararOnda();
@@ -240,6 +263,7 @@ const Jogo = {
     if (Jogo.jogador) Jogo.jogador.invulneravel = Math.max(Jogo.jogador.invulneravel, 1.2);
     Jogo.composicao = [];
     Jogo.timerSpawn = 0.8;
+    Jogo.iniciarHistoriaDaOnda(Jogo.onda);
 
     if (Jogo.ehOndaDeBoss(Jogo.onda)) {
       Jogo.spawnRestante = 0;
@@ -844,6 +868,7 @@ const Jogo = {
 
     // pausa
     if (Input.apertou('KeyP') || Input.apertou('Escape')) { Jogo.pausar(); return; }
+    if (Jogo.historiaAtiva) return;
 
     // A festa do boss manda na tela: enquanto o letreiro estiver no ar, nada
     // aparece por cima dele. A carta de melhoria espera na fila e abre assim

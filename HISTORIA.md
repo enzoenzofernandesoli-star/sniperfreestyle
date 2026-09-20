@@ -176,5 +176,7 @@ guardados para uma continuação futura. Nenhuma revelação final deve aparecer
 5. ~~Fazer o encontro impossível da onda 200 e encerrar com `AINDA NÃO É O BASTANTE`.~~
    **Feito**.
 6. Guardar fraqueza, identidade e final verdadeiro para expansão futura. **Vale ainda.**
-7. Falta também: os hazards de região (gravidade da Cidade Invertida, paredes móveis,
-   escuridão viva do Mar Sem Fundo) e as mensagens-chave das ondas 120, 150, 180 e 199.
+7. As mensagens-chave das ondas 1, 10, 20, 25, 50, 60, 70, 75, 120, 150, 180 e 199
+   aparecem em tela preta entre ondas, com saída em interferência/glitch. **Feito em 19/09/2026.**
+   Ainda faltam os hazards de região (gravidade da Cidade Invertida, paredes móveis e
+   escuridão viva do Mar Sem Fundo).

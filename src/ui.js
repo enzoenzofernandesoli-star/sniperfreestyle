@@ -41,6 +41,9 @@ const UI = {
       seloVersao: g('seloVersao'),
       avisoAtualizacao: g('avisoAtualizacao'),
       avaDetalhe: g('avaDetalhe'),
+      historiaInterferencia: g('historiaInterferencia'),
+      historiaOrigem: g('historiaOrigem'),
+      historiaTexto: g('historiaTexto'),
       versaoAtual: g('versaoAtual'),
       temporadaAtual: g('temporadaAtual'),
       listaAtualizacoes: g('listaAtualizacoes'),
@@ -69,6 +72,7 @@ const UI = {
     UI.marcarVersao();
     Progresso.carregar();
     UI.ligarAvisoAtualizacao();
+    g('btFecharHistoria').onclick = () => UI.fecharHistoria();
 
     g('btJogar').onclick = () => { Coop.intencao = null; Som.clique(); UI.mostrarTela('classes'); };
     g('btCriarSala').onclick = () => { Som.clique(); UI.abrirSala('criar'); };
@@ -156,6 +160,33 @@ const UI = {
     if (UI.el.moedasMenu) UI.el.moedasMenu.textContent = texto;
     if (UI.el.moedasHud) UI.el.moedasHud.textContent = texto;
     if (UI.el.nucleusClasses) UI.el.nucleusClasses.textContent = Carteira.nucleus.toLocaleString('pt-BR');
+  },
+
+  mostrarHistoria(marco) {
+    const tela = UI.el.historiaInterferencia;
+    if (!tela || !marco) return;
+    clearTimeout(UI._timerHistoria);
+    tela.classList.remove('saindo');
+    UI.el.historiaOrigem.textContent = marco.origem || 'TRANSMISSÃO DA ARENA';
+    UI.el.historiaTexto.textContent = marco.texto;
+    UI.el.historiaTexto.dataset.texto = marco.texto;
+    tela.hidden = false;
+    requestAnimationFrame(() => tela.classList.add('ativa'));
+    UI._podeFecharHistoria = false;
+    setTimeout(() => { UI._podeFecharHistoria = true; }, 900);
+    UI._timerHistoria = setTimeout(() => UI.fecharHistoria(true), marco.duracao || 4300);
+  },
+
+  fecharHistoria(forcar) {
+    const tela = UI.el.historiaInterferencia;
+    if (!tela || tela.hidden || (!forcar && !UI._podeFecharHistoria)) return;
+    clearTimeout(UI._timerHistoria);
+    tela.classList.add('saindo');
+    setTimeout(() => {
+      tela.hidden = true;
+      tela.classList.remove('ativa', 'saindo');
+      Jogo.historiaAtiva = false;
+    }, 420);
   },
 
   /* ------------------------------- Telas ------------------------------ */

@@ -1597,15 +1597,15 @@ test('ESPECTRO e INVOCADOR só abrem com NUCLEUS, e a tranca não tem atalho', (
   assert.equal(dados.invocadorTrancado, true, 'comprar uma não libera a outra');
 });
 
-test('pacote de NUCLEUS preserva pelo menos R$ 30 depois da taxa de 15%', () => {
+test('R$ 14,90 de NUCLEUS libera os dois personagens', () => {
   const mundo = vm.createContext({ console, Math, localStorage: { getItem: () => null, setItem() {} } });
   vm.runInContext(fs.readFileSync(path.join(raiz, 'src/loja.js'), 'utf8'), mundo, { filename: 'src/loja.js' });
   const dados = vm.runInContext(`PACOTES_NUCLEUS.map((p) => ({
     id: p.id, nucleus: p.nucleus, liquidoCentavos: Math.round(p.precoCentavos * 0.85)
   }))`, mundo);
-  assert.deepEqual(Array.from(dados).map((p) => p.nucleus), [700, 1600, 3500]);
-  assert.ok(Array.from(dados).every((p) => p.liquidoCentavos >= 3000),
-    'nenhum pacote pode render menos de R$ 30 antes de impostos e estornos');
+  assert.deepEqual(Array.from(dados).map((p) => p.nucleus), [700, 1500, 2200]);
+  assert.equal(dados[2].liquidoCentavos, 1267, 'R$ 14,90 deixa R$ 12,67 após taxa de 15%');
+  assert.equal(dados[2].nucleus, 700 + 1500, 'pacote de R$ 14,90 paga as duas classes exatamente');
 });
 
 /* A guarda que não depende da tela estar certa. */
@@ -1671,6 +1671,31 @@ test('dificuldade altera inimigos e bosses sem mexer no modo normal', () => {
   assert.ok(dados.ajustes.facil.ritmoBoss > 1, 'fácil aumenta intervalo entre ataques');
   assert.ok(dados.ajustes.dificil.ritmoBoss < 1, 'difícil reduz intervalo entre ataques');
   assert.equal(dados.invalida, 'normal', 'entrada inválida volta ao padrão seguro');
+});
+
+test('história aparece nos marcos canônicos e pausa a transição da onda', () => {
+  const mundo = vm.createContext({ console, Math, setTimeout: () => {} });
+  for (const arquivo of ['src/nucleo.js', 'src/loja.js', 'src/classes.js', 'src/entidades.js', 'src/jogo.js']) {
+    vm.runInContext(fs.readFileSync(path.join(raiz, arquivo), 'utf8'), mundo, { filename: arquivo });
+  }
+  const dados = vm.runInContext(`(() => {
+    const mostrados = [];
+    UI = { mostrarHistoria: (m) => mostrados.push(m.texto), atualizarHUD() {}, aviso() {} };
+    const ondas = Object.keys(Jogo.MARCOS_HISTORIA).map(Number);
+    Jogo.onda = 50;
+    Jogo.jogador = new Jogador('sniper', 'original');
+    Jogo.prepararOnda();
+    const ativoNoMarco = Jogo.historiaAtiva;
+    Jogo.historiaAtiva = false;
+    const foraDoMarco = Jogo.iniciarHistoriaDaOnda(51);
+    return { ondas, mostrados, ativoNoMarco, foraDoMarco };
+  })()`, mundo);
+
+  assert.deepEqual(Array.from(dados.ondas), [1, 10, 20, 25, 50, 60, 70, 75, 120, 150, 180, 199]);
+  assert.equal(dados.ativoNoMarco, true);
+  assert.equal(dados.mostrados.length, 1);
+  assert.match(dados.mostrados[0], /CONTINUE/);
+  assert.equal(dados.foraDoMarco, false);
 });
 
 /* Qualidade adaptativa do celular: desce quando o FPS cai, sobe quando sobra, e

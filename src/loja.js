@@ -187,9 +187,9 @@ const VITRINES = [
 // NUCLEUS só entra por compra. O meio de pagamento entra depois:
 // aqui fica só a vitrine e o gancho `Pagamento.iniciar`, que ainda não existe.
 const PACOTES_NUCLEUS = [
-  { id: 'nucleus-700', nucleus: 700, precoCentavos: 3990, preco: 'R$ 39,90', selo: 'LIBERA ESPECTRO' },
-  { id: 'nucleus-1600', nucleus: 1600, precoCentavos: 7990, preco: 'R$ 79,90', selo: 'LIBERA INVOCADOR' },
-  { id: 'nucleus-3500', nucleus: 3500, precoCentavos: 14990, preco: 'R$ 149,90', selo: 'MELHOR VALOR' }
+  { id: 'nucleus-700', nucleus: 700, precoCentavos: 590, preco: 'R$ 5,90', selo: 'LIBERA ESPECTRO' },
+  { id: 'nucleus-1500', nucleus: 1500, precoCentavos: 990, preco: 'R$ 9,90', selo: 'LIBERA INVOCADOR' },
+  { id: 'nucleus-2200', nucleus: 2200, precoCentavos: 1490, preco: 'R$ 14,90', selo: 'LIBERA OS DOIS' }
 ];
 
 /* --------------------------- Consultas rápidas --------------------------- */
