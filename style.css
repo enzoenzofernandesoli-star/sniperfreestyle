@@ -460,6 +460,61 @@ body.em-jogo #hud { display: flex; }
 .menu-caixa.estreito { max-width: 420px; }
 .menu-caixa.largo { max-width: 900px; width: 100%; }
 
+.menu-marca {
+  position: relative;
+  isolation: isolate;
+  padding: 22px 56px 14px;
+}
+.menu-marca::before,
+.menu-marca::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 84px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(49, 224, 255, .7));
+}
+.menu-marca::before { right: 100%; }
+.menu-marca::after { left: 100%; transform: scaleX(-1); }
+.menu-mira {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 50%;
+  width: min(410px, 70vw);
+  transform: translateX(-50%);
+  border: 1px solid rgba(49, 224, 255, .14);
+  clip-path: polygon(0 0, 34% 0, 38% 5px, 62% 5px, 66% 0, 100% 0, 100% 100%, 66% 100%, 62% calc(100% - 5px), 38% calc(100% - 5px), 34% 100%, 0 100%);
+  background: linear-gradient(90deg, transparent, rgba(49, 224, 255, .045), transparent);
+}
+.menu-status {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 2px auto 15px;
+  color: var(--tinta-fraca);
+  font: 700 9px Orbitron, sans-serif;
+  letter-spacing: .14em;
+}
+.menu-status span { padding: 0 16px; border-right: 1px solid var(--borda); }
+.menu-status span:last-child { border: 0; }
+.menu-status b { margin-right: 5px; color: var(--ciano); font-size: 12px; }
+.menu-acoes { display: grid; gap: 8px; width: min(650px, 100%); margin: auto; }
+.menu-jogar { min-height: 62px; font-size: 18px; position: relative; overflow: hidden; }
+.menu-jogar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.25) 50%, transparent 65%);
+  transform: translateX(-110%);
+  animation: varreMenu 4.6s ease-in-out infinite;
+}
+.menu-jogar small { display: block; margin-bottom: 2px; font-size: 7px; letter-spacing: .32em; opacity: .65; }
+.menu-coop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.menu-coop .bt { border-color: rgba(92, 255, 157, .26); }
+.menu-utilidades { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.menu-utilidades .bt { padding: 9px 7px; font-size: 9px; color: var(--tinta-fraca); }
+@keyframes varreMenu { 0%, 72% { transform: translateX(-110%); } 100% { transform: translateX(110%); } }
+
 .tag-topo {
   font-size: clamp(9px, .85vw, 12px);
   letter-spacing: .42em;
@@ -616,9 +671,9 @@ body.em-jogo #hud { display: flex; }
 /* ------------------------- Escolha de dificuldade ---------------------- */
 .grade-dificuldade {
   display: grid;
-  grid-template-columns: repeat(3, minmax(190px, 300px));
+  grid-template-columns: repeat(5, minmax(150px, 230px));
   gap: clamp(10px, 1.5vw, 22px);
-  width: min(100%, 940px);
+  width: min(100%, 1220px);
 }
 .cartao-dificuldade {
   --dif-cor: #31e0ff;
@@ -637,9 +692,11 @@ body.em-jogo #hud { display: flex; }
 }
 .cartao-dificuldade:hover,
 .cartao-dificuldade.selecionado { transform: translateY(-5px); box-shadow: 0 18px 46px color-mix(in srgb, var(--dif-cor) 24%, transparent); }
+.cartao-dificuldade.muito-facil { --dif-cor: #a8ffdc; }
 .cartao-dificuldade.facil { --dif-cor: #5cff9d; }
 .cartao-dificuldade.normal { --dif-cor: #31e0ff; }
 .cartao-dificuldade.dificil { --dif-cor: #ff4d6d; }
+.cartao-dificuldade.hard { --dif-cor: #ff8a2b; }
 .cartao-dificuldade b { font-family: Orbitron, sans-serif; font-size: clamp(20px, 2.4vw, 34px); color: var(--dif-cor); }
 .cartao-dificuldade > span:not(.dif-selo) { font-size: 13px; color: #b8cade; }
 .dif-selo { font: 700 9px Orbitron, sans-serif; letter-spacing: .15em; color: var(--dif-cor); }
@@ -1698,12 +1755,24 @@ body.toque #btPausar {
              max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
   .menu-caixa, .menu-caixa.largo, .painel { max-height: 96%; }
+  .menu-marca { padding: 5px 34px 3px; }
+  .menu-marca::before, .menu-marca::after { width: 38px; }
+  .menu-mira { width: min(300px, 56vw); }
   .tag-topo { margin-bottom: 1px; font-size: 7px; }
   .titulo { font-size: clamp(24px, 10vh, 36px); }
   .titulo-menor, .cabecalho-tela h2 { font-size: clamp(15px, 5vh, 19px); }
   .subtitulo { margin-top: 2px; font-size: 9px; }
   .recorde-linha { margin-top: 4px; font-size: 8px; }
   .creditos, .moeda-linha, .temporada-linha { font-size: 8px; }
+  .menu-status { margin: 1px auto 5px; font-size: 7px; }
+  .menu-status span { padding: 0 8px; }
+  .menu-status b { font-size: 9px; }
+  .menu-acoes { width: min(540px, 88vw); gap: 4px; }
+  .menu-jogar { min-height: 44px; font-size: 12px; }
+  .menu-jogar small { display: none; }
+  .menu-coop { gap: 4px; }
+  .menu-utilidades { gap: 4px; }
+  .menu-utilidades .bt { padding: 5px 3px; font-size: 7px; letter-spacing: .06em; }
   .menu-botoes { gap: 5px; margin-top: 5px; }
 
   /* Visual menor; superfície de toque preservada em 44 px. */

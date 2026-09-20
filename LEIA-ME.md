@@ -132,9 +132,11 @@ para ele — melhoria com `exige` não polui o sorteio das outras classes.
 ## Dificuldade por run
 
 Depois da classe, a run pede uma dificuldade. **NORMAL** preserva exatamente o
-balanceamento original. **FÁCIL** usa 25% menos inimigos, 25% menos vida de boss e
-intervalos de ataque de boss 25% maiores. **DIFÍCIL** usa 35% mais inimigos, 40% mais
-vida de boss e reduz o intervalo de ataque para 72% do normal. No cooperativo, o
+balanceamento original. **MUITO FÁCIL** usa 50% menos inimigos, 50% menos vida de boss
+e metade da frequência de ataques. **FÁCIL** usa 25% menos inimigos, 25% menos vida de boss e
+intervalos 25% maiores. **DIFÍCIL** usa 35% mais inimigos, 40% mais vida de boss e
+reduz o intervalo para 72% do normal. **HARD** usa 50% mais inimigos, 50% mais vida
+de boss e ataques 50% mais frequentes. No cooperativo, o
 anfitrião escolhe e a mesma dificuldade vale para toda a sala.
 
 ## Emoji é o corpo, não enfeite

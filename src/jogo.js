@@ -103,9 +103,11 @@ const Jogo = {
     199: { origem: 'SINAL DO TRONO AUSENTE', texto: 'VOCÊ NÃO ENCONTROU O TRONO. ENTROU DENTRO DELE.', duracao: 5200 }
   },
   DIFICULDADES: {
+    'muito-facil': { inimigos: 0.5, vidaBoss: 0.5, ritmoBoss: 2 },
     facil: { inimigos: 0.75, vidaBoss: 0.75, ritmoBoss: 1.25 },
     normal: { inimigos: 1, vidaBoss: 1, ritmoBoss: 1 },
-    dificil: { inimigos: 1.35, vidaBoss: 1.4, ritmoBoss: 0.72 }
+    dificil: { inimigos: 1.35, vidaBoss: 1.4, ritmoBoss: 0.72 },
+    hard: { inimigos: 1.5, vidaBoss: 1.5, ritmoBoss: 2 / 3 }
   },
 
   definirDificuldade(valor) {

@@ -1648,14 +1648,14 @@ test('dificuldade altera inimigos e bosses sem mexer no modo normal', () => {
     Jogo.jogador = new Jogador('sniper', 'original');
     Jogo.onda = 21;
     const quantidades = {};
-    for (const modo of ['facil', 'normal', 'dificil']) {
+    for (const modo of ['muito-facil', 'facil', 'normal', 'dificil', 'hard']) {
       Jogo.definirDificuldade(modo);
       Jogo.prepararOnda();
       quantidades[modo] = Jogo.spawnRestante;
     }
     const def = BOSSES.find((b) => !b.final && !b.secreto && (b.ato || 1) === 1);
     const vidas = {};
-    for (const modo of ['facil', 'normal', 'dificil']) {
+    for (const modo of ['muito-facil', 'facil', 'normal', 'dificil', 'hard']) {
       Jogo.definirDificuldade(modo);
       vidas[modo] = new Boss(def, 20).vidaMax;
     }
@@ -1664,12 +1664,18 @@ test('dificuldade altera inimigos e bosses sem mexer no modo normal', () => {
       ajustes: Jogo.DIFICULDADES };
   })()`, mundo);
 
+  assert.ok(dados.quantidades['muito-facil'] < dados.quantidades.facil);
   assert.ok(dados.quantidades.facil < dados.quantidades.normal);
   assert.ok(dados.quantidades.dificil > dados.quantidades.normal);
+  assert.ok(dados.quantidades.hard > dados.quantidades.dificil);
+  assert.equal(dados.vidas['muito-facil'] / dados.vidas.normal, 0.5);
   assert.equal(dados.vidas.facil / dados.vidas.normal, 0.75);
   assert.equal(dados.vidas.dificil / dados.vidas.normal, 1.4);
+  assert.equal(dados.vidas.hard / dados.vidas.normal, 1.5);
+  assert.equal(dados.ajustes['muito-facil'].ritmoBoss, 2, 'muito fácil corta ataques pela metade');
   assert.ok(dados.ajustes.facil.ritmoBoss > 1, 'fácil aumenta intervalo entre ataques');
   assert.ok(dados.ajustes.dificil.ritmoBoss < 1, 'difícil reduz intervalo entre ataques');
+  assert.equal(dados.ajustes.hard.ritmoBoss, 2 / 3, 'hard ataca 50% mais vezes');
   assert.equal(dados.invalida, 'normal', 'entrada inválida volta ao padrão seguro');
 });
 

@@ -123,21 +123,31 @@
   <section class="tela ativa" data-tela="menu">
     <div class="brilho-fundo"></div>
     <div class="menu-caixa">
-      <p class="tag-topo">ARENA NEON · TWIN-STICK ROGUELITE</p>
-      <h1 class="titulo">SNIPER<span>FREESTYLE</span></h1>
-      <p class="subtitulo">5 classes · lojinha de cosméticos · 22 tipos de inimigo · 24 bosses com fases · 22 melhorias · 2 atos · 200 ondas</p>
-      <div class="menu-botoes">
-        <button id="btJogar" class="bt principal">JOGAR</button>
-        <button id="btCriarSala" class="bt">CRIAR SALA</button>
-        <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
-        <button id="btComoJogar" class="bt">COMO JOGAR</button>
-        <button id="btLoja" class="bt">LOJINHA</button>
-        <!-- Só aparece para quem atravessou a fenda; o CSS decide pelo data-ato. -->
-        <span id="marcaAto" class="marca-ato">ATO II · NÁDIR LIBERADO</span>
-        <button id="btRecordes" class="bt">RECORDES</button>
-        <button id="btConfig" class="bt">AJUSTES</button>
-        <button id="btAtualizar" class="bt">ATUALIZAR<span id="seloVersao" class="selo-versao"></span></button>
+      <div class="menu-marca">
+        <span class="menu-mira" aria-hidden="true"></span>
+        <p class="tag-topo">PROTOCOLO DE COMBATE · ARENA NEON</p>
+        <h1 class="titulo">SNIPER<span>FREESTYLE</span></h1>
+        <p class="subtitulo">Sobreviva a 200 ondas. Escolha sua classe. Quebre o ciclo.</p>
       </div>
+      <div class="menu-status" aria-label="Conteúdo do jogo">
+        <span><b>05</b> CLASSES</span><span><b>24</b> BOSSES</span><span><b>02</b> DIMENSÕES</span>
+      </div>
+      <div class="menu-acoes">
+        <button id="btJogar" class="bt principal menu-jogar"><small>INICIAR PROTOCOLO</small>JOGAR</button>
+        <div class="menu-coop">
+          <button id="btCriarSala" class="bt">CRIAR SALA</button>
+          <button id="btEntrarSala" class="bt">ENTRAR NA SALA</button>
+        </div>
+        <div class="menu-utilidades">
+          <button id="btComoJogar" class="bt">COMO JOGAR</button>
+          <button id="btLoja" class="bt">LOJINHA</button>
+          <button id="btRecordes" class="bt">RECORDES</button>
+          <button id="btConfig" class="bt">AJUSTES</button>
+          <button id="btAtualizar" class="bt">ATUALIZAR<span id="seloVersao" class="selo-versao"></span></button>
+        </div>
+      </div>
+      <!-- Só aparece para quem atravessou a fenda; o CSS decide pelo data-ato. -->
+      <span id="marcaAto" class="marca-ato">ATO II · NÁDIR LIBERADO</span>
       <p class="recorde-linha">MELHOR PONTUAÇÃO: <b id="recordeMenu">0</b></p>
       <p class="moeda-linha"><i class="moeda-mini"></i><b id="moedasMenu">0</b> MOEDAS</p>
       <p id="salaStatus" class="sala-status" role="status" aria-live="polite"></p>
@@ -171,6 +181,10 @@
       <p>Você pode trocar a cada nova run. NORMAL mantém o balanceamento original.</p>
     </div>
     <div class="grade-dificuldade">
+      <button class="cartao-dificuldade muito-facil" data-dificuldade="muito-facil">
+        <span class="dif-selo">PRIMEIRO CONTATO</span><b>MUITO FÁCIL</b>
+        <span>−50% inimigos</span><span>−50% vida dos bosses</span><span>−50% ataques dos bosses</span>
+      </button>
       <button class="cartao-dificuldade facil" data-dificuldade="facil">
         <span class="dif-selo">MAIS TRANQUILO</span><b>FÁCIL</b>
         <span>−25% inimigos</span><span>−25% vida dos bosses</span><span>Ataques de boss mais lentos</span>
@@ -183,7 +197,12 @@
         <span class="dif-selo">SEM PIEDADE</span><b>DIFÍCIL</b>
         <span>+35% inimigos</span><span>+40% vida dos bosses</span><span>Ataques de boss mais frequentes</span>
       </button>
+      <button class="cartao-dificuldade hard" data-dificuldade="hard">
+        <span class="dif-selo">COLAPSO TOTAL</span><b>HARD</b>
+        <span>+50% inimigos</span><span>+50% vida dos bosses</span><span>Ataques de boss 50% mais frequentes</span>
+      </button>
     </div>
+    <p class="dica-arraste">◂ ARRASTE PARA VER AS 5 DIFICULDADES ▸</p>
     <button class="bt fantasma" id="btVoltarDificuldade">◂ TROCAR CLASSE</button>
   </section>
 
